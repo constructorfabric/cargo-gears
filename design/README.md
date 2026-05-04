@@ -1,99 +1,115 @@
-# CyberFabric CLI Design Proposal
+# CyberFabric CLI Design
 
-This folder contains a design proposal for a CLI tool for CyberFabric.
+This folder contains the authoritative design for the CyberFabric CLI, the canonical command-line interface for
+building, validating, and deploying applications on the CyberFabric framework.
 
-# Motivation
+> **Supersedes:** The original v1 design documents in `v1/` are retained for historical reference. The top-level
+> documents below represent the current design.
 
-In CyberFabric we are developing a new framework for building modular applications.
-This approach allows us to design backend applications in a more structured way, however, it comes with some challenges.
+## Purpose
 
-There's a high cognitive complexity for any new user of the framework, regardless of his background.
-This CLI tool pretends to be an opinionated but yet flexible tool to help users to build their applications.
-For most of the application life cycle, from scaffolding a simple app, to the orchestration of a bunch of applications.
+The CyberFabric CLI exists to maximize developer productivity, consistency, and correctness. It acts as a
+**deterministic enforcement layer** so that applications scaffolded, built, or deployed through it always follow
+CyberFabric standards, architectural patterns, and approved practices.
 
-We are not reinventing the wheel with this, specifically in Rust, we have a good ecosystem of tooling that helps the
-developer during app development. The idea is to orchestrate the existing tooling, NOT replacing it.
+The CLI orchestrates existing Rust ecosystem tooling rather than replacing it. Developers focus on writing modules and
+business logic; Modkit libraries provide the framework runtime; system modules provide generic functionality; and this
+CLI provides the development lifecycle tooling that ties everything together.
 
-By using this tool, the developer can focus on writing modules and the business logic that it's the relevant part.
-Cyberfabric libraries(Modkit*) will leverage the framework runtime, system modules will provide generic functionality
-to the application and Cyberfabric CLI(this tool) will provide a way to orchestrate all development tooling.
+## Core Goals
 
-## Table of Contents
+- **Enforce consistency** across generated code, configuration, project structure, and developer workflows
+- **Reduce ambiguity** in how developers use the CyberFabric framework
+- **Improve productivity** by automating scaffolding, validation, and framework-specific tasks
+- **Ensure determinism** so outputs are predictable, repeatable, and aligned with organizational standards
+- **Serve as canonical interface** for applying CyberFabric best practices in day-to-day development
+- **Support automation** with structured output that LLMs, CI systems, and scripts can consume reliably
 
-1. [Manifest and Configuration](./v1/01-manifest-and-config.md)
-2. [Template Generation](./v1/02-template-generation.md)
-3. [List and Inspection](./v1/03-list-and-inspection.md)
-4. [Help and Docs](./v1/04-help-and-docs.md)
-5. [Lint](./v1/05-lint.md)
-6. [Test](./v1/06-test.md)
-7. [Run for Development](./v1/07-run-dev.md)
-8. [Build and Package](./v1/08-build-and-package.md)
-9. [Implementation Plan](./v1/09-implementation-plan.md)
+## Key Decision
 
-## Design Goals
+The **manifest** (`Cyberfabric.toml`) becomes the source of truth for what the CLI generates and orchestrates. Runtime
+configuration remains the source of truth for runtime settings.
 
-- Move application composition out of runtime configuration and into a
-  CLI-owned manifest.
-- Keep runtime configuration focused on values consumed by the generated server
-  and modules.
-- Keep command behavior predictable for both humans and LLM-driven automation.
-- Preserve the current CLI flow where possible: `init`, `mod add`,
-  `config mod ...`, `docs`, `lint`, `run`, `build`, and `deploy`.
-- Prefer typed command modes and schema enums over open string values when the
-  allowed values are known.
-- Make generated artifacts explicit enough that users can inspect, reproduce,
-  and override them.
+| Question | Source |
+|---|---|
+| Which app, environment, modules, feature sets, test strategy, lint policy, runner mode, and build outputs? | **Manifest** |
+| What values should the generated server and modules read at runtime? | **Runtime config** |
+
+## Design Documents
+
+| # | Document | Scope |
+|---|---|---|
+| 01 | [Principles and Philosophy](./01-principles-and-philosophy.md) | Core design principles, standards, and tradeoff guidelines |
+| 02 | [Architecture](./02-architecture.md) | Internal crate structure, trait boundaries, extension model |
+| 03 | [Command Surface](./03-command-surface.md) | Complete command tree, naming conventions, shared argument patterns |
+| 04 | [Manifest and Configuration](./04-manifest-and-configuration.md) | Manifest schema, runtime config, validation, migration |
+| 05 | [Scaffolding and Templates](./05-scaffolding-and-templates.md) | Generation commands, template registry, workspace profiles |
+| 06 | [Inspection and Discovery](./06-inspection-and-discovery.md) | List, docs, help, schema introspection |
+| 07 | [Quality Gates](./07-quality-gates.md) | Lint, test, and coverage orchestration |
+| 08 | [Build, Run, and Deploy](./08-build-run-deploy.md) | Dev loop, build pipeline, Docker, Helm |
+| 09 | [Developer Experience](./09-developer-experience.md) | Output formatting, error handling, exit codes, UX conventions |
+| 10 | [Security](./10-security.md) | Secrets, credentials, secure defaults |
+| 11 | [CI and Automation](./11-ci-and-automation.md) | Non-interactive mode, CI patterns, LLM integration |
+| 12 | [Versioning and Compatibility](./12-versioning-and-compatibility.md) | CLI versioning, manifest versioning, migration |
+| 13 | [Implementation Plan](./13-implementation-plan.md) | Phased rollout with success criteria |
+| -- | [Glossary](./glossary.md) | Precise definitions for all domain terms |
 
 ## Proposed Command Shape
 
 ```text
 cargo cyberfabric
-|-- new/init
-|-- generate
-|   |-- workspace
-|   |-- module
-|   |-- config
-|   |-- manifest
-|   |-- build
-|   |-- agents
-|   `-- skill
-|-- list
-|   |-- modules
-|   |-- system-modules
-|   |-- local-modules
-|   `-- configs
-|-- help
-|   |-- schema
-|   |-- docs
-|   `-- topic
-|-- manifest
-|   |-- add
-|   |-- edit
-|   |-- rm
-|   |-- validate
-|   `-- render
-|-- config
-|   |-- db
-|   `-- mod
-|-- lint
-|-- test
-|-- run
-|-- build
-`-- deploy
+├── init                          # Alias for generate workspace
+├── generate
+│   ├── workspace
+│   ├── module
+│   ├── config
+│   ├── manifest
+│   ├── build
+│   ├── agents
+│   └── skill
+├── manifest
+│   ├── add
+│   ├── edit
+│   ├── rm
+│   ├── validate
+│   └── render
+├── list
+│   ├── modules
+│   ├── system-modules
+│   ├── local-modules
+│   ├── configs
+│   └── apps
+├── help
+│   ├── schema
+│   ├── docs
+│   └── topic
+├── config
+│   ├── mod
+│   │   ├── list
+│   │   ├── add
+│   │   ├── rm
+│   │   └── db { add | edit | rm }
+│   └── db { add | edit | rm }
+├── lint
+├── test
+├── run
+├── build
+└── deploy
 ```
 
-The tree keeps the existing command names where they already work, while adding
-more explicit aliases and subcommands for the new manifest-first model.
+The tree preserves existing commands (`init`, `mod add`, `config`, `docs`, `lint`, `run`, `build`, `deploy`) while
+adding the manifest-first model, normalized generation namespace, and structured inspection commands.
 
-## Key Decision
+## Design Principles Summary
 
-The manifest becomes the source of truth for what the CLI generates and
-orchestrates. Runtime config remains the source of truth for runtime settings.
+These are expanded in [01-principles-and-philosophy.md](./01-principles-and-philosophy.md):
 
-In practical terms:
-
-- Manifest answers: which app, environment, modules, feature sets, test
-  strategy, lint policy, runner mode, and build outputs should the CLI use?
-- Runtime config answers: what values should the generated server and modules
-  read at runtime?
+1. **Convention over configuration** -- sensible defaults, explicit overrides
+2. **Manifest-first orchestration** -- the manifest drives all generation and tooling
+3. **Deterministic outputs** -- same inputs always produce the same artifacts
+4. **Fail fast, fail clearly** -- validate early, report structured errors
+5. **Orchestrate, don't replace** -- wrap existing Rust tools, never reinvent them
+6. **Machine-readable by default** -- `--format json` everywhere, stable exit codes
+7. **Secure by default** -- no secrets in generated files, env-var expansion for credentials
+8. **Backward compatible** -- existing workflows keep working across upgrades
 
