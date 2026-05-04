@@ -35,12 +35,24 @@ The Rust framework for building modular applications. The CLI is the canonical t
 
 See [Manifest](#manifest).
 
+### CI (Continuous Integration)
+
+Automated pipeline that runs validation, lint, test, and build steps on code changes. The CLI is designed to be
+a first-class CI citizen with non-interactive mode, structured JSON output, and stable exit codes. See
+[11-ci-and-automation.md](./11-ci-and-automation.md).
+
 ## D
 
 ### Diagnostic
 
 A structured error, warning, or informational message produced by validation. Contains severity, code, message,
 location, and suggestion fields. Serializable to JSON.
+
+### Diagnostic Code
+
+A stable identifier for a specific error or warning (e.g., `E003`, `W001`). Codes use a global namespace with
+letter prefix and numeric suffix. See
+[09-developer-experience.md](./09-developer-experience.md#error-code-namespace) for the full registry.
 
 ### Dry Run
 
@@ -58,6 +70,20 @@ the manifest as `[env.<environment>]`.
 
 A numeric code returned by the CLI process to indicate success or failure type. Defined in
 [09-developer-experience.md](./09-developer-experience.md#exit-codes).
+
+## F
+
+### Feature Flag
+
+A Cargo feature passed to the generated server project to enable optional functionality. The CLI manages two
+structured feature flags (`--fips`, `--otel`) and supports arbitrary extra features via `extra_features` in the
+manifest or `--features` on the command line.
+
+### FIPS (Federal Information Processing Standards)
+
+A compliance mode that enables FIPS-validated cryptographic modules. Activated by `fips = true` in the manifest run
+policy or `--fips` on the command line. The CLI passes `-F fips` to the generated project's Cargo invocation.
+Validation warns if FIPS is enabled in non-production environments or with incompatible modules.
 
 ## G
 

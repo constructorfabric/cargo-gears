@@ -37,7 +37,8 @@ cargo cyberfabric
 │   ├── module <template> [--name <name>]           # Module scaffolding
 │   ├── config <kind>                               # Runtime config scaffolding
 │   ├── manifest                                    # Cyberfabric.toml scaffolding
-│   ├── build <kind>                                # Build artifact templates (docker, helm, ci)
+│   ├── build <kind>                                # Build artifact templates (docker, helm, compose)
+│   ├── ci <provider>                               # CI workflow templates (github)
 │   ├── agents                                      # AGENTS.md generation
 │   └── skill                                       # SKILL.md generation
 │
@@ -46,7 +47,8 @@ cargo cyberfabric
 │   ├── render [--env <env>] [--app <app>]          # Render resolved generation model
 │   ├── add <env> <app> [<module-ref>...]           # Add environment/app/modules
 │   ├── edit <env> <app> [flags]                    # Edit app settings
-│   └── rm <env> <app> [<module-ref>]               # Remove environment/app/module
+│   ├── rm <env> <app> [<module-ref>]               # Remove environment/app/module
+│   └── migrate [--from <v>] [--to <v>]             # Migrate manifest schema version
 │
 ├── list
 │   ├── modules [--env <env>] [--app <app>]         # All modules (local + system + configured)
@@ -80,7 +82,9 @@ cargo cyberfabric
 ├── tools                                           # Tool bootstrap (rustup, fmt, clippy)
 ├── run                                             # Generate and run server
 ├── build                                           # Generate and build server
-└── deploy                                          # Build Docker image
+├── deploy                                          # Build Docker image
+├── completions --shell <shell>                      # Generate shell completions
+└── man --output-dir <dir>                           # Generate man pages
 ```
 
 ## Verb Taxonomy
@@ -100,6 +104,8 @@ cargo cyberfabric
 | `deploy` | Build a Docker image | Generates project, invokes Docker |
 | `tools` | Install or upgrade toolchain components | May install system components |
 | `docs` | Resolve and print Rust source | May download/cache crate sources |
+| `completions` | Generate shell completion scripts | Writes to stdout or file |
+| `man` | Generate man pages | Writes man page files |
 
 ## Shared Argument Patterns
 
@@ -128,8 +134,9 @@ manifest. When the manifest has exactly one environment and one app, they are se
 
 Available on: `list`, `manifest validate`, `manifest render`, `help schema`.
 
-Controls output serialization. Default is `table` for interactive terminals, `json` when stdout is not a TTY (
-respecting `NO_COLOR` and pipe detection).
+Controls output serialization. When omitted, the CLI detects the terminal: `table` for interactive TTYs, `json` when
+stdout is not a TTY. The `CF_CLI_FORMAT` environment variable can override the auto-detected default. The explicit
+`--format` flag always takes highest precedence.
 
 ### Dry Run: `--dry-run`
 
@@ -143,6 +150,21 @@ with `--format json`, this is the stable contract for automation.
 Available on: all commands.
 
 Increases output detail. For subprocesses, shows their stdout/stderr in real time instead of capturing it.
+
+### Non-Interactive: `--no-interactive`
+
+Available on: all commands.
+
+Disables all interactive prompts. In this mode, ambiguous selections that would normally prompt the user instead
+produce an error with a suggestion to provide explicit flags. Automatically implied when stdin is not a TTY or
+`CI=true` is set. See [11-ci-and-automation.md](./11-ci-and-automation.md#non-interactive-mode).
+
+### Install Missing Tools: `--install-missing-tools`
+
+Available on: `test`, `lint`.
+
+When a required tool (e.g., `cargo-nextest`, `cargo-llvm-cov`) is not installed, install it automatically instead of
+failing with a suggestion. Not enabled by default to avoid surprising side effects.
 
 ## Name Validation
 

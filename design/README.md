@@ -65,6 +65,7 @@ cargo cyberfabric
 │   ├── config
 │   ├── manifest
 │   ├── build
+│   ├── ci
 │   ├── agents
 │   └── skill
 ├── manifest
@@ -72,7 +73,8 @@ cargo cyberfabric
 │   ├── edit
 │   ├── rm
 │   ├── validate
-│   └── render
+│   ├── render
+│   └── migrate
 ├── list
 │   ├── modules
 │   ├── system-modules
@@ -94,7 +96,9 @@ cargo cyberfabric
 ├── test
 ├── run
 ├── build
-└── deploy
+├── deploy
+├── completions
+└── man
 ```
 
 The tree preserves existing commands (`init`, `mod add`, `config`, `docs`, `lint`, `run`, `build`, `deploy`) while
@@ -112,4 +116,3 @@ These are expanded in [01-principles-and-philosophy.md](./01-principles-and-phil
 6. **Machine-readable by default** -- `--format json` everywhere, stable exit codes
 7. **Secure by default** -- no secrets in generated files, env-var expansion for credentials
 8. **Backward compatible** -- existing workflows keep working across upgrades
-

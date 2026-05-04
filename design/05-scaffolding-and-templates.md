@@ -11,9 +11,10 @@
 7. [Configuration Scaffolding](#configuration-scaffolding)
 8. [Manifest Scaffolding](#manifest-scaffolding)
 9. [Build Template Scaffolding](#build-template-scaffolding)
-10. [Agent and Skill Scaffolding](#agent-and-skill-scaffolding)
-11. [Post-Generation Hooks](#post-generation-hooks)
-12. [Template Versioning](#template-versioning)
+10. [CI Template Scaffolding](#ci-template-scaffolding)
+11. [Agent and Skill Scaffolding](#agent-and-skill-scaffolding)
+12. [Post-Generation Hooks](#post-generation-hooks)
+13. [Template Versioning](#template-versioning)
 
 ## Purpose
 
@@ -36,6 +37,7 @@ cargo cyberfabric generate module <template> [--name <name>] [flags]
 cargo cyberfabric generate config <kind> [flags]
 cargo cyberfabric generate manifest [flags]
 cargo cyberfabric generate build <kind> [flags]
+cargo cyberfabric generate ci <provider> [flags]
 cargo cyberfabric generate agents [flags]
 cargo cyberfabric generate skill [flags]
 ```
@@ -114,7 +116,7 @@ The `--with` flag enables optional additions (comma-separated):
 |---|---|
 | `docker` | `Dockerfile` and `.dockerignore` |
 | `helm` | `charts/<app>/` Helm chart skeleton |
-| `ci-github` | `.github/workflows/ci.yml` |
+| `ci-github` | `.github/workflows/ci.yml` (equivalent to `generate ci github`) |
 | `agents` | `AGENTS.md` |
 | `skill` | `SKILL.md` |
 
@@ -155,13 +157,13 @@ cargo cyberfabric mod add <template> [-p <path>] [flags]
 
 ### Available Templates
 
-| Template
-|---
-| `background-worker` 
-| `api-db-handler` 
-| `rest-gateway` 
-| `grpc-service` 
-| `oop-module` 
+| Template | Status | Description |
+|---|---|---|
+| `background-worker` | Existing | Periodic or event-driven background task module |
+| `api-db-handler` | Existing | REST API module with database integration |
+| `rest-gateway` | Existing | HTTP gateway and routing module |
+| `grpc-service` | Proposed | gRPC server module |
+| `oop-module` | Proposed | Out of process style module |
 
 ### Flags
 
@@ -238,7 +240,6 @@ cargo cyberfabric generate build <kind> [-p <path>]
 | `docker` | `Dockerfile` and `.dockerignore` |
 | `compose` | `docker-compose.yml` for local development dependencies |
 | `helm` | Helm chart skeleton in `charts/<app>/` |
-| `ci-github` | GitHub Actions CI workflow |
 
 ### Docker Template
 
@@ -258,6 +259,25 @@ The generated chart includes:
 - `Chart.yaml` with app version and chart version.
 - `values.yaml` with image repository/tag, config mount, env vars, ports, probes, resources.
 - `templates/deployment.yaml`, `templates/service.yaml`, `templates/configmap.yaml`.
+
+## CI Template Scaffolding
+
+CI workflow templates are separate from build artifact templates because they serve a different purpose: configuring
+continuous integration pipelines rather than producing deployable artifacts.
+
+```bash
+cargo cyberfabric generate ci <provider> [-p <path>]
+```
+
+### CI Providers
+
+| Provider | What It Generates |
+|---|---|
+| `github` | `.github/workflows/ci.yml` with validate, lint, test, and build steps |
+
+The generated workflow uses manifest-driven commands (see
+[11-ci-and-automation.md](./11-ci-and-automation.md#ci-pipeline-patterns) for the recommended pattern). Additional
+providers (e.g., `gitlab`, `azure`) can be added as templates become available.
 
 ## Agent and Skill Scaffolding
 

@@ -106,7 +106,7 @@ bump and a documented migration path.
 
 - The current `--config`-based flow remains supported alongside the manifest-first flow.
 - Deprecated flags produce warnings for at least one minor release cycle before removal.
-- `manifest init --from-config` provides a migration path from config-centric to manifest-first.
+- `generate manifest --from-config` provides a migration path from config-centric to manifest-first.
 
 ## Standards the CLI Enforces
 

@@ -27,13 +27,17 @@ parsing stderr.
 |---|---|---|
 | `0` | Success | Command completed without errors |
 | `1` | General error | Unclassified runtime failure |
-| `2` | Usage error | Invalid arguments, missing required flags |
+| `2` | Usage error | Invalid arguments, missing required flags (matches clap's default) |
 | `3` | Validation error | Manifest validation failed, config schema error |
 | `4` | Resolution error | Module not found, registry unreachable |
 | `5` | Generation error | Template failure, code generation error |
 | `6` | Tool error | Cargo/Docker/Helm invocation failed |
 | `7` | I/O error | File not found, permission denied |
 | `130` | Interrupted | User pressed Ctrl+C (SIGINT) |
+
+> **Note on clap errors:** Exit code 2 is clap's default for parse failures. Because clap errors bypass the CLI's own
+> error handling, they will **not** produce the structured JSON error format below. Custom error handling wrapping clap
+> failures is required to achieve full JSON coverage.
 
 ### JSON Error Wrapping
 
@@ -69,6 +73,21 @@ error[E003]: local module 'payments' not found in workspace
   = help: run 'cargo cyberfabric generate module api-db-handler --name payments' to create it
   = note: available local modules: background-worker, api-db-handler
 ```
+
+### Error Code Namespace
+
+Diagnostic codes use a single global namespace with a letter prefix and numeric suffix:
+
+| Prefix | Domain | Range |
+|---|---|---|
+| `E0xx` | Manifest and config validation | `E001`-`E099` |
+| `E1xx` | Module resolution | `E100`-`E199` |
+| `E2xx` | Code generation and templates | `E200`-`E299` |
+| `E3xx` | Tool orchestration (cargo, docker, helm) | `E300`-`E399` |
+| `E4xx` | CLI usage and argument errors | `E400`-`E499` |
+| `W0xx` | Manifest and config warnings | `W001`-`W099` |
+
+Codes are stable within a major version. New codes may be added in any release.
 
 ### Error Message Rules
 
@@ -171,13 +190,13 @@ Color palette:
 
 Some commands prompt for user input in interactive mode:
 
-- `tools` prompts before installing/upgrading (skipped with `--yolo`).
+- `tools` prompts before installing/upgrading (skipped with `--yes` / `-y`).
 - Ambiguous manifest selection (multiple envs/apps) prompts for selection.
 - `generate workspace` in a non-empty directory prompts for confirmation (skipped with `--force`).
 
 ### Non-Interactive Fallback
 
-When stdin is not a TTY, prompts are replaced with errors:
+When stdin is not a TTY, `CI=true` is set, or `--no-interactive` is passed, prompts are replaced with errors:
 
 ```text
 error[E011]: ambiguous manifest selection, multiple apps found

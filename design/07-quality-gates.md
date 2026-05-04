@@ -31,7 +31,7 @@ cargo cyberfabric lint [-p <path>] [--all] [--fmt] [--clippy] [--strict] [--dyli
 
 | Condition | What Runs |
 |---|---|
-| No flags | All suites (fmt + clippy + dylint if available). Equivalent to `--all`. |
+| No flags | All suites (fmt + clippy + dylint if available). Same as passing `--all`. |
 | `--fmt` only | `cargo fmt --check --all` |
 | `--clippy` only | `cargo clippy --workspace --all-targets --all-features` |
 | `--dylint` only | Embedded Dylint rules |
@@ -45,7 +45,7 @@ cargo cyberfabric lint [-p <path>] [--all] [--fmt] [--clippy] [--strict] [--dyli
 clippy = true          # default: true
 fmt = true             # default: true
 dylint = true          # default: true when available
-skip_dylint = ["rule-name"]  # or skip_dylint = true to skip all
+skip_dylint_rules = ["rule-name"]  # skip specific rules (list of strings)
 strict = false         # default: false
 ```
 
@@ -134,7 +134,8 @@ Runner resolution order:
 4. `cargo-test`.
 
 If `nextest` is selected and not installed, the CLI prints the install command and fails unless
-`--install-missing-tools` is passed.
+`--install-missing-tools` is passed (see
+[03-command-surface.md](./03-command-surface.md#install-missing-tools---install-missing-tools)).
 
 ### Test Scoping
 
@@ -187,7 +188,8 @@ cargo cyberfabric test --coverage [--coverage-format <format>]
 
 Preferred tool: `cargo-llvm-cov`.
 
-If not installed, the CLI prints the install command and fails unless `--install-missing-tools` is passed.
+If not installed, the CLI prints the install command and fails unless `--install-missing-tools` is passed (see
+[03-command-surface.md](./03-command-surface.md#install-missing-tools---install-missing-tools)).
 
 ### Coverage Formats
 
@@ -223,18 +225,29 @@ coverage_format = "lcov"
 
 ### Named Test Sets
 
-Advanced teams can define custom test sets in the manifest:
+Advanced teams can define custom test sets **per-app** in the manifest, alongside the other policy sections:
 
 ```toml
-[test_sets.unit]
+[env.dev.app1.test]
+runner = "nextest"
+sets = ["unit", "integration"]
+coverage = false
+
+[[env.dev.app1.test.custom_sets]]
+name = "unit"
 runner = "cargo-test"
 args = ["--workspace", "--all-features"]
 
-[test_sets.e2e]
+[[env.dev.app1.test.custom_sets]]
+name = "e2e"
 runner = "nextest"
 args = ["run", "--workspace", "--features", "e2e"]
 requires_generated_app = true
 ```
+
+Custom test sets live under the app's test policy (`env.<env>.<app>.test.custom_sets`) to keep them
+scoped to the app they apply to. The built-in set names (`unit`, `integration`, `e2e`, `module`) work
+without custom definitions; `custom_sets` is only needed to override arguments or runner for a specific set.
 
 This keeps the CLI opinionated for common cases while allowing explicit test topology for advanced needs.
 

@@ -123,10 +123,17 @@ coverage = true
 ### Schema Design Decisions
 
 - **`BTreeMap` for environments and apps** ensures deterministic ordering in serialization and iteration.
+- **Environment-first hierarchy** (`[env.<environment>.<app>]`) groups all apps under their environment. This inverts
+  the v1 design (`[env.<app>.<environment>]`) to match the mental model of "select an environment, then an app within
+  it" which aligns with `--env <env> --app <app>` flag ordering.
 - **Modules are arrays of tables** (`[[env.dev.app1.modules]]`) rather than inline tables for readability with many
   modules.
 - **Policy sections** (`run`, `build`, `lint`, `test`) are optional; the CLI applies convention defaults when omitted.
 - **`schema_version`** is a top-level integer for forward compatibility. See [Schema Versioning](#schema-versioning).
+- **No `remote` source type.** The v1 design had `local`, `remote`, and `registry`. The `remote` source is removed
+  because its semantics (Git-based dependency) overlap with `registry` for published crates and with `local` path
+  dependencies. If Git-based dependencies are needed in the future, they should be added as a new explicit source type
+  (e.g., `git`) with clear semantics rather than the ambiguous `remote`.
 
 ## Module References
 
@@ -135,7 +142,7 @@ Each module reference has:
 | Field | Required | Description |
 |---|---|---|
 | `name` | Yes | Module name used in the CyberFabric runtime |
-| `source` | Yes | One of `local`, `registry` |
+| `source` | Yes | One of `local`, `registry` (see [note on removed `remote` source](#schema-design-decisions)) |
 | `version` | When `registry` | Exact semver version |
 | `package` | When `registry` | Cargo package name (crate name) |
 | `features` | No | List of Cargo features to enable |
@@ -324,9 +331,28 @@ Rules:
 - The CLI can read older schema versions and apply internal migration logic.
 - `manifest validate` warns about deprecated fields from older schemas.
 
+## Manifest Migration
+
+When a new schema version is released, the CLI provides a migration command:
+
+```bash
+cargo cyberfabric manifest migrate [--from <version>] [--to <version>] [--manifest <path>] [--dry-run]
+```
+
+This command:
+
+1. Reads the manifest with the old schema.
+2. Applies migration rules (field renames, restructuring, default injection).
+3. Writes the updated manifest using `toml_edit` to preserve comments.
+4. Prints a diff of changes.
+
+`--dry-run` shows the diff without writing. See
+[12-versioning-and-compatibility.md](./12-versioning-and-compatibility.md#migration-between-schema-versions) for the
+full versioning policy.
+
 ## Migration from Config-Centric Model
 
-The `manifest init --from-config` command generates a `Cyberfabric.toml` from an existing config file:
+The `generate manifest --from-config` command generates a `Cyberfabric.toml` from an existing config file:
 
 ```bash
 cargo cyberfabric generate manifest --from-config config/quickstart.yml --env dev --app quickstart

@@ -30,12 +30,13 @@ In non-interactive mode:
 | Spinner progress indicators | Line-based status messages to stderr |
 | Default output format: `table` | Default output format: `json` |
 | Color enabled | Color disabled (unless `CLICOLOR_FORCE=1`) |
-| `tools` prompts before install | `tools` fails unless `--yolo` is passed |
+| `tools` prompts before install | `tools` fails unless `--yes` is passed |
 
 ### Forcing Non-Interactive
 
-Even in an interactive terminal, `--no-interactive` disables all prompts. This is useful for testing CI behavior
-locally.
+Even in an interactive terminal, `--no-interactive` disables all prompts (see
+[03-command-surface.md](./03-command-surface.md#non-interactive---no-interactive)). This is useful for testing CI
+behavior locally.
 
 ## CI Pipeline Patterns
 
@@ -155,19 +156,9 @@ JSON output schema is versioned alongside the CLI. The schema version is implied
 
 ### Error Schema
 
-All commands use the same error schema in JSON mode:
-
-```json
-{
-  "error": {
-    "code": "E003",
-    "exit_code": 4,
-    "message": "Local module 'payments' not found in workspace",
-    "location": { "file": "Cyberfabric.toml", "line": 15 },
-    "suggestion": "Run 'cargo cyberfabric generate module api-db-handler --name payments'"
-  }
-}
-```
+All commands use the same structured error schema in JSON mode. See
+[09-developer-experience.md](./09-developer-experience.md#json-error-wrapping) for the full schema definition
+and [error code namespace](./09-developer-experience.md#error-code-namespace) for the diagnostic code registry.
 
 ## Idempotency
 

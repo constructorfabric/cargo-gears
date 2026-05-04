@@ -37,14 +37,22 @@ Secrets never appear as literal values in:
 | Registry credentials | Environment | Standard Docker/Helm credential flows |
 | Config path | Generated server | `CF_CLI_CONFIG` env var at runtime |
 
-### Manifest Render Redaction
+### Output Redaction
 
-`manifest render` redacts values that match common secret patterns when printing to stdout:
+The CLI redacts potentially sensitive values in two contexts:
 
-- Values starting with `${` are shown as `${VAR_NAME}` (not expanded).
-- Fields named `password`, `secret`, `token`, `key`, `api_key` are masked as `***REDACTED***` in verbose output.
+1. **`manifest render --verbose`**: when verbose mode includes runtime config preview alongside the generation model,
+   fields named `password`, `secret`, `token`, `key`, or `api_key` are masked as `***REDACTED***`. Without `--verbose`,
+   `manifest render` only outputs manifest-derived data (module list, features, policies) which does not contain secrets.
+2. **Diagnostic output**: error messages and suggestions never include runtime config values that could contain secrets.
+
+Values using `${VAR_NAME}` syntax are always shown as-is (not expanded) because they are placeholder references, not
+actual secrets.
 
 The `--show-secrets` flag disables redaction for debugging. It produces a warning when used.
+
+> **Scope note:** The manifest (`Cyberfabric.toml`) itself does not contain secret values by design. Redaction applies
+> when the CLI reads or previews runtime config files, not to the manifest schema.
 
 ## Environment Variable Expansion
 

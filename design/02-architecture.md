@@ -28,7 +28,7 @@ crates/
 └── module-parser/        # Library crate: Rust source parsing for module discovery
 ```
 
-Proposed evolution:
+Proposed evolution (none of these crates exist yet; extract incrementally as APIs stabilize):
 
 ```text
 crates/
@@ -106,9 +106,10 @@ pub struct ManifestArgs {
 /// Flags shared by commands that support structured output.
 #[derive(clap::Args)]
 pub struct OutputArgs {
-    /// Output format.
-    #[arg(long, default_value = "table")]
-    pub format: OutputFormat,
+    /// Output format. When omitted, defaults to `table` for interactive
+    /// terminals and `json` when stdout is not a TTY.
+    #[arg(long)]
+    pub format: Option<OutputFormat>,
 }
 
 #[derive(clap::ValueEnum, Clone)]
@@ -121,6 +122,9 @@ pub enum OutputFormat {
 ```
 
 ## Core Abstractions
+
+The types below are **proposed designs**, not existing code. They illustrate the target API
+and will be introduced incrementally during implementation.
 
 ### Manifest Model
 

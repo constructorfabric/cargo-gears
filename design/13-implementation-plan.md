@@ -34,6 +34,7 @@
 - [ ] Add structured error types (`CliError`, `Diagnostic`) and wire them into the error handling path.
 - [ ] Add exit code constants matching the defined taxonomy.
 - [ ] Add `--dry-run` plumbing (flag accepted, no-op initially) to `run`, `build`, `deploy`.
+- [ ] Add `--no-interactive` global flag.
 - [ ] Add `CF_CLI_LOG` environment variable support for debug logging.
 - [ ] Set up snapshot test infrastructure for generated files.
 
@@ -43,6 +44,7 @@
 - `config mod list --format json` produces valid JSON.
 - Errors print diagnostic codes.
 - `--dry-run` is accepted without error on action commands.
+- At least one existing generation command (`init` or `mod add`) has a snapshot test.
 
 ### Estimated Effort
 
@@ -61,6 +63,7 @@
 - [ ] Implement `generate manifest` (including `--from-config` migration).
 - [ ] Add `schema_version` handling (parse, validate, refuse unknown versions).
 - [ ] Add `manifest add`, `manifest edit`, `manifest rm` for basic CRUD.
+- [ ] Add `manifest migrate` with `--dry-run` support.
 
 ### Success Criteria
 
@@ -132,7 +135,8 @@
 - [ ] Implement `generate workspace` with `--profile` (minimal, service, platform).
 - [ ] Implement `generate module` with `--name` and `--add-to-manifest`.
 - [ ] Implement `generate config` (dev, prod, test kinds).
-- [ ] Implement `generate build` (docker, compose, helm, ci-github).
+- [ ] Implement `generate build` (docker, compose, helm).
+- [ ] Implement `generate ci` (github).
 - [ ] Implement `generate agents` and `generate skill`.
 - [ ] Wire `init` as alias for `generate workspace`.
 - [ ] Wire `mod add` as alias for `generate module`.
@@ -213,6 +217,7 @@
 - [ ] Audit all error messages for consistency, diagnostic codes, and suggestions.
 - [ ] Add shell completion generation (`completions --shell`).
 - [ ] Add man page generation (`man --output-dir`).
+- [ ] Review `tools` command for manifest integration (e.g., required tool versions).
 - [ ] Update `SKILL.md` to cover all new commands.
 - [ ] Update `README.md` with manifest-first workflows.
 - [ ] Write migration guide from config-centric to manifest-first.
@@ -231,6 +236,13 @@
 
 2-3 weeks.
 
+## Effort Summary
+
+Total estimated effort: **18-25 developer-weeks** across all phases. This assumes a single developer working
+full-time. With two developers, phases can be partially parallelized (e.g., Phase 3 + Phase 4, Phase 5 + Phase 6)
+reducing wall-clock time to approximately **12-16 weeks**. Phases 0-2 are sequential dependencies; Phases 3-6 have
+more independence.
+
 ## Resolved Design Decisions
 
 These questions from the v1 design are resolved:
@@ -243,3 +255,6 @@ These questions from the v1 design are resolved:
 | `deploy` vs `build --output docker`? | **Both.** `deploy` is a compatibility alias. | New users guided to `build --output docker`. |
 | Generated `AGENTS.md`: workspace-level only? | **Workspace-level only, initially.** | Module-level is a future enhancement. |
 | `SKILL.md`: replace root or separate file? | **Same root `SKILL.md`.** | Generated from template, updated by `generate skill`. |
+| `source = "remote"` from v1? | **Removed.** Only `local` and `registry` remain. | `remote` semantics overlapped with `registry` and `local`. A future `git` source can be added explicitly. |
+| CI templates under `generate build`? | **Separated into `generate ci`.** | CI workflows are not build artifacts; separate namespace avoids category confusion. |
+| `deploy --manifest` (Cargo.toml)? | **Renamed to `--cargo-manifest`.** | Avoids conflict with `--manifest` meaning `Cyberfabric.toml` everywhere else. |

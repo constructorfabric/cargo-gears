@@ -24,7 +24,7 @@ only at the final execution step.
 ### Synopsis
 
 ```bash
-cargo cyberfabric run [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--watch] [--otel] [--fips] [--release] [--clean] [--dry-run] [--format json]
+cargo cyberfabric run [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--watch] [--otel] [--fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
@@ -65,7 +65,7 @@ but not the manifest module selection.
 ### Synopsis
 
 ```bash
-cargo cyberfabric build [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--output <output>] [--otel] [--fips] [--release] [--clean] [--dry-run] [--format json]
+cargo cyberfabric build [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--output <output>] [--otel] [--fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
@@ -95,7 +95,7 @@ When `--output` is omitted, the manifest `build.outputs` list is used. If no man
 ### Synopsis
 
 ```bash
-cargo cyberfabric deploy [-c <config>] [-p <path>] [--manifest <Cargo.toml>] [--debug] [--dockerfile <path>] [--args <KEY=VALUE>]...
+cargo cyberfabric deploy [-c <config>] [-p <path>] [--cargo-manifest <Cargo.toml>] [--debug] [--dockerfile <path>] [--args <KEY=VALUE>]...
 ```
 
 ### Status
@@ -104,8 +104,11 @@ cargo cyberfabric deploy [-c <config>] [-p <path>] [--manifest <Cargo.toml>] [--
 
 ### Behavior
 
-- Without `--manifest`: generates the server project from config, then builds a Docker image.
-- With `--manifest`: skips generation, builds the provided Cargo manifest directly.
+- Without `--cargo-manifest`: generates the server project from config, then builds a Docker image.
+- With `--cargo-manifest`: skips generation, builds the provided Cargo manifest directly.
+
+> **Note:** This flag is named `--cargo-manifest` (not `--manifest`) to avoid confusion with `--manifest` which refers
+> to `Cyberfabric.toml` everywhere else in the CLI.
 - Writes the embedded Dockerfile if none exists (with a notice suggesting `generate build docker`).
 - Docker build args: `BUILDER_MANIFEST`, `BUILD_MODE`, `ARTIFACT_NAME`, `LOCAL_CONFIG_PATH`, `CONFIG_EXT`.
 - Custom `--args` are appended and can override defaults.
@@ -328,7 +331,14 @@ side effects:
 - No Cargo commands are invoked.
 - No Docker images are built.
 
-Combined with `--format json`, this is the stable contract for CI pre-flight checks, LLM planning, and debugging.
+Dry-run output supports `--format json` for structured consumption. This is the stable contract for CI pre-flight
+checks, LLM planning, and debugging.
+
+> **Note on `--format` for action commands:** Outside of `--dry-run`, action commands (`run`, `build`, `deploy`) do
+> not support `--format` because their primary output is subprocess execution (Cargo/Docker stdout/stderr). The
+> `--format json` flag is only meaningful with `--dry-run`, where it serializes the resolved generation model.
+> Build summary output is always printed as a human-readable summary to stderr; use `--dry-run --format json` for
+> machine-parseable pre-flight data.
 
 ## Generated Server Project
 
