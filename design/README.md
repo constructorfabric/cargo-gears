@@ -39,20 +39,20 @@ configuration remains the source of truth for runtime settings.
 
 | # | Document | Scope |
 |---|---|---|
-| 01 | [Principles and Philosophy](./01-principles-and-philosophy.md) | Core design principles, standards, and tradeoff guidelines |
-| 02 | [Architecture](./02-architecture.md) | Internal crate structure, trait boundaries, extension model |
-| 03 | [Command Surface](./03-command-surface.md) | Complete command tree, naming conventions, shared argument patterns |
-| 04 | [Manifest and Configuration](./04-manifest-and-configuration.md) | Manifest schema, runtime config, validation, migration |
-| 05 | [Scaffolding and Templates](./05-scaffolding-and-templates.md) | Generation commands, template registry, workspace profiles |
-| 06 | [Inspection and Discovery](./06-inspection-and-discovery.md) | List, docs, help, schema introspection |
-| 07 | [Quality Gates](./07-quality-gates.md) | Lint, test, and coverage orchestration |
-| 08 | [Build, Run, and Deploy](./08-build-run-deploy.md) | Dev loop, build pipeline, Docker, Helm |
-| 09 | [Developer Experience](./09-developer-experience.md) | Output formatting, error handling, exit codes, UX conventions |
-| 10 | [Security](./10-security.md) | Secrets, credentials, secure defaults |
-| 11 | [CI and Automation](./11-ci-and-automation.md) | Non-interactive mode, CI patterns, LLM integration |
-| 12 | [Versioning and Compatibility](./12-versioning-and-compatibility.md) | CLI versioning, manifest versioning, migration |
-| 13 | [Implementation Plan](./13-implementation-plan.md) | Phased rollout with success criteria |
-| -- | [Glossary](./glossary.md) | Precise definitions for all domain terms |
+| 01 | [Principles and Philosophy](./v1_proposal/01-principles-and-philosophy.md) | Core design principles, standards, and tradeoff guidelines |
+| 02 | [Architecture](./v1_proposal/02-architecture.md) | Internal crate structure, trait boundaries, extension model |
+| 03 | [Command Surface](./v1_proposal/03-command-surface.md) | Complete command tree, naming conventions, shared argument patterns |
+| 04 | [Manifest and Configuration](./v1_proposal/04-manifest-and-configuration.md) | Manifest schema, runtime config, validation, migration |
+| 05 | [Scaffolding and Templates](./v1_proposal/05-scaffolding-and-templates.md) | Generation commands, template registry, workspace profiles |
+| 06 | [Inspection and Discovery](./v1_proposal/06-inspection-and-discovery.md) | List, docs, help, schema introspection |
+| 07 | [Quality Gates](./v1_proposal/07-quality-gates.md) | Lint, test, and coverage orchestration |
+| 08 | [Build, Run, and Deploy](./v1_proposal/08-build-run-deploy.md) | Dev loop, build pipeline, Docker, Helm |
+| 09 | [Developer Experience](./v1_proposal/09-developer-experience.md) | Output formatting, error handling, exit codes, UX conventions |
+| 10 | [Security](./v1_proposal/10-security.md) | Secrets, credentials, secure defaults |
+| 11 | [CI and Automation](./v1_proposal/11-ci-and-automation.md) | Non-interactive mode, CI patterns, LLM integration |
+| 12 | [Versioning and Compatibility](./v1_proposal/12-versioning-and-compatibility.md) | CLI versioning, manifest versioning, migration |
+| 13 | [Implementation Plan](./v1_proposal/13-implementation-plan.md) | Phased rollout with success criteria |
+| -- | [Glossary](./v1_proposal/glossary.md) | Precise definitions for all domain terms |
 
 ## Proposed Command Shape
 
@@ -106,7 +106,7 @@ adding the manifest-first model, normalized generation namespace, and structured
 
 ## Design Principles Summary
 
-These are expanded in [01-principles-and-philosophy.md](./01-principles-and-philosophy.md):
+These are expanded in [01-principles-and-philosophy.md](./v1_proposal/01-principles-and-philosophy.md):
 
 1. **Convention over configuration** -- sensible defaults, explicit overrides
 2. **Manifest-first orchestration** -- the manifest drives all generation and tooling
