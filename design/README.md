@@ -3,9 +3,6 @@
 This folder contains the authoritative design for the CyberFabric CLI, the canonical command-line interface for
 building, validating, and deploying applications on the CyberFabric framework.
 
-> **Supersedes:** The original v1 design documents in `v1/` are retained for historical reference. The top-level
-> documents below represent the current design.
-
 ## Purpose
 
 The CyberFabric CLI exists to maximize developer productivity, consistency, and correctness. It acts as a
@@ -56,63 +53,14 @@ configuration remains the source of truth for runtime settings.
 
 ## Proposed Command Shape
 
-```text
-cargo cyberfabric
-├── init                          # Alias for generate workspace
-├── generate
-│   ├── workspace
-│   ├── module
-│   ├── config
-│   ├── manifest
-│   ├── build
-│   ├── ci
-│   ├── agents
-│   └── skill
-├── manifest
-│   ├── add
-│   ├── edit
-│   ├── rm
-│   ├── validate
-│   ├── render
-│   └── migrate
-├── list
-│   ├── modules
-│   ├── system-modules
-│   ├── local-modules
-│   ├── configs
-│   └── apps
-├── help
-│   ├── schema
-│   ├── docs
-│   └── topic
-├── config
-│   ├── mod
-│   │   ├── list
-│   │   ├── add
-│   │   ├── rm
-│   │   └── db { add | edit | rm }
-│   └── db { add | edit | rm }
-├── lint
-├── test
-├── run
-├── build
-├── deploy
-├── completions
-└── man
-```
-
-The tree preserves existing commands (`init`, `mod add`, `config`, `docs`, `lint`, `run`, `build`, `deploy`) while
-adding the manifest-first model, normalized generation namespace, and structured inspection commands.
+You can find the surface in [03-command-surface.md](v1/03-command-surface.md).
 
 ## Design Principles Summary
 
-These are expanded in [01-principles-and-philosophy.md](v1_proposal_a/01-principles-and-philosophy.md):
+These are expanded in [01-principles-and-philosophy.md](v1/01-principles-and-philosophy.md):
 
 1. **Convention over configuration** -- sensible defaults, explicit overrides
-2. **Manifest-first orchestration** -- the manifest drives all generation and tooling
+2. **Manifest orchestration** -- the manifest defines the policies and the runtime config defines the runtime values
 3. **Deterministic outputs** -- same inputs always produce the same artifacts
 4. **Fail fast, fail clearly** -- validate early, report structured errors
 5. **Orchestrate, don't replace** -- wrap existing Rust tools, never reinvent them
-6. **Machine-readable by default** -- `--format json` everywhere, stable exit codes
-7. **Secure by default** -- no secrets in generated files, env-var expansion for credentials
-8. **Backward compatible** -- existing workflows keep working across upgrades
