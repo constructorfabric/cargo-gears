@@ -12,7 +12,6 @@
 8. [Manifest Scaffolding](#manifest-scaffolding)
 9. [Build Templates](#build-templates)
 10. [Agent and Skill Templates](#agent-and-skill-templates)
-11. [CI Template Scaffolding](#ci-template-scaffolding)
 
 ## Purpose
 
@@ -39,7 +38,6 @@ cargo cyberfabric generate module --template <template> [--name <name>] [flags]
 cargo cyberfabric generate config <kind> [flags]
 cargo cyberfabric generate manifest [flags]
 cargo cyberfabric generate build <kind> [flags]
-cargo cyberfabric generate ci <provider> [flags]
 cargo cyberfabric generate agents [flags]
 cargo cyberfabric generate skill [flags]
 ```
@@ -101,13 +99,13 @@ Should create:
 - `.cyberfabric/` ignored by Git in .gitignore
 - optional `AGENTS.md`, `CLAUDE.md`
 - optional `SKILL.md` in `.agents/skills/cyberfabric` or `.claude/skills/cyberfabric`
-- optional Docker/Helm build templates in `deploy/`
+- optional Docker build templates in `deploy/`
 
 Recommended flags:
 
 ```text
 --profile minimal|service|platform
---with docker,helm,agents,skill
+--with docker,agents,skill
 ```
 
 ## Module Scaffolding
@@ -211,8 +209,8 @@ Build template kinds:
 Commands:
 
 ```text
-cargo cyberfabric generate agents
-cargo cyberfabric generate skill
+cargo cyberfabric generate ai --agents
+cargo cyberfabric generate ai --skill --provider <provider>
 ```
 
 `AGENTS.md` should include:
@@ -232,12 +230,3 @@ cargo cyberfabric generate skill
 - warning that generated `.cyberfabric/` is derived output
 
 These templates are useful for humans, Codex-like coding agents, and CI bots.
-
-## CI Template Scaffolding
-
-CI workflow templates are separate from build artifact templates because they serve a different purpose: configuring
-continuous integration pipelines rather than producing deployable artifacts.
-
-```bash
-cargo cyberfabric generate ci <provider> [-p <path>]
-```

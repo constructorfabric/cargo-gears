@@ -89,9 +89,6 @@ cargo cyberfabric help topic generated-server
 cargo cyberfabric help topic fips
 cargo cyberfabric help topic otel
 cargo cyberfabric help topic docker
-cargo cyberfabric help topic helm
 ```
 
-These topics should be concise and should link to generated schema help where
-possible.
-
+The list is not exhaustive and can be expanded as needed.

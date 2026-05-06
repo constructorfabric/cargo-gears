@@ -36,10 +36,9 @@ cargo cyberfabric
 │   ├── module <template> [--name <name>]           # Module scaffolding
 │   ├── config <kind>                               # Runtime config scaffolding
 │   ├── manifest                                    # Cyberfabric.toml scaffolding
-│   ├── build <kind>                                # Build artifact templates (docker, helm, compose)
+│   ├── build <kind>                                # Build artifact templates (docker, compose)
 │   ├── ci <provider>                               # CI workflow templates (github)
-│   ├── agents                                      # AGENTS.md generation
-│   └── skill                                       # SKILL.md generation
+│   └── ai [--skill --provider <p> --agents]        # SKILL.md generation
 │
 ├── manifest
 │   ├── validate                                    # Validate manifest structure and references

@@ -68,8 +68,8 @@ machine-readable.
 
 ### 5. Orchestrate, Don't Replace
 
-The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest`, `cargo-llvm-cov`, `docker`,
-and `helm`. It never reimplements their core functionality.
+The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest`, `cargo-llvm-cov` and
+`docker`. It never reimplements their core functionality.
 
 - `lint` invokes `cargo fmt`, `cargo clippy` and compiled dylint libraries with the right flags, not a custom formatter.
 - `build binary` invokes `cargo build` inside a generated project, not a custom compiler.
