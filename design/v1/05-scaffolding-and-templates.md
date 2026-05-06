@@ -36,7 +36,7 @@ Keep existing commands and add a normalized generation namespace:
 
 ```text
 cargo cyberfabric generate workspace <path> [flags]
-cargo cyberfabric generate module <template> [--name <name>] [flags]
+cargo cyberfabric generate module --template <template> [--name <name>] [flags]
 cargo cyberfabric generate config <kind> [flags]
 cargo cyberfabric generate manifest [flags]
 cargo cyberfabric generate build <kind> [flags]
@@ -63,25 +63,21 @@ Catalog shape:
 [[templates.module]]
 name = "background-worker"
 source = "git"
-type = "module"
 subfolder = "Modules/background-worker"
 
 [[templates.build]]
 name = "docker"
-type = "build"
 source = "embedded"
 
-[[templates.module]]
+[[templates.config]]
 name = "grpc-service"
-type = "config"
 source = "local"
 path = "templates/grpc-service"
 
-[[templates.agent]]
+[[templates.agents]]
 name = "custom-agent"
 source = "git"
 url = "ssh://github.com/cyberfabric/cf-template-rust.git"
-type = "agents"
 branch = "main"
 subfolder = "Agents/custom-agent"
 ```

@@ -138,7 +138,7 @@ prod         app1  config/prod-app1.yml 2       fips,otel       binary,docker
 All list commands should support:
 
 ```text
---format table|json
+--format table|json|yaml|toml
 ```
 
 Default is `table` for humans. `json` is the stable contract for tools and LLMs.

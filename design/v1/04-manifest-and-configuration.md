@@ -185,14 +185,14 @@ Validation output should be deterministic and machine-readable with `--format js
 New flow:
 
 1. Load manifest.
-2. Select `env` and `app`.
+2. Select `app` and `env`.
 3. Load runtime config path declared for that app, unless overridden by
    `--config`.
 4. Resolve modules from manifest.
 5. Merge discovered metadata with manifest constraints.
-6. Generate `.cyberfabric/<env>-<app>` or configured generated name.
+6. Generate `.cyberfabric/<app>-<env>` or configured generated name.
 7. Set `CF_CLI_CONFIG` to the runtime config.
 8. Run the selected operation.
 
 The generated `main.rs` can remain close to the current implementation: it
-should still load `CF_CLI_CONFIG` at runtime and call `run_server(config)`.
+should still load `CF_CLI_CONFIG` at runtime and call `modkit::run_server(config)`.
