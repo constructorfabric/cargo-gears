@@ -5,13 +5,12 @@
 1. [Purpose](#purpose)
 2. [Run Command](#run-command)
 3. [Build Command](#build-command)
-4. [Deploy Command](#deploy-command)
-5. [Build Outputs](#build-outputs)
-6. [Feature Flags](#feature-flags)
-7. [Watch Mode](#watch-mode)
-8. [Manifest Integration](#manifest-integration)
-9. [Dry Run](#dry-run)
-10. [Generated Server Project](#generated-server-project)
+4. [Build Outputs](#build-outputs)
+5. [Feature Flags](#feature-flags)
+6. [Watch Mode](#watch-mode)
+7. [Manifest Integration](#manifest-integration)
+8. [Dry Run](#dry-run)
+9. [Generated Server Project](#generated-server-project)
 
 ## Purpose
 
@@ -77,7 +76,6 @@ Same pipeline as `run`, but invokes `cargo build` instead of `cargo run` and sup
 ```bash
 cargo cyberfabric build --env prod --app app1 --output binary
 cargo cyberfabric build --env prod --app app1 --output docker
-cargo cyberfabric build --env prod --app app1 --output helm
 cargo cyberfabric build --env prod --app app1 --output all
 ```
 
@@ -85,34 +83,9 @@ cargo cyberfabric build --env prod --app app1 --output all
 |----------|------------------------------------------------------------|
 | `binary` | `cargo build` in the generated project. Default.           |
 | `docker` | Build a Docker image (subsumes current `deploy` behavior). |
-| `helm`   | Package a Helm chart.                                      |
-| `all`    | Binary + Docker + Helm (whatever is configured).           |
+| `all`    | Binary + Docker (whatever is configured).                  |
 
 When `--output` is omitted, the manifest `build.outputs` list is used. If no manifest exists, `binary` is the default.
-
-## Deploy Command
-
-### Synopsis
-
-```bash
-cargo cyberfabric deploy [-c <config>] [-p <path>] [--cargo-manifest <Cargo.toml>] [--debug] [--dockerfile <path>] [--args <KEY=VALUE>]...
-```
-
-### Status
-
-`deploy` remains as a Docker-focused compatibility command. New users are guided toward `build --output docker`.
-
-### Behavior
-
-- Without `--cargo-manifest`: generates the server project from config, then builds a Docker image.
-- With `--cargo-manifest`: skips generation, builds the provided Cargo manifest directly.
-
-> **Note:** This flag is named `--cargo-manifest` (not `--manifest`) to avoid confusion with `--manifest` which refers
-> to `Cyberfabric.toml` everywhere else in the CLI.
-
-- Writes the embedded Dockerfile if none exists (with a notice suggesting `generate build docker`).
-- Docker build args: `BUILDER_MANIFEST`, `BUILD_MODE`, `ARTIFACT_NAME`, `LOCAL_CONFIG_PATH`, `CONFIG_EXT`.
-- Custom `--args` are appended and can override defaults.
 
 ## Build Outputs
 
@@ -148,31 +121,6 @@ Docker build process:
 4. Tag the image.
 5. Print summary.
 
-The Dockerfile uses `cargo-chef` for dependency caching. It is generated explicitly by `generate build docker` for
-new projects.
-
-### Helm Chart
-
-```toml
-[env.app1.prod.build]
-outputs = ["binary", "docker", "helm"]
-
-[env.app1.prod.build.helm]
-chart = "charts/app1"
-version = "0.1.0"
-app_version = "1.2.3"
-values = "charts/app1/values.yaml"
-```
-
-Helm build process:
-
-1. Validate chart directory exists.
-2. Render values from manifest and runtime config reference.
-3. Package chart with `helm package`.
-4. Print summary.
-
-Future enhancements: `helm template` validation, schema generation, image tag injection from Docker build output.
-
 ### Build Summary
 
 After all outputs are produced, the CLI prints a summary:
@@ -181,7 +129,6 @@ After all outputs are produced, the CLI prints a summary:
 Built app prod/app1
   binary: .cyberfabric/prod-app1/target/release/app1
   image:  registry.example.com/app1:1.2.3
-  helm:   charts/app1-0.1.0.tgz
 ```
 
 In `--format json` mode:
@@ -192,8 +139,7 @@ In `--format json` mode:
   "app": "app1",
   "outputs": {
     "binary": ".cyberfabric/prod-app1/target/release/app1",
-    "docker": "registry.example.com/app1:1.2.3",
-    "helm": "charts/app1-0.1.0.tgz"
+    "docker": "registry.example.com/app1:1.2.3"
   },
   "duration_ms": 45000
 }
@@ -360,7 +306,7 @@ The generated `main.rs`:
 
 - Reads `CF_CLI_CONFIG` from the environment.
 - Loads the runtime config.
-- Calls `run_server(config)`.
+- Calls `modkit::run_server(config)`.
 - Does not embed any hardcoded paths.
 
 ### `.cyberfabric/` Is Derived Output
