@@ -60,18 +60,11 @@ Should print:
 - examples
 - compatibility notes
 
-Recommended output flags:
-
-```text
---format markdown|json|yaml
---section <path>
-```
-
 Examples:
 
 ```text
 cargo cyberfabric help schema manifest --section env.app.test
-cargo cyberfabric help schema config --format json
+cargo cyberfabric help schema config 
 ```
 
 Schema help should be generated from the same Rust types used by parsing where

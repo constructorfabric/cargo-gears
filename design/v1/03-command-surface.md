@@ -7,8 +7,7 @@
 3. [Verb Taxonomy](#verb-taxonomy)
 4. [Shared Argument Patterns](#shared-argument-patterns)
 5. [Name Validation](#name-validation)
-6. [Command Aliases and Migration](#command-aliases-and-migration)
-7. [Discoverability](#discoverability)
+6. [Discoverability](#discoverability)
 
 ## Design Conventions
 
@@ -82,6 +81,7 @@ cargo cyberfabric
 ├── tools                                           # Tool bootstrap (rustup, fmt, clippy)
 ├── run                                             # Generate and run server
 ├── build                                           # Generate and build server
+├── ci                                              # Alias (manifest verify + lint + test + build) 
 └── completions --shell <shell>                     # Generate shell completions
 ```
 
@@ -138,14 +138,6 @@ with `--format json`, this is the stable contract for automation.
 Available on: all commands.
 
 Increases output detail. For subprocesses, shows their stdout/stderr in real time instead of capturing it.
-
-### Non-Interactive: `--no-interactive`
-
-Available on: all commands.
-
-Disables all interactive prompts. In this mode, ambiguous selections that would normally prompt the user instead
-produce an error with a suggestion to provide explicit flags. Automatically implied when stdin is not a TTY or
-`CI=true` is set. See [11-ci-and-automation.md](./11-ci-and-automation.md#non-interactive-mode).
 
 ### Install Missing Tools: `--install-missing-tools`
 

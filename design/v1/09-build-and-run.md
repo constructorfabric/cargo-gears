@@ -1,4 +1,4 @@
-# 08. Build, Run, and Deploy
+# 08. Build and Run
 
 ## Table of Contents
 
