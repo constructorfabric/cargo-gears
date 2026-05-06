@@ -1,4 +1,4 @@
-# 02. Template Generation
+# 05. Template Generation
 
 ## Table of Contents
 
@@ -12,6 +12,7 @@
 8. [Manifest Scaffolding](#manifest-scaffolding)
 9. [Build Templates](#build-templates)
 10. [Agent and Skill Templates](#agent-and-skill-templates)
+11. [CI Template Scaffolding](#ci-template-scaffolding)
 
 ## Purpose
 
@@ -34,28 +35,27 @@ Current generation behavior:
 Keep existing commands and add a normalized generation namespace:
 
 ```text
-cargo cyberfabric generate workspace <path>
-cargo cyberfabric generate module <template> [--name <name>]
-cargo cyberfabric generate config <kind>
-cargo cyberfabric generate manifest
-cargo cyberfabric generate build <kind>
-cargo cyberfabric generate agents
-cargo cyberfabric generate skill
+cargo cyberfabric generate workspace <path> [flags]
+cargo cyberfabric generate module <template> [--name <name>] [flags]
+cargo cyberfabric generate config <kind> [flags]
+cargo cyberfabric generate manifest [flags]
+cargo cyberfabric generate build <kind> [flags]
+cargo cyberfabric generate ci <provider> [flags]
+cargo cyberfabric generate agents [flags]
+cargo cyberfabric generate skill [flags]
 ```
 
 Aliases:
 
-- `init` will remain as an alias for `generate workspace`.
+- `new` will remain as an alias for `generate workspace`.
 
 ## Template Registry
 
 We'll provide a set of templates to be used in the generation commands.
 However, the developer can add their own templates by:
 
-1. `--local-path`
-2. manifest-defined template registry
-3. default Git template repo
-4. embedded fallback templates for small files
+1. Manifest-defined template registry
+2. Embedded fallback templates for small files
 
 Catalog shape:
 
@@ -63,19 +63,30 @@ Catalog shape:
 [[templates.module]]
 name = "background-worker"
 source = "git"
+type = "module"
 subfolder = "Modules/background-worker"
 
 [[templates.build]]
 name = "docker"
+type = "build"
 source = "embedded"
+
+[[templates.module]]
+name = "grpc-service"
+type = "config"
+source = "local"
+path = "templates/grpc-service"
 
 [[templates.agent]]
 name = "custom-agent"
 source = "git"
 url = "ssh://github.com/cyberfabric/cf-template-rust.git"
+type = "agents"
 branch = "main"
 subfolder = "Agents/custom-agent"
 ```
+
+This catalog is optional and can be placed in `Cyberfabric-templates.toml` or by its own section in the manifest.
 
 ## Initial Scaffolding
 
@@ -241,3 +252,11 @@ cargo cyberfabric generate skill
 
 These templates are useful for humans, Codex-like coding agents, and CI bots.
 
+## CI Template Scaffolding
+
+CI workflow templates are separate from build artifact templates because they serve a different purpose: configuring
+continuous integration pipelines rather than producing deployable artifacts.
+
+```bash
+cargo cyberfabric generate ci <provider> [-p <path>]
+```

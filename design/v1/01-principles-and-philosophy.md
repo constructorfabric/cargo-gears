@@ -64,7 +64,6 @@ machine-readable.
 
 - Validation runs before file generation, before network calls, before subprocess invocation.
 - Error messages include the offending value, the constraint that was violated, and a suggested fix.
-- Exit codes follow a defined taxonomy (see [09-developer-experience.md](./09-developer-experience.md)).
 - `--format json` produces structured error objects, not human prose.
 
 ### 5. Orchestrate, Don't Replace
@@ -72,9 +71,9 @@ machine-readable.
 The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest`, `cargo-llvm-cov`, `docker`,
 and `helm`. It never reimplements their core functionality.
 
-- `lint` invokes `cargo fmt` and `cargo clippy` with the right flags, not a custom formatter.
-- `build` invokes `cargo build` inside a generated project, not a custom compiler.
-- `deploy` invokes `docker build` with controlled arguments, not a custom image builder.
+- `lint` invokes `cargo fmt`, `cargo clippy` and compiled dylint libraries with the right flags, not a custom formatter.
+- `build binary` invokes `cargo build` inside a generated project, not a custom compiler.
+- `build docker` invokes `docker build` with controlled arguments, not a custom image builder.
 
 When a wrapped tool fails, the CLI surfaces the tool's stderr alongside its own context. The developer can always
 reproduce the failure by running the underlying tool directly.
@@ -112,20 +111,20 @@ bump and a documented migration path.
 
 The following standards are enforced across all generated code, configuration, and workflows:
 
-| Standard | How the CLI Enforces It |
-|---|---|
-| Standardized project structure | `init` and `generate workspace` produce a canonical layout |
-| Consistent naming conventions | Name validation regex `[a-zA-Z0-9_-]+` on modules, apps, environments |
-| Approved architectural patterns | Module templates encode approved patterns; no freeform scaffolding |
-| Reusable scaffolding templates | `generate` commands use a versioned template registry |
-| Validated configuration | `manifest validate` and implicit validation before every build/run |
-| Dependency and version consistency | Workspace dependency promotion; manifest pins module versions |
-| Secure-by-default defaults | Env-var expansion for secrets; no embedded credentials |
-| Consistent logging and observability | `--otel` feature flag; standardized tracing config schema |
-| Built-in linting and guardrails | `lint` orchestrates fmt, clippy, and custom dylint rules |
-| Testing conventions | `test` orchestrates runners, sets, and coverage with manifest policy |
-| Documentation and discoverability | `help schema`, `help topic`, `list` commands |
-| Backward compatibility | Versioned manifest schema; `--config` flow preserved |
+| Standard                             | How the CLI Enforces It                                               |
+|--------------------------------------|-----------------------------------------------------------------------|
+| Standardized project structure       | `init` and `generate workspace` produce a canonical layout            |
+| Consistent naming conventions        | Name validation regex `[a-zA-Z0-9_-]+` on modules, apps, environments |
+| Approved architectural patterns      | Module templates encode approved patterns; no freeform scaffolding    |
+| Reusable scaffolding templates       | `generate` commands use a versioned template registry                 |
+| Validated configuration              | `manifest validate` and implicit validation before every build/run    |
+| Dependency and version consistency   | Workspace dependency promotion; manifest pins module versions         |
+| Secure-by-default defaults           | Env-var expansion for secrets; no embedded credentials                |
+| Consistent logging and observability | `--otel` feature flag; standardized tracing config schema             |
+| Built-in linting and guardrails      | `lint` orchestrates fmt, clippy, and custom dylint rules              |
+| Testing conventions                  | `test` orchestrates runners, sets, and coverage with manifest policy  |
+| Documentation and discoverability    | `help schema`, `help topic`, `list` commands                          |
+| Backward compatibility               | Versioned manifest schema; `--config` flow preserved                  |
 
 ## Tradeoff Guidelines
 

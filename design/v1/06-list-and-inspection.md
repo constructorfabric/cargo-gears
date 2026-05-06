@@ -1,4 +1,4 @@
-# 03. List and Inspection
+# 06. List and Inspection
 
 ## Table of Contents
 
@@ -135,7 +135,7 @@ prod         app1  config/prod-app1.yml 2       fips,otel       binary,docker
 All list commands should support:
 
 ```text
---format table|json|yaml|toml
+--format table|json
 ```
 
 Default is `table` for humans. `json` is the stable contract for tools and LLMs.

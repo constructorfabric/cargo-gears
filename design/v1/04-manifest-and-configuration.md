@@ -1,4 +1,4 @@
-# 01. Manifest and Configuration
+# 04. Manifest and Configuration
 
 ## Table of Contents
 
@@ -11,9 +11,15 @@
 
 ## Purpose
 
-The manifest should detach the orchestration layer from the configuration layer.
-Today the configuration contains enough module metadata for the CLI to shape the generated
-`Cargo.toml` and `src/main.rs`. The proposed manifest makes that behavior explicit.
+The manifest detaches the **orchestration layer** from the **configuration layer**. Today the runtime config contains
+module dependency metadata that the CLI uses to shape generated `Cargo.toml` and `src/main.rs`. The manifest makes this
+explicit:
+
+- **Manifest** (`Cyberfabric.toml`): what the CLI builds, how it builds it, and which policies apply.
+- **Runtime config** (`config/*.yml`): what the generated server reads at runtime.
+
+This separation eliminates metadata duplication, reduces config-file complexity, and makes the CLI's behavior
+inspectable without reading YAML runtime values.
 
 ## Proposed Manifest
 
@@ -72,7 +78,7 @@ fmt = true # by default
 feature-set-test = true # inherits the feature set to test
 
 
-[env.app1.test]
+[env.app1.test.default]
 runner = "nextest"
 config = "test-app1.yml"
 coverage = true

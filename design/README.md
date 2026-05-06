@@ -3,9 +3,6 @@
 This folder contains the authoritative design for the CyberFabric CLI, the canonical command-line interface for
 building, validating, and deploying applications on the CyberFabric framework.
 
-> **Supersedes:** The original v1 design documents in `v1/` are retained for historical reference. The top-level
-> documents below represent the current design.
-
 ## Purpose
 
 The CyberFabric CLI exists to maximize developer productivity, consistency, and correctness. It acts as a
@@ -37,82 +34,29 @@ configuration remains the source of truth for runtime settings.
 
 ## Design Documents
 
-| #  | Document                                                                         | Scope                                                               |
-|----|----------------------------------------------------------------------------------|---------------------------------------------------------------------|
-| 01 | [Principles and Philosophy](v1_proposal_a/01-principles-and-philosophy.md)       | Core design principles, standards, and tradeoff guidelines          |
-| 02 | [Architecture](v1_proposal_a/02-architecture.md)                                 | Internal crate structure, trait boundaries, extension model         |
-| 03 | [Command Surface](v1_proposal_a/03-command-surface.md)                           | Complete command tree, naming conventions, shared argument patterns |
-| 04 | [Manifest and Configuration](v1_proposal_a/04-manifest-and-configuration.md)     | Manifest schema, runtime config, validation, migration              |
-| 05 | [Scaffolding and Templates](v1_proposal_a/05-scaffolding-and-templates.md)       | Generation commands, template registry, workspace profiles          |
-| 06 | [Inspection and Discovery](v1_proposal_a/06-inspection-and-discovery.md)         | List, docs, help, schema introspection                              |
-| 07 | [Quality Gates](v1_proposal_a/07-quality-gates.md)                               | Lint, test, and coverage orchestration                              |
-| 08 | [Build, Run, and Deploy](v1_proposal_a/08-build-run-deploy.md)                   | Dev loop, build pipeline, Docker, Helm                              |
-| 09 | [Developer Experience](v1_proposal_a/09-developer-experience.md)                 | Output formatting, error handling, exit codes, UX conventions       |
-| 10 | [Security](v1_proposal_a/10-security.md)                                         | Secrets, credentials, secure defaults                               |
-| 11 | [CI and Automation](v1_proposal_a/11-ci-and-automation.md)                       | Non-interactive mode, CI patterns, LLM integration                  |
-| 12 | [Versioning and Compatibility](v1_proposal_a/12-versioning-and-compatibility.md) | CLI versioning, manifest versioning, migration                      |
-| 13 | [Implementation Plan](v1_proposal_a/13-implementation-plan.md)                   | Phased rollout with success criteria                                |
-| -- | [Glossary](v1_proposal_a/glossary.md)                                            | Precise definitions for all domain terms                            |
+| #  | Document                                                                | Scope                                                               |
+|----|-------------------------------------------------------------------------|---------------------------------------------------------------------|
+| 01 | [Principles and Philosophy](v1/01-principles-and-philosophy.md)         | Core design principles, standards, and tradeoff guidelines          |
+| 02 | [Architecture](v1/02-architecture.md)                                   | Internal crate structure, trait boundaries, extension model         |
+| 03 | [Command Surface](v1/03-command-surface.md)                             | Complete command tree, naming conventions, shared argument patterns |
+| 04 | [Manifest and Configuration](v1/04-manifest-and-configuration.md)       | Manifest schema, runtime config, validation, migration              |
+| 05 | [Scaffolding and Templates](v1/05-scaffolding-and-templates.md)         | Generation commands, template registry, workspace profiles          |
+| 06 | [Inspection and Discovery](v1/06-list-and-inspection.md)                | List, docs, help, schema introspection                              |
+| 07 | [Documentation and LLM helpers](v1/07-documentation-and-llm-helpers.md) | Documentation and utilities to support LLM loops and dev flow       |
+| 08 | [Lint and Test](v1/08-lint-and-test.md)                                 | Lint, test, and coverage orchestration                              |
+| 09 | [Build, Run, and Deploy](v1/09-build-and-run.md)                        | Dev loop, build pipeline, Docker, Helm                              |
+| 10 | [CI and Automation](v1/10-ci-and-automation.md)                         | Non-interactive mode, CI patterns, LLM integration                  |
 
 ## Proposed Command Shape
 
-```text
-cargo cyberfabric
-├── init                          # Alias for generate workspace
-├── generate
-│   ├── workspace
-│   ├── module
-│   ├── config
-│   ├── manifest
-│   ├── build
-│   ├── ci
-│   ├── agents
-│   └── skill
-├── manifest
-│   ├── add
-│   ├── edit
-│   ├── rm
-│   ├── validate
-│   ├── render
-│   └── migrate
-├── list
-│   ├── modules
-│   ├── system-modules
-│   ├── local-modules
-│   ├── configs
-│   └── apps
-├── help
-│   ├── schema
-│   ├── docs
-│   └── topic
-├── config
-│   ├── mod
-│   │   ├── list
-│   │   ├── add
-│   │   ├── rm
-│   │   └── db { add | edit | rm }
-│   └── db { add | edit | rm }
-├── lint
-├── test
-├── run
-├── build
-├── deploy
-├── completions
-└── man
-```
-
-The tree preserves existing commands (`init`, `mod add`, `config`, `docs`, `lint`, `run`, `build`, `deploy`) while
-adding the manifest-first model, normalized generation namespace, and structured inspection commands.
+You can find the surface in [03-command-surface.md](v1/03-command-surface.md).
 
 ## Design Principles Summary
 
-These are expanded in [01-principles-and-philosophy.md](v1_proposal_a/01-principles-and-philosophy.md):
+These are expanded in [01-principles-and-philosophy.md](v1/01-principles-and-philosophy.md):
 
 1. **Convention over configuration** -- sensible defaults, explicit overrides
-2. **Manifest-first orchestration** -- the manifest drives all generation and tooling
+2. **Manifest orchestration** -- the manifest defines the policies and the runtime config defines the runtime values
 3. **Deterministic outputs** -- same inputs always produce the same artifacts
 4. **Fail fast, fail clearly** -- validate early, report structured errors
 5. **Orchestrate, don't replace** -- wrap existing Rust tools, never reinvent them
-6. **Machine-readable by default** -- `--format json` everywhere, stable exit codes
-7. **Secure by default** -- no secrets in generated files, env-var expansion for credentials
-8. **Backward compatible** -- existing workflows keep working across upgrades

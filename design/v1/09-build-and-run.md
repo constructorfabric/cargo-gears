@@ -1,17 +1,16 @@
-# 08. Build, Run, and Deploy
+# 08. Build and Run
 
 ## Table of Contents
 
 1. [Purpose](#purpose)
 2. [Run Command](#run-command)
 3. [Build Command](#build-command)
-4. [Deploy Command](#deploy-command)
-5. [Build Outputs](#build-outputs)
-6. [Feature Flags](#feature-flags)
-7. [Watch Mode](#watch-mode)
-8. [Manifest Integration](#manifest-integration)
-9. [Dry Run](#dry-run)
-10. [Generated Server Project](#generated-server-project)
+4. [Build Outputs](#build-outputs)
+5. [Feature Flags](#feature-flags)
+6. [Watch Mode](#watch-mode)
+7. [Manifest Integration](#manifest-integration)
+8. [Dry Run](#dry-run)
+9. [Generated Server Project](#generated-server-project)
 
 ## Purpose
 
@@ -52,11 +51,11 @@ but not the manifest module selection.
 
 ### Name Resolution
 
-| Input | Generated Project Path |
-|---|---|
-| `--env dev --app app1` | `.cyberfabric/dev-app1/` |
-| `-c config/quickstart.yml` | `.cyberfabric/quickstart/` |
-| `--name demo-server` | `.cyberfabric/demo-server/` |
+| Input                      | Generated Project Path      |
+|----------------------------|-----------------------------|
+| `--env dev --app app1`     | `.cyberfabric/dev-app1/`    |
+| `-c config/quickstart.yml` | `.cyberfabric/quickstart/`  |
+| `--name demo-server`       | `.cyberfabric/demo-server/` |
 
 `--name` always takes highest precedence.
 
@@ -77,48 +76,23 @@ Same pipeline as `run`, but invokes `cargo build` instead of `cargo run` and sup
 ```bash
 cargo cyberfabric build --env prod --app app1 --output binary
 cargo cyberfabric build --env prod --app app1 --output docker
-cargo cyberfabric build --env prod --app app1 --output helm
 cargo cyberfabric build --env prod --app app1 --output all
 ```
 
-| Output | Description |
-|---|---|
-| `binary` | `cargo build` in the generated project. Default. |
+| Output   | Description                                                |
+|----------|------------------------------------------------------------|
+| `binary` | `cargo build` in the generated project. Default.           |
 | `docker` | Build a Docker image (subsumes current `deploy` behavior). |
-| `helm` | Package a Helm chart. |
-| `all` | Binary + Docker + Helm (whatever is configured). |
+| `all`    | Binary + Docker (whatever is configured).                  |
 
 When `--output` is omitted, the manifest `build.outputs` list is used. If no manifest exists, `binary` is the default.
-
-## Deploy Command
-
-### Synopsis
-
-```bash
-cargo cyberfabric deploy [-c <config>] [-p <path>] [--cargo-manifest <Cargo.toml>] [--debug] [--dockerfile <path>] [--args <KEY=VALUE>]...
-```
-
-### Status
-
-`deploy` remains as a Docker-focused compatibility command. New users are guided toward `build --output docker`.
-
-### Behavior
-
-- Without `--cargo-manifest`: generates the server project from config, then builds a Docker image.
-- With `--cargo-manifest`: skips generation, builds the provided Cargo manifest directly.
-
-> **Note:** This flag is named `--cargo-manifest` (not `--manifest`) to avoid confusion with `--manifest` which refers
-> to `Cyberfabric.toml` everywhere else in the CLI.
-- Writes the embedded Dockerfile if none exists (with a notice suggesting `generate build docker`).
-- Docker build args: `BUILDER_MANIFEST`, `BUILD_MODE`, `ARTIFACT_NAME`, `LOCAL_CONFIG_PATH`, `CONFIG_EXT`.
-- Custom `--args` are appended and can override defaults.
 
 ## Build Outputs
 
 ### Binary Build
 
 ```toml
-[env.prod.app1.build]
+[env.app1.prod.build]
 profile = "release"
 name = "app1"
 outputs = ["binary"]
@@ -130,14 +104,13 @@ project's `target/<profile>/` directory.
 ### Docker Image
 
 ```toml
-[env.prod.app1.build]
+[env.app1.prod.build]
 outputs = ["binary", "docker"]
 
-[env.prod.app1.build.docker]
+[env.app1.prod.build.docker]
 image = "registry.example.com/app1"
 tag = "1.2.3"
 dockerfile = "Dockerfile"         # optional, defaults to workspace root Dockerfile
-build_args = { RUSTFLAGS = "-C target-cpu=x86-64-v3" }
 ```
 
 Docker build process:
@@ -148,31 +121,6 @@ Docker build process:
 4. Tag the image.
 5. Print summary.
 
-The Dockerfile uses `cargo-chef` for dependency caching. It is generated explicitly by `generate build docker` for
-new projects.
-
-### Helm Chart
-
-```toml
-[env.prod.app1.build]
-outputs = ["binary", "docker", "helm"]
-
-[env.prod.app1.build.helm]
-chart = "charts/app1"
-version = "0.1.0"
-app_version = "1.2.3"
-values = "charts/app1/values.yaml"
-```
-
-Helm build process:
-
-1. Validate chart directory exists.
-2. Render values from manifest and runtime config reference.
-3. Package chart with `helm package`.
-4. Print summary.
-
-Future enhancements: `helm template` validation, schema generation, image tag injection from Docker build output.
-
 ### Build Summary
 
 After all outputs are produced, the CLI prints a summary:
@@ -181,7 +129,6 @@ After all outputs are produced, the CLI prints a summary:
 Built app prod/app1
   binary: .cyberfabric/prod-app1/target/release/app1
   image:  registry.example.com/app1:1.2.3
-  helm:   charts/app1-0.1.0.tgz
 ```
 
 In `--format json` mode:
@@ -192,8 +139,7 @@ In `--format json` mode:
   "app": "app1",
   "outputs": {
     "binary": ".cyberfabric/prod-app1/target/release/app1",
-    "docker": "registry.example.com/app1:1.2.3",
-    "helm": "charts/app1-0.1.0.tgz"
+    "docker": "registry.example.com/app1:1.2.3"
   },
   "duration_ms": 45000
 }
@@ -206,7 +152,7 @@ FIPS and OpenTelemetry are Cargo features on the generated project, controlled b
 ### FIPS
 
 ```toml
-[env.prod.app1.run]
+[env.app1.prod.run]
 fips = true
 ```
 
@@ -222,7 +168,7 @@ Validation:
 ### OpenTelemetry
 
 ```toml
-[env.prod.app1.run]
+[env.app1.prod.run]
 otel = true
 ```
 
@@ -237,17 +183,6 @@ opentelemetry:
   tracing:
     endpoint: http://localhost:4317
 ```
-
-### Extra Features
-
-For features beyond the structured `fips` and `otel` booleans:
-
-```toml
-[env.prod.app1.run]
-extra_features = ["metrics", "custom-auth"]
-```
-
-Or via CLI: `--features metrics,custom-auth`.
 
 ## Watch Mode
 
@@ -273,8 +208,10 @@ When a change is detected, the CLI:
 
 ### Manifest Watch Policy
 
+To override default values(detected members, configs and generated files)
+
 ```toml
-[env.dev.app1.run.watch]
+[env.app1.dev.run.watch]
 enabled = true
 paths = ["modules", "config/dev-app1.yml", "Cyberfabric.toml"]
 ignore = ["target", ".cyberfabric"]
@@ -282,11 +219,11 @@ ignore = ["target", ".cyberfabric"]
 
 ### Watch Flags
 
-| Flag | Description |
-|---|---|
-| `--watch` | Enable watch mode |
+| Flag                  | Description                |
+|-----------------------|----------------------------|
+| `--watch`             | Enable watch mode          |
 | `--watch-path <path>` | Add an extra path to watch |
-| `--ignore <glob>` | Add an ignore pattern |
+| `--ignore <glob>`     | Add an ignore pattern      |
 
 For the first implementation, the current watch behavior is preserved with manifest selection added. Path-level
 customization from the manifest follows.
@@ -298,7 +235,7 @@ customization from the manifest follows.
 For all action commands (`run`, `build`, `deploy`), settings are resolved in this order:
 
 1. **CLI flags** (highest precedence).
-2. **App manifest policy** (`env.<env>.<app>.run`, `.build`).
+2. **App manifest policy** (`env.<app>.<env>.run`, `.build`).
 3. **CLI defaults** (lowest precedence).
 
 ### Resolved Run Model
@@ -315,8 +252,13 @@ cargo cyberfabric run --env dev --app app1 --dry-run --format json
   "app": "app1",
   "config": "config/dev-app1.yml",
   "generated_project": ".cyberfabric/dev-app1",
-  "modules": ["background-worker", "credstore"],
-  "features": ["otel"],
+  "modules": [
+    "background-worker",
+    "credstore"
+  ],
+  "features": [
+    "otel"
+  ],
   "watch": true,
   "profile": "debug"
 }
@@ -364,7 +306,7 @@ The generated `main.rs`:
 
 - Reads `CF_CLI_CONFIG` from the environment.
 - Loads the runtime config.
-- Calls `run_server(config)`.
+- Calls `modkit::run_server(config)`.
 - Does not embed any hardcoded paths.
 
 ### `.cyberfabric/` Is Derived Output
