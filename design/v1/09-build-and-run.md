@@ -1,4 +1,4 @@
-# 08. Build and Run
+# 09. Build and Run
 
 ## Table of Contents
 
@@ -131,19 +131,8 @@ Built app prod/app1
   image:  registry.example.com/app1:1.2.3
 ```
 
-In `--format json` mode:
-
-```json
-{
-  "environment": "prod",
-  "app": "app1",
-  "outputs": {
-    "binary": ".cyberfabric/prod-app1/target/release/app1",
-    "docker": "registry.example.com/app1:1.2.3"
-  },
-  "duration_ms": 45000
-}
-```
+For machine-parseable output, use `--dry-run --format json`. Executed action commands keep their summary human-readable
+because their primary output is subprocess execution.
 
 ## Feature Flags
 

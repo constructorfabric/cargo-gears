@@ -4,12 +4,11 @@
 
 1. [Overview](#overview)
 2. [Crate Layout](#crate-layout)
-3. [Command Dispatch](#command-dispatch)
-4. [Manifest Pipeline](#manifest-pipeline)
-5. [Template Engine Integration](#template-engine-integration)
-6. [Tool Orchestration](#tool-orchestration)
-7. [Output Model](#output-model)
-8. [Extension Points](#extension-points)
+3. [Manifest Pipeline](#manifest-pipeline)
+4. [Template Engine Integration](#template-engine-integration)
+5. [Tool Orchestration](#tool-orchestration)
+6. [Output Model](#output-model)
+7. [Extension Points](#extension-points)
 
 ## Overview
 
@@ -87,8 +86,10 @@ pub struct ToolRunner {
 pub enum Tool {
     Cargo,
     CargoGenerate,
+    CargoNextest,
+    CargoLLVMCoverage,
+    CargoDeny,
     Docker,
-    Helm,
     Rustup,
 }
 ```

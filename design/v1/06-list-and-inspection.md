@@ -49,7 +49,7 @@ Output should include:
 
 - module name
 - crate name
-- latest version
+- resolved_version
 - capabilities
 - dependencies
 - available features
@@ -72,6 +72,9 @@ Initial system module registry can continue to use the current static list:
 - `static-tr-plugin`
 - `tenant-resolver`
 - `types-registry`
+
+`resolved_version` is the exact version selected from the chosen registry for this command invocation. Automation should
+persist that resolved value instead of depending on time-relative "latest" wording.
 
 ## Local Modules
 
@@ -152,6 +155,7 @@ JSON output should use explicit fields rather than human labels:
       "reference": "local:crate1",
       "module_name": "crate1",
       "package": "crate1",
+      "resolved_version": "1.2.3",
       "source": "local",
       "capabilities": [
         "db"
@@ -160,4 +164,3 @@ JSON output should use explicit fields rather than human labels:
   ]
 }
 ```
-

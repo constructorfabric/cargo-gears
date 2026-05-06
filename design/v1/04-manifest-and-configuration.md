@@ -100,13 +100,13 @@ modules = [
         name = "module1",
         source = "local", # local | remote | registry
         version = "1.2.0", # required for remote and registry
-        crate = "crate1",
+        package = "crate1",
     },
     {
         name = "module2",
         source = "remote",
         version = "0.1.0",
-        crate = "crate2",
+        package = "crate2",
     }
 ]
 run = {
@@ -137,7 +137,7 @@ Initial enum:
 For the local, we can treat it as module name first, then package
 name and library name as a fallback, and print the resolved package name in verbose output.
 
-Recommendation: Use always the `crate` name to be precise.
+Recommendation: Use always the `package` name to be precise.
 
 ## Commands
 
