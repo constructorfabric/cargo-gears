@@ -28,7 +28,6 @@ Current generation behavior:
 - `init` uses `cargo-generate` against `cf-template-rust`, subfolder `Init`.
 - `mod add` uses `cargo-generate` against subfolder `Modules/<template>`.
 - Available module templates are `background-worker`, `api-db-handler`, and `rest-gateway`.
-- Docker support exists in `deploy` through an embedded Dockerfile.
 
 ## Proposed Commands
 
@@ -198,28 +197,14 @@ Command:
 
 ```text
 cargo cyberfabric generate build docker
-cargo cyberfabric generate build helm
+cargo cyberfabric generate build compose
 ```
 
 Build template kinds:
 
 - `docker`: Dockerfile and `.dockerignore`
 - `compose`: local development dependencies
-- `helm`: chart skeleton
 - `ci-github`: GitHub Actions workflow
-
-Docker should align with current `deploy` behavior, but generation should make
-the Dockerfile inspectable before the build.
-
-Helm should be a packaging template, not a deployment command in the first
-iteration. The first version should generate values for:
-
-- image repository/tag
-- config file mount
-- environment variables
-- service ports
-- probes
-- resource requests/limits
 
 ## Agent and Skill Templates
 

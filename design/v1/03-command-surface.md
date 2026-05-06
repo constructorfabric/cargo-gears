@@ -13,7 +13,7 @@
 
 All commands follow these conventions:
 
-- **Verb-first structure.** Top-level commands are verbs (`init`, `run`, `build`, `lint`, `test`, `deploy`) or
+- **Verb-first structure.** Top-level commands are verbs (`init`, `run`, `build`, `lint`, `test`) or
   noun-scoped managers (`config`, `manifest`, `list`, `help`).
 - **Predictable flag names.** The same concept uses the same flag across all commands (e.g., `-p/--path` always means
   workspace root, `-c/--config` always means runtime config file).
@@ -107,28 +107,28 @@ cargo cyberfabric
 
 ### Workspace Path: `-p, --path <PATH>`
 
-Available on: `config`, `lint`, `test`, `run`, `build`, `deploy`, `generate module`, `list`, `docs`.
+Available on: `config`, `lint`, `test`, `run`, `build`, `generate module`, `list`, `docs`.
 
 Sets the workspace root. When provided, the CLI changes the working directory before resolving any other paths. When
 omitted, the current directory is used.
 
 ### Runtime Config: `-c, --config <PATH>`
 
-Available on: `config mod`, `config db`, `run`, `build`, `deploy`.
+Available on: `config mod`, `config db`, `run`, `build`.
 
 Path to the YAML runtime config file. Required when operating without a manifest, or to override the manifest-declared
 config. Resolved relative to the workspace root after `-p/--path` is applied.
 
 ### Manifest Selection: `--manifest <PATH>`, `--env <ENV>`, `--app <APP>`
 
-Available on: `run`, `build`, `deploy`, `lint`, `test`, `manifest`, `list modules`, `list apps`.
+Available on: `run`, `build`, `lint`, `test`, `manifest`, `list modules`, `list apps`.
 
 `--manifest` overrides automatic `Cyberfabric.toml` discovery. `--env` and `--app` select the target within the
 manifest. When the manifest has exactly one environment and one app, they are selected automatically.
 
 ### Dry Run: `--dry-run`
 
-Available on: `run`, `build`, `deploy`, `generate`.
+Available on: `run`, `build`, `generate`.
 
 Prints the resolved plan (generation model, command invocation, file list) without executing side effects. Combined
 with `--format json`, this is the stable contract for automation.

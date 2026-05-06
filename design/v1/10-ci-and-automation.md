@@ -125,7 +125,6 @@ Most CLI commands are idempotent:
 | `lint`              | Yes         | Read-only analysis                                    |
 | `run`               | No          | Starts a process                                      |
 | `build`             | Yes         | Regenerates and rebuilds (same output for same input) |
-| `deploy`            | Yes         | Regenerates and rebuilds Docker image                 |
 | `generate *`        | Partially   | Fails if target exists; `--force` makes it idempotent |
 
 CI pipelines can safely re-run validation, lint, and build steps without worrying about accumulated side effects.

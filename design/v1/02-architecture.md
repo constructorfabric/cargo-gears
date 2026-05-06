@@ -43,16 +43,15 @@ members when the API stabilizes.
 
 ## Manifest Pipeline
 
-Every command that builds, runs, or deploys follows this pipeline:
+Every command that builds or runs follows this pipeline:
 
 ```text
 1. Discover manifest (Cyberfabric.toml or --manifest)
 2. Select environment and app (--env, --app, or defaults)
 3. Validate manifest structure and references
 4. Resolve modules (local discovery + registry lookup)
-5. Build GenerationModel
-6. Generate server project (.cyberfabric/<env>-<app>/)
-7. Execute operation (cargo build, cargo run, docker build, etc.)
+5. Generate server project (.cyberfabric/<app>-<env>/)
+6. Execute operation (cargo build, cargo run, docker build, etc.)
 ```
 
 Commands that only inspect (e.g., `list`, `manifest validate`) stop at step 3-5. Commands that mutate (e.g.,

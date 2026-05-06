@@ -95,7 +95,6 @@ The CLI never embeds secrets in generated files. Credentials flow through enviro
 
 - Generated code reads config paths from `CF_CLI_CONFIG`, not hardcoded paths.
 - Database passwords in config use `${DB_PASSWORD}` notation.
-- `deploy` does not copy `.env` files into Docker images.
 - `manifest render` redacts values that look like secrets.
 
 ### 8. Backward Compatible
