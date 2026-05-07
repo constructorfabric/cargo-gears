@@ -41,7 +41,7 @@ config-dir = "config" # default
 generated-dir = ".cyberfabric" # default
 
 [env.app1.dev]
-config = "dev-app1.yml" # relative from config_dir
+config = "app1-dev.yml" # relative from config_dir
 modules = [
     {
         name = "module1",
@@ -80,7 +80,7 @@ feature-set-test = true # inherits the feature set to test
 
 [env.app1.test.default]
 runner = "nextest"
-config = "test-app1.yml"
+config = "app1-test.yml"
 coverage = true
 feature-set = {
     "module1" = [
@@ -94,7 +94,7 @@ feature-set = {
 }
 
 [env.app1.prod]
-config = "prod-app1.yml"
+config = "app1-prod.yml"
 modules = [
     {
         name = "module1",

@@ -47,8 +47,7 @@ Command:
 
 ```text
 cargo cyberfabric help schema manifest
-cargo cyberfabric help schema config
-cargo cyberfabric help schema config module
+cargo cyberfabric help schema config [-m <module>]
 ```
 
 Should print:
