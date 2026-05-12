@@ -175,7 +175,7 @@ cargo cyberfabric generate manifest
 
 Should create `Cyberfabric.toml` and optionally infer:
 
-- known configs in `config/`
+- generate a default config in `config/` based on env-app
 - local modules from workspace metadata
 - default `dev` environment
 - one app from the workspace/package name
@@ -183,7 +183,6 @@ Should create `Cyberfabric.toml` and optionally infer:
 Recommended flags:
 
 ```text
---from-config <path>
 --env <env>
 --app <app>
 --include-local-modules

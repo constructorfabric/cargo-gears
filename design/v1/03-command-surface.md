@@ -43,7 +43,7 @@ cargo cyberfabric
 │   ├── validate                                    # Validate manifest structure and references
 │   ├── render [--app <app>] [--env <env>]          # Render resolved generation model
 │   ├── add <app> <env> [<module-ref>...]           # Add environment/app/modules
-│   ├── edit <app> <env> [flags]                    # Edit app settings
+│   ├── edit <app> <env> [[--set config.ref]]       # Edit app settings
 │   ├── rm <app> <env> [<module-ref>]               # Remove environment/app/module
 │   └── migrate [--from <v>] [--to <v>]             # Migrate manifest schema version
 │

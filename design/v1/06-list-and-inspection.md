@@ -55,7 +55,8 @@ Output should include:
 - available features
 - whether the module is already used by any manifest app
 
-Initial system module registry can continue to use the current static list:
+Initial system module registry can continue to use the ~~current static list~~. There will be a simple registry in 
+the templates directory until we have a better alternative with the resolution of the system modules we have available:
 
 - `credstore`
 - `file-parser`

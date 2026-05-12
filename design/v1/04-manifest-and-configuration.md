@@ -32,6 +32,8 @@ Cyberfabric.toml
 TOML is recommended because the current ecosystem in rust for handling `toml` with `toml_edit` crate allows us to
 do in-place edits from the CLI without breaking comments.
 
+Find the schema to be used in [manifest.rs](./manifest.rs).
+
 Example:
 
 ```toml
@@ -157,8 +159,7 @@ cargo cyberfabric manifest render <app> <env>
 - module dependency metadata
 - generated Cargo dependencies
 - generated features
-- generated `main.rs` inputs
-- selected lint/test/run/build policy
+- generated `.cyberfabric` inputs
 
 This command is useful for debugging and for LLMs because it exposes the exact
 input to generation without executing Cargo.
@@ -191,8 +192,5 @@ New flow:
 4. Resolve modules from manifest.
 5. Merge discovered metadata with manifest constraints.
 6. Generate `.cyberfabric/<app>-<env>` or configured generated name.
-7. Set `CF_CLI_CONFIG` to the runtime config.
+7. Provide the relative path in the first argument to the config file.
 8. Run the selected operation.
-
-The generated `main.rs` can remain close to the current implementation: it
-should still load `CF_CLI_CONFIG` at runtime and call `modkit::run_server(config)`.

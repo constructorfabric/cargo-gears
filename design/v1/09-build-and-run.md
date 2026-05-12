@@ -173,8 +173,10 @@ Watch mode observes:
 
 When a change is detected, the CLI:
 
-1. Regenerates the server project if manifest or workspace metadata changed.
+1. Regenerates the generated server project if manifest or workspace metadata changed.
 2. Restarts the `cargo run` process.
+
+All notify events will have a debounced of 300ms
 
 ### Manifest Watch Policy
 
