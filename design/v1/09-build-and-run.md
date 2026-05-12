@@ -22,38 +22,20 @@ Both share the same generation pipeline (manifest resolution -> module resolutio
 ### Synopsis
 
 ```bash
-cargo cyberfabric run [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--watch] [--otel] [--fips] [--release] [--clean] [--dry-run]
+cargo cyberfabric run [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--watch] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
 
-1. Resolve manifest app or fall back to `--config`.
-2. Resolve modules and build the generation model.
-3. Generate `.cyberfabric/<env>-<app>/` (or `<config-stem>/` in config-only mode).
-4. Set `CF_CLI_CONFIG` to the resolved runtime config path.
-5. Execute `cargo run` inside the generated project.
-
-### Backward Compatibility
-
-The current `--config` flow is fully preserved:
-
-```bash
-# Manifest-first (new)
-cargo cyberfabric run --env dev --app app1
-
-# Config-only (existing, still supported)
-cargo cyberfabric run -c config/quickstart.yml -p /tmp/cf-demo
-```
-
-When both manifest app and `--config` are provided, the explicit config path overrides the manifest-declared config
-but not the manifest module selection.
+1. Resolve manifest app with `cargo cyberfabric run --app app1 --env dev`.
+2. Generate `.cyberfabric/<app>-<env>/` with a cargo manifest, a main function and a .cargo config.
+3. Execute `cargo run` inside the generated project while providing as first argument the resolved config path.
 
 ### Name Resolution
 
 | Input                      | Generated Project Path      |
 |----------------------------|-----------------------------|
-| `--env dev --app app1`     | `.cyberfabric/dev-app1/`    |
-| `-c config/quickstart.yml` | `.cyberfabric/quickstart/`  |
+| `--app app1 --env dev`     | `.cyberfabric/app1-dev/`    |
 | `--name demo-server`       | `.cyberfabric/demo-server/` |
 
 `--name` always takes highest precedence.
@@ -63,7 +45,7 @@ but not the manifest module selection.
 ### Synopsis
 
 ```bash
-cargo cyberfabric build [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--output <output>] [--otel] [--fips] [--release] [--clean] [--dry-run]
+cargo cyberfabric build [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--output <output>] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
@@ -278,14 +260,61 @@ The generated project under `.cyberfabric/<name>/` contains:
 Dependencies are derived from the resolved module list. Each module becomes a dependency with its source (path for
 local, version for registry), features, and default-features.
 
+```toml
+[package]
+name = "<app>-<env>"
+version = "0.1.0"
+
+[features]
+default = []
+otel = ["cf-modkit/otel"]
+fips = ["cf-modkit/fips"]
+
+[dependencies]
+anyhow = "..." # Same version as the workspace, otherwise 1 by default
+tokio = "..." # Same version as the workspace, otherwise 1 by default
+cf-modkit = "..." # Same version as the workspace plus the bootstrap feature
+# module dependencies generated based on the manifest
+# {{dependencies}}
+
+[workspace] # We stop cargo workspace resolution here 
+```
+
 ### `main.rs`
 
-The generated `main.rs`:
+The generated main.rs is a simple entry point that:
 
-- Reads `CF_CLI_CONFIG` from the environment.
-- Loads the runtime config.
-- Calls `modkit::run_server(config)`.
-- Does not embed any hardcoded paths.
+1. Reads the first argument as the config path.
+2. Loads the runtime config.
+3. Runs the server.
+
+The CLI generates based on the manifest the module list dependencies that the application will have,
+so that manual modification is abstracted.
+
+```rust
+use anyhow::{Context, Result};
+// ALL module dependencies are added here
+// {{dependencies}} 
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let config_path = std::env::args().nth(1)
+        .map(std::path::PathBuf::from)
+        .context("first argument must be the configuration path")?;
+    let config = modkit::bootstrap::AppConfig::load_or_default(Some(&config_path))?;
+
+    modkit::bootstrap::run_server(config).await
+}
+```
+### .cargo/config.toml
+
+It will reuse the artifacts from the workspace. This is to avoid recompiling the modules.
+
+```toml
+[build]
+target-dir = "../../target"
+build-dir = "../../target"
+```
 
 ### `.cyberfabric/` Is Derived Output
 
