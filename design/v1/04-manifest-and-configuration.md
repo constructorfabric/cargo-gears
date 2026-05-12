@@ -145,10 +145,10 @@ Recommendation: Use always the `package` name to be precise.
 cargo cyberfabric manifest [--manifest Cyberfabric.toml] <CMD>
 cargo cyberfabric manifest validate 
 cargo cyberfabric manifest ls [flags]
-cargo cyberfabric manifest add <env> <app> [<module-ref1> <module-ref2> ...]
-cargo cyberfabric manifest edit <env> <app> [flags]
-cargo cyberfabric manifest rm <env> <app> <module-ref>
-cargo cyberfabric manifest render <env> <app>
+cargo cyberfabric manifest add <app> <env> [<module-ref1> <module-ref2> ...]
+cargo cyberfabric manifest edit <app> <env> [flags]
+cargo cyberfabric manifest rm <app> <env> <module-ref>
+cargo cyberfabric manifest render <app> <env>
 ```
 
 `manifest render` should produce the resolved generation model:

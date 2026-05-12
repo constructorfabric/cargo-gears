@@ -104,7 +104,7 @@ Commands:
 ```text
 cargo cyberfabric list configs
 cargo cyberfabric list apps
-cargo cyberfabric list modules --env dev --app app1
+cargo cyberfabric list modules --app app1 --env dev
 ```
 
 `list configs` should show:
@@ -128,9 +128,9 @@ cargo cyberfabric list modules --env dev --app app1
 Example:
 
 ```text
-Environment  App   Config              Modules  Run             Build
-dev          app1  config/dev-app1.yml 3        watch,otel      binary
-prod         app1  config/prod-app1.yml 2       fips,otel       binary,docker
+Environment  App   Config               Modules  Run             Build
+dev          app1  config/app1-dev.yml  3        watch,otel      binary
+prod         app1  config/app1-prod.yml 2        fips,otel       binary,docker
 ```
 
 ## Output Formats
@@ -149,7 +149,7 @@ JSON output should use explicit fields rather than human labels:
 {
   "environment": "dev",
   "app": "app1",
-  "config": "config/dev-app1.yml",
+  "config": "config/app1-dev.yml",
   "modules": [
     {
       "reference": "local:crate1",

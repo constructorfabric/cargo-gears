@@ -31,11 +31,11 @@ jobs:
       - name: Validate manifest
         run: cargo cyberfabric manifest validate --format json
       - name: Lint
-        run: cargo cyberfabric lint --env prod --app app1 --strict
+        run: cargo cyberfabric lint --app app1 --env prod --strict
       - name: Test
-        run: cargo cyberfabric test --env prod --app app1 --coverage --coverage-format lcov
+        run: cargo cyberfabric test --app app1 --env prod --coverage --coverage-format lcov
       - name: Build
-        run: cargo cyberfabric build --env prod --app app1 --output binary --release
+        run: cargo cyberfabric build --app app1 --env prod --output binary --release
 ```
 
 Or with alias:
@@ -53,20 +53,20 @@ jobs:
       - name: Install CyberFabric CLI
         run: cargo install --git https://github.com/cyberfabric/cf-cli
       - name: Validate manifest
-        run: cargo cyberfabric ci --env prod --app app1
+        run: cargo cyberfabric ci --app app1 --env prod
 ```
 
 ### Key Patterns
 
 - **Validate first.** `manifest validate` catches configuration errors before expensive build steps.
-- **Use manifest policies.** `--env prod --app app1` reads lint/test/build policies from the manifest. CI does not
+- **Use manifest policies.** `--app app1 --env prod` reads lint/test/build policies from the manifest. CI does not
   duplicate flag logic.
 - **Use `--strict` in CI.** Turns warnings into errors for lint checks.
 
 ### Pre-Flight Check
 
 ```bash
-cargo cyberfabric build --env prod --app app1 --dry-run --format json | jq '.modules | length'
+cargo cyberfabric build --app app1 --env prod --dry-run --format json | jq '.modules | length'
 ```
 
 Dry-run produces the resolved generation model without executing anything. CI can validate the model before committing
@@ -92,7 +92,7 @@ The CLI is designed to be usable by LLM-driven coding agents (Codex, Copilot, Cl
 1. LLM reads SKILL.md for command reference.
 2. LLM runs: cargo cyberfabric list modules --format json
 3. LLM parses the JSON to understand available modules.
-4. LLM runs: cargo cyberfabric manifest render --env dev --app app1 --format json
+4. LLM runs: cargo cyberfabric manifest render --app app1 --env dev --format json
 5. LLM parses the generation model to understand the app structure.
 6. LLM writes module code following the patterns in the existing modules.
 7. LLM runs: cargo cyberfabric lint --format json

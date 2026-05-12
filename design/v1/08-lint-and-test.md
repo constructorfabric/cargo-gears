@@ -110,7 +110,7 @@ Testing matrix is a list of test sets that can be run with `cargo cyberfabric te
 ```toml
 [env.app1.test.default]
 runner = "nextest"
-config = "test-app1.yml"
+config = "app1-test.yml"
 feature-set = {
     "module1" = [
         ["unit", "integration"],

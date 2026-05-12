@@ -13,7 +13,7 @@
 
 All commands follow these conventions:
 
-- **Verb-first structure.** Top-level commands are verbs (`init`, `run`, `build`, `lint`, `test`) or
+- **Verb-first structure.** Top-level commands are verbs (`new`, `run`, `build`, `lint`, `test`) or
   noun-scoped managers (`config`, `manifest`, `list`, `help`).
 - **Predictable flag names.** The same concept uses the same flag across all commands (e.g., `-p/--path` always means
   workspace root, `-c/--config` always means runtime config file).
@@ -29,27 +29,26 @@ All commands follow these conventions:
 ```text
 cargo cyberfabric
 │
-├── new <path>                                      # Initialize workspace (alias: generate workspace)
+├── new <path>                                        # Initialize workspace (alias: generate workspace)
 │
 ├── generate
-│   ├── workspace <path>                            # Full workspace scaffolding
-│   ├── module <template> [--name <name>]           # Module scaffolding
-│   ├── config <kind>                               # Runtime config scaffolding
-│   ├── manifest                                    # Cyberfabric.toml scaffolding
-│   ├── build <kind>                                # Build artifact templates (docker, compose)
-│   ├── ci <provider>                               # CI workflow templates (github)
-│   └── ai [--skill --provider <p> --agents]        # SKILL.md generation
+│   ├── workspace <path>                              # Full workspace scaffolding
+│   ├── module --template <template> [--name <name>]  # Module scaffolding
+│   ├── config <kind>                                 # Runtime config scaffolding
+│   ├── manifest                                      # Cyberfabric.toml scaffolding
+│   ├── build <kind>                                  # Build artifact templates (docker, compose)
+│   └── ai [--skill --provider <p> --agents]          # SKILL.md generation
 │
 ├── manifest
 │   ├── validate                                    # Validate manifest structure and references
-│   ├── render [--env <env>] [--app <app>]          # Render resolved generation model
-│   ├── add <env> <app> [<module-ref>...]           # Add environment/app/modules
-│   ├── edit <env> <app> [flags]                    # Edit app settings
-│   ├── rm <env> <app> [<module-ref>]               # Remove environment/app/module
+│   ├── render [--app <app>] [--env <env>]          # Render resolved generation model
+│   ├── add <app> <env> [<module-ref>...]           # Add environment/app/modules
+│   ├── edit <app> <env> [flags]                    # Edit app settings
+│   ├── rm <app> <env> [<module-ref>]               # Remove environment/app/module
 │   └── migrate [--from <v>] [--to <v>]             # Migrate manifest schema version
 │
 ├── list
-│   ├── modules [--env <env>] [--app <app>]         # All modules (local + system + configured)
+│   ├── modules [--app <app>] [--env <env>]         # All modules (local + system + configured)
 │   ├── local-modules                               # Workspace-discovered modules
 │   ├── system-modules                              # Built-in system module registry
 │   ├── configs                                     # Runtime config files
@@ -147,10 +146,10 @@ failing with a suggestion. Not enabled by default to avoid surprising side effec
 
 ## Name Validation
 
-All user-provided names (module names, app names, environment names, DB server names) are validated against:
+All user-provided names (module names, app names, environment names, DB server names) are validated against a kebab-case regex:
 
 ```text
-^[a-zA-Z][a-zA-Z0-9_-]+$
+^[a-z](?:-[a-z0-9]+)+$
 ```
 
 Rules:

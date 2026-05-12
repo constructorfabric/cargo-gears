@@ -27,7 +27,7 @@ toward CyberFabric-approved patterns without requiring them to read or memorize 
 Every command has sensible defaults derived from CyberFabric conventions. Explicit overrides are available but never
 required for the common case.
 
-- `init` produces a workspace that compiles and runs without further configuration.
+- `new` produces a workspace that compiles and runs without further configuration.
 - `lint` runs all quality gates by default; individual suites are opt-in only when narrowing scope.
 - `run` resolves config path, module set, and features from the manifest without requiring flags.
 - Generated project paths follow a deterministic naming convention: `.cyberfabric/<env>-<app>`.
@@ -112,7 +112,7 @@ The following standards are enforced across all generated code, configuration, a
 
 | Standard                             | How the CLI Enforces It                                               |
 |--------------------------------------|-----------------------------------------------------------------------|
-| Standardized project structure       | `init` and `generate workspace` produce a canonical layout            |
+| Standardized project structure       | `new` and `generate workspace` produce a canonical layout             |
 | Consistent naming conventions        | Name validation regex `[a-zA-Z0-9_-]+` on modules, apps, environments |
 | Approved architectural patterns      | Module templates encode approved patterns; no freeform scaffolding    |
 | Reusable scaffolding templates       | `generate` commands use a versioned template registry                 |

@@ -20,7 +20,7 @@ limited to `init` and `mod add`. The goal is to let users scaffold a full
 CyberFabric workspace, individual modules, runtime config, CLI manifest, build
 artifacts, and automation guidance files.
 
-## Current Behavior
+### Current Behavior
 
 Current generation behavior:
 
@@ -30,7 +30,7 @@ Current generation behavior:
 
 ## Proposed Commands
 
-Keep existing commands and add a normalized generation namespace:
+We replace the current `init` and `mod add` commands with a more structured one:
 
 ```text
 cargo cyberfabric generate workspace <path> [flags]
@@ -75,7 +75,7 @@ path = "templates/grpc-service"
 name = "custom-agent"
 source = "git"
 url = "ssh://github.com/cyberfabric/cf-template-rust.git"
-branch = "main"
+rev = "f1e6ad66"
 subfolder = "Agents/custom-agent"
 ```
 
@@ -137,7 +137,7 @@ Recommended flags:
 
 ```text
 --add-to-manifest env.<app>.dev,env.<app>.prod
---add-to-config config/dev-app.yml,config/prod-app.yml
+--add-to-config config/app-dev.yml,config/app-prod.yml
 ```
 
 ## Configuration Scaffolding
@@ -145,7 +145,7 @@ Recommended flags:
 Command:
 
 ```text
-cargo cyberfabric generate config --env dev --app app1 --name dev-app2
+cargo cyberfabric generate config --app app1 --env dev --name dev-app2
 ```
 
 Config templates:
@@ -157,7 +157,7 @@ Config templates:
 Output examples:
 
 ```text
-config/dev-app1.yml
+config/app1-dev.yml
 config/fragments/database.yml
 config/modules/<module>.yml
 ```
@@ -202,7 +202,6 @@ Build template kinds:
 
 - `docker`: Dockerfile and `.dockerignore`
 - `compose`: local development dependencies
-- `ci-github`: GitHub Actions workflow
 
 ## Agent and Skill Templates
 
