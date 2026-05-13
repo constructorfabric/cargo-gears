@@ -36,7 +36,6 @@ cargo cyberfabric
 │   ├── module --template <template> [--name <name>]  # Module scaffolding
 │   ├── config <kind>                                 # Runtime config scaffolding
 │   ├── manifest                                      # Cyberfabric.toml scaffolding
-│   ├── build <kind>                                  # Build artifact templates (docker, compose)
 │   └── ai [--skill --provider <p> --agents]          # SKILL.md generation
 │
 ├── manifest

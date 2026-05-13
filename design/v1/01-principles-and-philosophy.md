@@ -68,12 +68,11 @@ machine-readable.
 
 ### 5. Orchestrate, Don't Replace
 
-The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest`, `cargo-llvm-cov` and
-`docker`. It never reimplements their core functionality.
+The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest` and `cargo-llvm-cov`. 
+It never reimplements their core functionality.
 
 - `lint` invokes `cargo fmt`, `cargo clippy` and compiled dylint libraries with the right flags, not a custom formatter.
-- `build binary` invokes `cargo build` inside a generated project, not a custom compiler.
-- `build docker` invokes `docker build` with controlled arguments, not a custom image builder.
+- `build` invokes `cargo build` inside a generated project, not a custom compiler.
 
 When a wrapped tool fails, the CLI surfaces the tool's stderr alongside its own context. The developer can always
 reproduce the failure by running the underlying tool directly.
@@ -138,8 +137,8 @@ When making design decisions, apply these tradeoff rules in order:
 3. **Convention over configuration.** If a reasonable default exists, it should be the default. Configuration is for
    exceptions, not the common case.
 
-4. **Explicit over implicit.** When the CLI takes a significant action (generating files, modifying config, invoking
-   Docker), it should state what it is doing. Use `--dry-run` to preview.
+4. **Explicit over implicit.** When the CLI takes a significant action (generating files, modifying config, invoking), 
+   it should state what it is doing. Use `--dry-run` to preview.
 
 5. **Machine-first, human-friendly.** Design output for programmatic consumption first, then add human-friendly
    formatting. Never produce output that is human-readable but unparseable.

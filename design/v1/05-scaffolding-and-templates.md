@@ -10,8 +10,7 @@
 6. [Module Scaffolding](#module-scaffolding)
 7. [Configuration Scaffolding](#configuration-scaffolding)
 8. [Manifest Scaffolding](#manifest-scaffolding)
-9. [Build Templates](#build-templates)
-10. [Agent and Skill Templates](#agent-and-skill-templates)
+9. [Agent and Skill Templates](#agent-and-skill-templates)
 
 ## Purpose
 
@@ -61,10 +60,6 @@ Catalog shape:
 name = "background-worker"
 source = "git"
 subfolder = "Modules/background-worker"
-
-[[templates.build]]
-name = "docker"
-source = "embedded"
 
 [[templates.config]]
 name = "grpc-service"
@@ -187,20 +182,6 @@ Recommended flags:
 --app <app>
 --include-local-modules
 ```
-
-## Build Templates
-
-Command:
-
-```text
-cargo cyberfabric generate build docker
-cargo cyberfabric generate build compose
-```
-
-Build template kinds:
-
-- `docker`: Dockerfile and `.dockerignore`
-- `compose`: local development dependencies
 
 ## Agent and Skill Templates
 

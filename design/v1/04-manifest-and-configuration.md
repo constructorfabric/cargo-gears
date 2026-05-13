@@ -48,6 +48,7 @@ Example:
 
 ```toml
 [workspace]
+version = 1
 root = "." # default
 config-dir = "config" # default
 generated-dir = ".cyberfabric" # default
@@ -69,22 +70,20 @@ modules = [
     }
 ]
 run = {
-    watch = true,
+    watch = { enabled = true }, # this is the default
     fips = false,
     otel = true
 }
 build = {
     name = "app1", # override env name
-    outputs = ["binary", "docker"],
-    image = "registry.example.com/app1",
     profile = "debug"
 }
 
 [env.app1.lint]
-skip-dylint = [
-    "rule-name"
-]
-# skip-dylint = true
+dylint = {
+   enabled = true,
+   skip = ["rule-name"],
+}
 clippy = true # by default
 fmt = true # by default
 feature-set-test = true # inherits the feature set to test
@@ -122,15 +121,12 @@ modules = [
     }
 ]
 run = {
-    watch = false,
+    watch = { enabled = false },
     fips = true,
     otel = true
 }
 build = {
     name = "app1", # override env name
-    docker = {
-        image = "registry.example.com/app1", # required for docker output
-    },
     profile = "release"
 }
 ```
@@ -185,9 +181,7 @@ Validation should fail early when:
 - multiple module refs resolve to the same package name
 - module dependency constraints conflict
 - a run/build/test profile references unsupported modes
-- production uses `watch = true`
 - FIPS is requested with modules or features that cannot support it
-- Docker/Helm output is selected without required metadata
 
 Validation output should be deterministic and machine-readable with `--format json`.
 

@@ -31,6 +31,8 @@ pub type TestSuites = BTreeMap<String, TestPolicy>;
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Workspace {
+    #[serde(default = "default_version")]
+    pub version: u32,
     #[serde(default = "default_workspace_root")]
     pub root: String,
     #[serde(default = "default_config_dir", rename = "config-dir")]
@@ -44,6 +46,7 @@ pub struct Workspace {
 impl Default for Workspace {
     fn default() -> Self {
         Self {
+            version: 1,
             root: default_workspace_root(),
             config_dir: default_config_dir(),
             generated_dir: default_generated_dir(),
@@ -103,7 +106,7 @@ pub struct RegistryModuleRef {
 #[serde(deny_unknown_fields)]
 pub struct RunPolicy {
     #[serde(default)]
-    pub watch: bool,
+    pub watch: WatchPolicy,
     #[serde(default)]
     pub fips: bool,
     #[serde(default)]
@@ -112,24 +115,22 @@ pub struct RunPolicy {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+pub struct WatchPolicy {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub paths: Vec<String>,
+    #[serde(default)]
+    pub ignore: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct BuildPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub outputs: Vec<BuildOutput>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub image: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<BuildProfile>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub docker: Option<DockerBuild>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum BuildOutput {
-    Binary,
-    Docker,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -141,23 +142,9 @@ pub enum BuildProfile {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct DockerBuild {
-    pub image: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tag: Option<String>,
-    #[serde(default = "default_dockerfile")]
-    pub dockerfile: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
 pub struct LintPolicy {
-    #[serde(
-        default,
-        rename = "skip-dylint",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub skip_dylint: Option<SkipDylint>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dylint: Option<Dylint>,
     #[serde(default = "default_true")]
     pub clippy: bool,
     #[serde(default = "default_true")]
@@ -167,10 +154,11 @@ pub struct LintPolicy {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum SkipDylint {
-    All(bool),
-    Rules(Vec<String>),
+pub struct Dylint {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub skip: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -211,6 +199,10 @@ pub enum FeatureSet {
     Features(Vec<String>),
 }
 
+fn default_version() -> u32 {
+    1
+}
+
 fn default_workspace_root() -> String {
     ".".to_owned()
 }
@@ -221,10 +213,6 @@ fn default_config_dir() -> String {
 
 fn default_generated_dir() -> String {
     ".cyberfabric".to_owned()
-}
-
-fn default_dockerfile() -> String {
-    "Dockerfile".to_owned()
 }
 
 const fn default_true() -> bool {
@@ -240,6 +228,7 @@ mod tests {
         let manifest: Manifest = toml::from_str(
             r#"
 [workspace]
+version = 1
 root = "."
 config-dir = "config"
 generated-dir = ".cyberfabric"
@@ -250,11 +239,11 @@ modules = [
     { name = "module1", source = "local", version = "1.2.0", package = "crate1" },
     { name = "module2", source = "remote", version = "0.1.0", package = "crate2" }
 ]
-run = { watch = true, fips = false, otel = true }
-build = { name = "app1", outputs = ["binary", "docker"], image = "registry.example.com/app1", profile = "debug" }
+run = { watch = { enabled = true }, fips = false, otel = true }
+build = { name = "app1", profile = "debug" }
 
 [env.app1.lint]
-skip-dylint = ["rule-name"]
+dylint = { enabled = true, skip = ["rule-name"] }
 clippy = true
 fmt = true
 feature-set-test = true
@@ -274,14 +263,11 @@ modules = [
     { name = "module1", source = "local", version = "1.2.0", package = "crate1" },
     { name = "module2", source = "remote", version = "0.1.0", package = "crate2" }
 ]
-run = { watch = false, fips = true, otel = true }
+run = { watch = { enabled = false }, fips = true, otel = true }
 
 [env.app1.prod.build]
 name = "app1"
 profile = "release"
-
-[env.app1.prod.build.docker]
-image = "registry.example.com/app1"
 "#,
         )
         .unwrap();

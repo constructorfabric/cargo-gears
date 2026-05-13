@@ -129,9 +129,9 @@ cargo cyberfabric list modules --app app1 --env dev
 Example:
 
 ```text
-Environment  App   Config               Modules  Run             Build
-dev          app1  config/app1-dev.yml  3        watch,otel      binary
-prod         app1  config/app1-prod.yml 2        fips,otel       binary,docker
+Environment  App   Config               Modules  Run
+dev          app1  config/app1-dev.yml  3        watch,otel
+prod         app1  config/app1-prod.yml 2        fips,otel
 ```
 
 ## Output Formats

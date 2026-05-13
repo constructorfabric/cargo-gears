@@ -24,7 +24,7 @@ crates/
 ├── codegen/              # Library: server project generation (Cargo.toml, main.rs)
 ├── templates/            # Library: template registry, cargo-generate orchestration
 ├── module-parser/        # Library: Rust source parsing for module discovery (existing)
-└── tools/                # Library: external tool orchestration (cargo helpers, docker, etc)
+└── tools/                # Library: external tool orchestration (cargo helpers, system dependencies, etc)
 ```
 
 ### Rationale
@@ -35,7 +35,7 @@ crates/
   snapshot assertions and decouples it from command parsing.
 - **`templates`** owns the template registry and `cargo-generate` integration. Separating this from `cli` allows
   template logic to evolve independently.
-- **`tools`** owns subprocess invocation for `cargo ...`, `docker`, `rustup`. This is where retry logic,
+- **`tools`** owns subprocess invocation for `cargo ...`, `rustup`. This is where retry logic,
   environment setup, and tool version detection live.
 
 Migration path: Extract crates incrementally behind internal `pub(crate)` boundaries first, then promote to workspace
@@ -51,7 +51,7 @@ Every command that builds or runs follows this pipeline:
 3. Validate manifest structure and references
 4. Resolve modules (local discovery + registry lookup)
 5. Generate server project (.cyberfabric/<app>-<env>/)
-6. Execute operation (cargo build, cargo run, docker build, etc.)
+6. Execute operation (cargo build, cargo run, etc.)
 ```
 
 Commands that only inspect (e.g., `list`, `manifest validate`) stop at step 3-5. Commands that mutate (e.g.,
@@ -88,7 +88,6 @@ pub enum Tool {
     CargoNextest,
     CargoLLVMCoverage,
     CargoDeny,
-    Docker,
     Rustup,
 }
 ```

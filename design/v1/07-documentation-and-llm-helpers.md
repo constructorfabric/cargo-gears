@@ -87,7 +87,6 @@ cargo cyberfabric help topic module-refs
 cargo cyberfabric help topic generated-server
 cargo cyberfabric help topic fips
 cargo cyberfabric help topic otel
-cargo cyberfabric help topic docker
 ```
 
 The list is not exhaustive and can be expanded as needed.

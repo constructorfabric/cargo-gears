@@ -52,23 +52,11 @@ cargo cyberfabric build [--env <env>] [--app <app>] [-c <config>] [-p <path>] [-
 
 Same pipeline as `run`, but invokes `cargo build` instead of `cargo run` and supports multiple output types.
 
-### Build Output Types
+## Build Outputs
 
 ```bash
-cargo cyberfabric build --env prod --app app1 --output binary
-cargo cyberfabric build --env prod --app app1 --output docker
-cargo cyberfabric build --env prod --app app1 --output all
+cargo cyberfabric build --env prod --app app1
 ```
-
-| Output   | Description                                      |
-|----------|--------------------------------------------------|
-| `binary` | `cargo build` in the generated project. Default. |
-| `docker` | Build a Docker image                             |
-| `all`    | Binary + Docker (whatever is configured).        |
-
-When `--output` is omitted, the manifest `build.outputs` list is used. If no manifest exists, `binary` is the default.
-
-## Build Outputs
 
 ### Binary Build
 
@@ -76,44 +64,10 @@ When `--output` is omitted, the manifest `build.outputs` list is used. If no man
 [env.app1.prod.build]
 profile = "release"
 name = "app1"
-outputs = ["binary"]
 ```
 
 The generated project path is deterministic: `.cyberfabric/<env>-<app>/`. The binary is placed in the generated
 project's `target/<profile>/` directory.
-
-### Docker Image
-
-```toml
-[env.app1.prod.build]
-outputs = ["binary", "docker"]
-
-[env.app1.prod.build.docker]
-image = "registry.example.com/app1"
-tag = "1.2.3"
-dockerfile = "Dockerfile"         # optional, defaults to workspace root Dockerfile
-```
-
-Docker build process:
-
-1. Ensure Dockerfile exists (generate if missing, with notice).
-2. Build binary if not already built.
-3. Invoke `docker build` with controlled arguments.
-4. Tag the image.
-5. Print summary.
-
-### Build Summary
-
-After all outputs are produced, the CLI prints a summary:
-
-```text
-Built app prod/app1
-  binary: .cyberfabric/prod-app1/target/release/app1
-  image:  registry.example.com/app1:1.2.3
-```
-
-For machine-parseable output, use `--dry-run --format json`. Executed action commands keep their summary human-readable
-because their primary output is subprocess execution.
 
 ## Feature Flags
 
@@ -242,7 +196,6 @@ It prints the resolved execution plan without performing side effects:
 
 - No files are generated.
 - No Cargo commands are invoked.
-- No Docker images are built.
 
 ## Generated Server Project
 
