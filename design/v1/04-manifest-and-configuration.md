@@ -21,6 +21,11 @@ explicit:
 This separation eliminates metadata duplication, reduces config-file complexity, and makes the CLI's behavior
 inspectable without reading YAML runtime values.
 
+The manifest will be required for the `run`, `test`, `lint` and `build` commands. These commands require the 
+orchestration information that the manifest provides.
+
+For the rest of proposed commands, the manifest will not be required, as `generate`, `help`, `list`, `config`, `tools`
+
 ## Proposed Manifest
 
 Default file name:
@@ -31,6 +36,11 @@ Cyberfabric.toml
 
 TOML is recommended because the current ecosystem in rust for handling `toml` with `toml_edit` crate allows us to
 do in-place edits from the CLI without breaking comments.
+
+Other formats were considered like YAML or JSON. JSON doesn't allow comments, which would be a nice feature to have
+in the manifest. YAML is very close to TOML, but during the investigation phase, there was no crate that allowed
+in-place edits without breaking comments. This feature is required as we are going to allow to do certain changes
+in the manifest from the CLI.
 
 Find the schema to be used in [manifest.rs](./manifest.rs).
 
