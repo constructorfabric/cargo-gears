@@ -145,19 +145,11 @@ failing with a suggestion. Not enabled by default to avoid surprising side effec
 
 ## Name Validation
 
-All user-provided names (module names, app names, environment names, DB server names) are validated against a kebab-case regex:
+All user-provided names (module names, app names, DB server names) are validated against a kebab-case regex:
 
 ```text
 ^[a-z](?:-[a-z0-9]+)+$
 ```
-
-Rules:
-
-- Must start with a letter.
-- May contain letters, digits, hyphens, and underscores.
-- Must not be empty.
-- Maximum length: 64 characters.
-- Case-sensitive; lowercase-with-hyphens is the recommended convention.
 
 Validation is enforced at the clap parsing layer using a custom `value_parser` so that invalid names never reach
 command logic.

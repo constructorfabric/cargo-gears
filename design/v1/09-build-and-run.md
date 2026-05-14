@@ -139,7 +139,7 @@ To override default values(detected members, configs and generated files)
 ```toml
 [env.app1.dev.run.watch]
 enabled = true
-paths = ["modules", "config/dev-app1.yml", "Cyberfabric.toml"]
+paths = ["modules", "config/app1-dev.yml", "Cyberfabric.toml"]
 ignore = ["target", ".cyberfabric"]
 ```
 
@@ -176,8 +176,8 @@ cargo cyberfabric run --env dev --app app1 --dry-run --format json
 {
   "environment": "dev",
   "app": "app1",
-  "config": "config/dev-app1.yml",
-  "generated_project": ".cyberfabric/dev-app1",
+  "config": "config/app1-dev.yml",
+  "generated_project": ".cyberfabric/app1-dev",
   "modules": [
     "background-worker",
     "credstore"

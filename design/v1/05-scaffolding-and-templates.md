@@ -140,7 +140,7 @@ Recommended flags:
 Command:
 
 ```text
-cargo cyberfabric generate config --app app1 --env dev --name dev-app2
+cargo cyberfabric generate config --app app1 --env dev --name custom_name
 ```
 
 Config templates:
