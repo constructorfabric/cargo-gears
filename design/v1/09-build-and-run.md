@@ -22,7 +22,7 @@ Both share the same generation pipeline (manifest resolution -> module resolutio
 ### Synopsis
 
 ```bash
-cargo cyberfabric run [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--watch] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
+cargo cyberfabric run [--app <app>] [--env <env>] [-c <config>] [-w <workspace>] [--name <name>] [--watch] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
@@ -45,7 +45,7 @@ cargo cyberfabric run [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--n
 ### Synopsis
 
 ```bash
-cargo cyberfabric build [--env <env>] [--app <app>] [-c <config>] [-p <path>] [--name <name>] [--output <output>] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
+cargo cyberfabric build [--app <app>] [--env <env>] [-c <config>] [-w <workspace>] [--name <name>] [--output <output>] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
@@ -55,7 +55,7 @@ Same pipeline as `run`, but invokes `cargo build` instead of `cargo run` and sup
 ## Build Outputs
 
 ```bash
-cargo cyberfabric build --env prod --app app1
+cargo cyberfabric build --app app1 --env prod
 ```
 
 ### Binary Build
@@ -66,7 +66,7 @@ profile = "release"
 name = "app1"
 ```
 
-The generated project path is deterministic: `.cyberfabric/<env>-<app>/`. The binary is placed in the generated
+The generated project path is deterministic: `.cyberfabric/<app>-<env>/`. The binary is placed in the generated
 project's `target/<profile>/` directory.
 
 ## Feature Flags
@@ -113,7 +113,7 @@ opentelemetry:
 ### Synopsis
 
 ```bash
-cargo cyberfabric run --env dev --app app1 --watch
+cargo cyberfabric run --app app1 --env dev --watch
 ```
 
 ### Watched Paths
@@ -169,7 +169,7 @@ For all action commands, settings are resolved in this order:
 The resolved model can be inspected with `--dry-run`:
 
 ```bash
-cargo cyberfabric run --env dev --app app1 --dry-run --format json
+cargo cyberfabric run --app app1 --env dev --dry-run --format json
 ```
 
 ```json

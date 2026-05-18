@@ -15,7 +15,7 @@ All commands follow these conventions:
 
 - **Verb-first structure.** Top-level commands are verbs (`new`, `run`, `build`, `lint`, `test`) or
   noun-scoped managers (`config`, `manifest`, `list`, `help`).
-- **Predictable flag names.** The same concept uses the same flag across all commands (e.g., `-p/--path` always means
+- **Predictable flag names.** The same concept uses the same flag across all commands (e.g., `-w/--workspace` always means
   workspace root, `-c/--config` always means runtime config file).
 - **No positional ambiguity.** When a command accepts both a positional argument and flags, the positional argument is
   always the primary subject (module name, path, query). Flags modify behavior.
@@ -41,9 +41,9 @@ cargo cyberfabric
 ├── manifest
 │   ├── validate                                    # Validate manifest structure and references
 │   ├── render [--app <app>] [--env <env>]          # Render resolved generation model
-│   ├── add <app> <env> [<module-ref>...]           # Add environment/app/modules
+│   ├── add <app> <env> [<module-ref>...]           # Add app/environment/modules
 │   ├── edit <app> <env> [[--set config.ref]]       # Edit app settings
-│   ├── rm <app> <env> [<module-ref>]               # Remove environment/app/module
+│   ├── rm <app> <env> [<module-ref>]               # Remove app/environment/module
 │   └── migrate [--from <v>] [--to <v>]             # Migrate manifest schema version
 │
 ├── list
@@ -102,7 +102,7 @@ cargo cyberfabric
 
 ## Shared Argument Patterns
 
-### Workspace Path: `-p, --path <PATH>`
+### Workspace Path: `-w, --workspace <PATH>`
 
 Available on: `config`, `lint`, `test`, `run`, `build`, `generate module`, `list`, `docs`.
 
@@ -114,14 +114,14 @@ omitted, the current directory is used.
 Available on: `config mod`, `config db`, `run`, `build`.
 
 Path to the YAML runtime config file. Required when operating without a manifest, or to override the manifest-declared
-config. Resolved relative to the workspace root after `-p/--path` is applied.
+config. Resolved relative to the workspace root after `-w/--workspace` is applied.
 
-### Manifest Selection: `--manifest <PATH>`, `--env <ENV>`, `--app <APP>`
+### Manifest Selection: `--manifest <PATH>`, `--app <APP>`, `--env <ENV>`
 
 Available on: `run`, `build`, `lint`, `test`, `manifest`, `list modules`, `list apps`.
 
-`--manifest` overrides automatic `Cyberfabric.toml` discovery. `--env` and `--app` select the target within the
-manifest. When the manifest has exactly one environment and one app, they are selected automatically.
+`--manifest` overrides automatic `Cyberfabric.toml` discovery. `--app` and `--env` select the target within the
+manifest. When the manifest has exactly one app and one environment, they are selected automatically.
 
 ### Dry Run: `--dry-run`
 
@@ -148,7 +148,7 @@ failing with a suggestion. Not enabled by default to avoid surprising side effec
 All user-provided names (module names, app names, DB server names) are validated against a kebab-case regex:
 
 ```text
-^[a-z](?:-[a-z0-9]+)+$
+^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$
 ```
 
 Validation is enforced at the clap parsing layer using a custom `value_parser` so that invalid names never reach

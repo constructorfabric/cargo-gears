@@ -111,15 +111,15 @@ cargo cyberfabric list modules --app app1 --env dev
 `list configs` should show:
 
 - config path
-- inferred environment/app when linked from manifest
+- inferred app/environment when linked from manifest
 - runtime sections present
 - modules with runtime config
 - modules with legacy metadata
 
 `list apps` should show:
 
-- environment
 - app
+- environment
 - config path
 - module count
 - run mode summary
@@ -129,9 +129,9 @@ cargo cyberfabric list modules --app app1 --env dev
 Example:
 
 ```text
-Environment  App   Config               Modules  Run
-dev          app1  config/app1-dev.yml  3        watch,otel
-prod         app1  config/app1-prod.yml 2        fips,otel
+App   Environment  Config               Modules  Run
+app1  dev          config/app1-dev.yml  3        watch,otel
+app1  prod         config/app1-prod.yml 2        fips,otel
 ```
 
 ## Output Formats

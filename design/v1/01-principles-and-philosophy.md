@@ -30,7 +30,7 @@ required for the common case.
 - `new` produces a workspace that compiles and runs without further configuration.
 - `lint` runs all quality gates by default; individual suites are opt-in only when narrowing scope.
 - `run` resolves config path, module set, and features from the manifest without requiring flags.
-- Generated project paths follow a deterministic naming convention: `.cyberfabric/<env>-<app>`.
+- Generated project paths follow a deterministic naming convention: `.cyberfabric/<app>-<env>`.
 
 ### 2. Manifest-First Orchestration
 
@@ -38,8 +38,8 @@ The manifest (`Cyberfabric.toml`) is the single source of truth for what the CLI
 configuration is the single source of truth for runtime values. This separation eliminates the ambiguity of the current
 config-centric model where dependency metadata and runtime values coexist.
 
-- Manifest answers: **what** to build (apps, environments, modules, features, policies).
-- Runtime config answers: **how** to behave at runtime (endpoints, credentials, tuning).
+- Manifest answers: **what** to build (apps, environments, modules, features, policies). You can find the schema in [manifest_schema.rs](manifest_schema.rs). And an example in [manifest_example.toml](manifest_example.toml).
+- Runtime config answers: **how** to behave at runtime (endpoints, credentials, tuning). You can find examples of the config files in cyberware-rust repository [quickstart](https://github.com/cyberfabric/cyberware-rust/blob/main/config/quickstart.yaml). More available in config directory [cyberware-rust](https://github.com/cyberfabric/cyberware-rust/blob/main/config/).
 
 ### 3. Deterministic Outputs
 

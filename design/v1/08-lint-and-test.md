@@ -31,7 +31,7 @@ runners, so we can have an automation about what specific test sets succeed and 
 - `--clippy`
 - `--dylint`
 - `--strict`
-- `--path`
+- `--workspace`
 
 Clippy currently uses:
 

@@ -224,60 +224,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_manifest_example() {
-        let manifest: Manifest = toml::from_str(
-            r#"
-[workspace]
-version = 1
-root = "."
-config-dir = "config"
-generated-dir = ".cyberfabric"
-
-[env.app1.dev]
-config = "app1-dev.yml"
-modules = [
-    { name = "module1", source = "local", version = "1.2.0", package = "crate1" },
-    { name = "module2", source = "remote", version = "0.1.0", package = "crate2" }
-]
-run = { watch = { enabled = true }, fips = false, otel = true }
-build = { name = "app1", profile = "debug" }
-
-[env.app1.lint]
-dylint = { enabled = true, skip = ["rule-name"] }
-clippy = true
-fmt = true
-feature-set-test = true
-
-[env.app1.test.default]
-runner = "nextest"
-config = "app1-test.yml"
-coverage = true
-feature-set = {
-    "module1" = [["unit", "integration"], ["sqlite"], ["postgres"], ["fips"], false],
-    "module2" = true,
-}
-
-[env.app1.prod]
-config = "app1-prod.yml"
-modules = [
-    { name = "module1", source = "local", version = "1.2.0", package = "crate1" },
-    { name = "module2", source = "remote", version = "0.1.0", package = "crate2" }
-]
-run = { watch = { enabled = false }, fips = true, otel = true }
-
-[env.app1.prod.build]
-name = "app1"
-profile = "release"
-"#,
-        )
-        .unwrap();
-
+    fn parse_manifest_example_toml() {
+        let manifest: Manifest = toml::from_str(include_str!("manifest_example.toml")).unwrap();
         assert_eq!(manifest.workspace.config_dir, "config");
+        assert_eq!(manifest.env.len(), 1);
+
         let app = manifest.env.get("app1").unwrap();
         assert!(app.dev.is_some());
         assert!(app.prod.is_some());
         assert!(app.lint.is_some());
         assert!(app.test.as_ref().unwrap().contains_key("default"));
+        // Add more assertions if required
     }
 
     #[test]

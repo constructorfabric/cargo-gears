@@ -24,7 +24,7 @@ inspectable without reading YAML runtime values.
 The manifest will be required for the `run`, `test`, `lint` and `build` commands. These commands require the 
 orchestration information that the manifest provides.
 
-For the rest of proposed commands, the manifest will not be required, as `generate`, `help`, `list`, `config`, `tools`
+For the rest of proposed commands, the manifest will not be required. For example: the `generate`, `help`, `list`, `config`, `tools` commands
 
 ## Proposed Manifest
 
@@ -34,7 +34,7 @@ Default file name:
 Cyberfabric.toml
 ```
 
-TOML is recommended because the current ecosystem in rust for handling `toml` with `toml_edit` crate allows us to
+TOML is recommended because the current ecosystem in Rust for handling `toml`, with the `toml_edit` crate, allows us to
 do in-place edits from the CLI without breaking comments.
 
 Other formats were considered like YAML or JSON. JSON doesn't allow comments, which would be a nice feature to have
@@ -42,96 +42,11 @@ in the manifest. YAML is very close to TOML, but during the investigation phase,
 in-place edits without breaking comments. This feature is required as we are going to allow to do certain changes
 in the manifest from the CLI.
 
-Find the schema to be used in [manifest.rs](./manifest.rs).
+Find the schema to be used in [manifest_schema.rs](manifest_schema.rs).
 
-Example:
+Find an example in [manifest_example.toml](manifest_example.toml).
 
-```toml
-[workspace]
-version = 1
-root = "." # default
-config-dir = "config" # default
-generated-dir = ".cyberfabric" # default
-
-[env.app1.dev]
-config = "app1-dev.yml" # relative from config_dir
-modules = [
-    {
-        name = "module1",
-        source = "local", # local | remote | registry
-        version = "1.2.0", # required for remote and registry
-        package = "crate1",
-    },
-    {
-        name = "module2",
-        source = "remote",
-        version = "0.1.0",
-        package = "crate2",
-    }
-]
-run = {
-    watch = { enabled = true }, # this is the default
-    fips = false,
-    otel = true
-}
-build = {
-    name = "app1", # override env name
-    profile = "debug"
-}
-
-[env.app1.lint]
-dylint = {
-   enabled = true,
-   skip = ["rule-name"],
-}
-clippy = true # by default
-fmt = true # by default
-feature-set-test = true # inherits the feature set to test
-
-
-[env.app1.test.default]
-runner = "nextest"
-config = "app1-test.yml"
-coverage = true
-feature-set = {
-    "module1" = [
-        ["unit", "integration"],
-        ["sqlite"],
-        ["postgres"],
-        ["fips"],
-        false # disable all features
-    ],
-    "module2" = true, # enable all features
-}
-
-[env.app1.prod]
-config = "app1-prod.yml"
-modules = [
-    {
-        name = "module1",
-        source = "local", # local | remote | registry
-        version = "1.2.0", # required for remote and registry
-        package = "crate1",
-    },
-    {
-        name = "module2",
-        source = "remote",
-        version = "0.1.0",
-        package = "crate2",
-    }
-]
-run = {
-    watch = { enabled = false },
-    fips = true,
-    otel = true
-}
-build = {
-    name = "app1", # override env name
-    profile = "release"
-}
-```
-
-The TOML structure makes environment and app explicit while leaving room for
+The TOML structure makes app and environment explicit while leaving room for
 test, lint, run, and build policy.
 
 ## Module References
@@ -142,10 +57,10 @@ Initial enum:
 - `remote`: resolved from the configured registry, defaulting to `crates.io`.
 - `registry`: explicit registry-qualified remote module.
 
-For the local, we can treat it as module name first, then package
+For `local`, we treat it as module name first, then package
 name and library name as a fallback, and print the resolved package name in verbose output.
 
-Recommendation: Use always the `package` name to be precise.
+Recommendation: Always use the `package`'s name to be precise.
 
 ## Commands
 
@@ -174,7 +89,7 @@ input to generation without executing Cargo.
 
 Validation should fail early when:
 
-- an environment/app does not exist
+- an app/environment does not exist
 - a module reference has an unknown kind
 - a local module cannot be discovered
 - a remote module cannot be resolved

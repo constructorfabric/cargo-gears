@@ -47,7 +47,7 @@ Every command that builds or runs follows this pipeline:
 
 ```text
 1. Discover manifest (Cyberfabric.toml or --manifest)
-2. Select environment and app (--env, --app, or defaults)
+2. Select app and environment (--app, --env, or defaults)
 3. Validate manifest structure and references
 4. Resolve modules (local discovery + registry lookup)
 5. Generate server project (.cyberfabric/<app>-<env>/)
