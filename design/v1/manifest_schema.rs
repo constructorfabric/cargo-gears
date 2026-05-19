@@ -6,22 +6,13 @@ use std::collections::BTreeMap;
 pub struct Manifest {
     #[serde(default)]
     pub workspace: Workspace,
-    pub env: Apps,
+    pub apps: Apps,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub templates: Option<TemplateRegistry>,
 }
 
-pub type Apps = BTreeMap<String, App>;
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct App {
-    #[serde(flatten)]
-    pub environments: BTreeMap<String, Environment>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub test: BTreeMap<String, TestPolicy>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub lint: BTreeMap<String, LintPolicy>,
-}
+pub type Apps = BTreeMap<String, Environments>;
+pub type Environments = BTreeMap<String, Environment>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -35,7 +26,7 @@ pub struct Workspace {
     #[serde(default = "default_generated_dir", rename = "generated-dir")]
     pub generated_dir: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub global_env: Option<App>,
+    pub global_env: Option<Environment>,
 }
 
 impl Default for Workspace {
@@ -54,6 +45,8 @@ impl Default for Workspace {
 #[serde(deny_unknown_fields)]
 pub struct Environment {
     pub config: String,
+    pub test: TestPolicy,
+    pub lint: LintPolicy,
     pub modules: Vec<ModuleRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run: Option<RunPolicy>,
@@ -129,15 +122,40 @@ pub struct BuildPolicy {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(try_from = "String", into = "String")]
 pub enum BuildProfile {
     Debug,
     Release,
+    Custom(String),
+}
+
+impl TryFrom<String> for BuildProfile {
+    type Error = std::convert::Infallible;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(match value.as_str() {
+            "debug" => BuildProfile::Debug,
+            "release" => BuildProfile::Release,
+            _ => BuildProfile::Custom(value),
+        })
+    }
+}
+
+impl From<BuildProfile> for String {
+    fn from(profile: BuildProfile) -> Self {
+        match profile {
+            BuildProfile::Debug => "debug".to_string(),
+            BuildProfile::Release => "release".to_string(),
+            BuildProfile::Custom(value) => value,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct LintPolicy {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r#ref: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dylint: Option<Dylint>,
     #[serde(default = "default_true")]
@@ -159,6 +177,8 @@ pub struct Dylint {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct TestPolicy {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r#ref: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runner: Option<TestRunner>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -254,18 +274,14 @@ mod tests {
     fn parse_manifest_example_toml() {
         let manifest: Manifest = toml::from_str(include_str!("manifest_example.toml")).unwrap();
         assert_eq!(manifest.workspace.config_dir, "config");
-        assert_eq!(manifest.env.len(), 1);
+        assert_eq!(manifest.apps.len(), 1);
 
-        let app = manifest.env.get("app1").unwrap();
-        assert!(app.environments.get("dev").is_some());
-        assert!(app.environments.get("prod").is_some());
-        assert_eq!(app.lint.len(), 1);
-        assert_eq!(app.lint.get("default").unwrap().clippy, true);
-        assert_eq!(app.test.len(), 1);
-        assert_eq!(
-            app.test.get("default").unwrap().runner.as_ref().unwrap(),
-            &TestRunner::Nextest
-        );
+        let app = manifest.apps.get("app1").unwrap();
+        assert_eq!(app.len(), 2);
+        let dev = app.get("dev").unwrap();
+        let _prod = app.get("prod").unwrap();
+        assert_eq!(dev.lint.clippy, true);
+        assert_eq!(dev.test.runner.as_ref().unwrap(), &TestRunner::Nextest);
         // Add more assertions if required
     }
 

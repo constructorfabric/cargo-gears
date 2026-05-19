@@ -4,7 +4,7 @@ root = "." # default
 config-dir = "config" # default
 generated-dir = ".cyberfabric" # default
 
-[env.app1.dev]
+[apps.app1.dev]
 config = "app1-dev.yml" # relative from config_dir
 modules = [
     {
@@ -30,7 +30,7 @@ build = {
     profile = "debug"
 }
 
-[env.app1.lint.default]
+[apps.app1.dev.lint]
 dylint = {
     enabled = true,
     skip = [
@@ -43,7 +43,7 @@ fmt = true # by default
 feature-set-test = true # inherits the feature set to test
 
 
-[env.app1.test.default]
+[apps.app1.dev.test]
 runner = "nextest"
 config = "app1-test.yml"
 coverage = true
@@ -58,7 +58,7 @@ feature-set = {
     "module2" = true, # enable all features
 }
 
-[env.app1.prod]
+[apps.app1.prod]
 config = "app1-prod.yml"
 modules = [
     {
@@ -83,6 +83,9 @@ build = {
     name = "app1", # override env name
     profile = "release"
 }
+# inherit lint and test from dev
+lint = { ref = "dev", }
+test = { ref = "dev", }
 
 [templates.module.background-worker]
 source = "git"
