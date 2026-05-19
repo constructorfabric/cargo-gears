@@ -56,18 +56,16 @@ However, the developer can add their own templates by:
 Catalog shape:
 
 ```toml
-[[templates.module]]
-name = "background-worker"
+[templates.module.background-worker]
 source = "git"
-subfolder = "Modules/background-worker"
+url = "ssh://github.com/username/repository.git"
+rev = "eb5a0f5d"
 
-[[templates.config]]
-name = "grpc-service"
+[templates.config.grpc-service]
 source = "local"
 path = "templates/grpc-service"
 
-[[templates.agents]]
-name = "custom-agent"
+[templates.agents.custom-agent]
 source = "git"
 url = "ssh://github.com/cyberfabric/cf-template-rust.git"
 rev = "f1e6ad66"
@@ -121,8 +119,10 @@ Initial module template set:
 
 Module generation should:
 
-- create the module crate
-- add it to workspace members
+- retrieve from the template(through git, local path, or embedded from the CLI)
+- put in @/modules/<name> the module selected
+- replace the placeholders with the expected values (this is done through cargo generate)
+- add the module and its sdk, if any, to workspace members
 - normalize dependencies to workspace dependencies
 - inherit workspace lints
 - optionally add the module to a manifest app

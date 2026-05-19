@@ -6,8 +6,7 @@
 2. [Complete Command Tree](#complete-command-tree)
 3. [Verb Taxonomy](#verb-taxonomy)
 4. [Shared Argument Patterns](#shared-argument-patterns)
-5. [Name Validation](#name-validation)
-6. [Discoverability](#discoverability)
+5. [Discoverability](#discoverability)
 
 ## Design Conventions
 
@@ -142,17 +141,6 @@ Available on: `test`, `lint`.
 
 When a required tool (e.g., `cargo-nextest`, `cargo-llvm-cov`) is not installed, install it automatically instead of
 failing with a suggestion. Not enabled by default to avoid surprising side effects.
-
-## Name Validation
-
-All user-provided names (module names, app names, DB server names) are validated against a kebab-case regex:
-
-```text
-^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$
-```
-
-Validation is enforced at the clap parsing layer using a custom `value_parser` so that invalid names never reach
-command logic.
 
 ## Discoverability
 

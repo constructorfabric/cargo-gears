@@ -30,10 +30,13 @@ build = {
     profile = "debug"
 }
 
-[env.app1.lint]
+[env.app1.lint.default]
 dylint = {
     enabled = true,
-    skip = ["rule-name"],
+    skip = [
+        "de0101_no_serde_in_contract",
+        "de0110_no_schema_for_on_gts_structs",
+    ],
 }
 clippy = true # by default
 fmt = true # by default
@@ -80,3 +83,18 @@ build = {
     name = "app1", # override env name
     profile = "release"
 }
+
+[templates.module.background-worker]
+source = "git"
+url = "ssh://github.com/username/repository.git"
+rev = "eb5a0f5d"
+
+[templates.config.grpc-service]
+source = "local"
+path = "templates/grpc-service"
+
+[templates.agents.custom-agent]
+source = "git"
+url = "ssh://github.com/cyberfabric/cf-template-rust.git"
+rev = "f1e6ad66"
+subfolder = "Agents/custom-agent"

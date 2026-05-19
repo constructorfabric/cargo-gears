@@ -7,26 +7,21 @@ pub struct Manifest {
     #[serde(default)]
     pub workspace: Workspace,
     pub env: Apps,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub templates: BTreeMap<String, toml::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub templates: Option<TemplateRegistry>,
 }
 
 pub type Apps = BTreeMap<String, App>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
 pub struct App {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub dev: Option<Environment>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub prod: Option<Environment>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub test: Option<TestSuites>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub lint: Option<LintPolicy>,
+    #[serde(flatten)]
+    pub environments: BTreeMap<String, Environment>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub test: BTreeMap<String, TestPolicy>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub lint: BTreeMap<String, LintPolicy>,
 }
-
-pub type TestSuites = BTreeMap<String, TestPolicy>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -176,6 +171,38 @@ pub struct TestPolicy {
         skip_serializing_if = "BTreeMap::is_empty"
     )]
     pub feature_set: BTreeMap<String, ModuleFeatureSet>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "custom-command"
+    )]
+    pub custom_command: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct TemplateRegistry {
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub module: BTreeMap<String, TemplateSource>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub config: BTreeMap<String, TemplateSource>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub agents: BTreeMap<String, TemplateSource>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "source", rename_all = "kebab-case")]
+pub enum TemplateSource {
+    Git {
+        url: String,
+        rev: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        subfolder: Option<String>,
+    },
+    Local {
+        path: String,
+    },
+    Embedded,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -230,10 +257,15 @@ mod tests {
         assert_eq!(manifest.env.len(), 1);
 
         let app = manifest.env.get("app1").unwrap();
-        assert!(app.dev.is_some());
-        assert!(app.prod.is_some());
-        assert!(app.lint.is_some());
-        assert!(app.test.as_ref().unwrap().contains_key("default"));
+        assert!(app.environments.get("dev").is_some());
+        assert!(app.environments.get("prod").is_some());
+        assert_eq!(app.lint.len(), 1);
+        assert_eq!(app.lint.get("default").unwrap().clippy, true);
+        assert_eq!(app.test.len(), 1);
+        assert_eq!(
+            app.test.get("default").unwrap().runner.as_ref().unwrap(),
+            &TestRunner::Nextest
+        );
         // Add more assertions if required
     }
 
