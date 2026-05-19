@@ -1,13 +1,13 @@
-# CyberFabric CLI Design
+# Cyberware CLI Design
 
-This folder contains the authoritative design for the CyberFabric CLI, the canonical command-line interface for
-building, validating, and deploying applications on the CyberFabric framework.
+This folder contains the authoritative design for the Cyberware CLI, the canonical command-line interface for
+building, validating, and deploying applications on the Cyberware framework.
 
 ## Purpose
 
-The CyberFabric CLI exists to maximize developer productivity, consistency, and correctness. It acts as a
+The Cyberware CLI exists to maximize developer productivity, consistency, and correctness. It acts as a
 **deterministic enforcement layer** so that applications scaffolded, built, or deployed through it always follow
-CyberFabric standards, architectural patterns, and approved practices.
+Cyberware standards, architectural patterns, and approved practices.
 
 The CLI orchestrates existing Rust ecosystem tooling rather than replacing it. Developers focus on writing modules and
 business logic; Modkit libraries provide the framework runtime; system modules provide generic functionality; and this
@@ -16,15 +16,15 @@ CLI provides the development lifecycle tooling that ties everything together.
 ## Core Goals
 
 - **Enforce consistency** across generated code, configuration, project structure, and developer workflows
-- **Reduce ambiguity** in how developers use the CyberFabric framework
+- **Reduce ambiguity** in how developers use the Cyberware framework
 - **Improve productivity** by automating scaffolding, validation, and framework-specific tasks
 - **Ensure determinism** so outputs are predictable, repeatable, and aligned with organizational standards
-- **Serve as canonical interface** for applying CyberFabric best practices in day-to-day development
+- **Serve as canonical interface** for applying Cyberware best practices in day-to-day development
 - **Support automation** with structured output that LLMs, CI systems, and scripts can consume reliably
 
 ## Key Decision
 
-The **manifest** (`Cyberfabric.toml`) becomes the source of truth for what the CLI generates and orchestrates. Runtime
+The **manifest** (`Cyberware.toml`) becomes the source of truth for what the CLI generates and orchestrates. Runtime
 configuration remains the source of truth for runtime settings.
 
 | Question                                                                                                   | Source             |

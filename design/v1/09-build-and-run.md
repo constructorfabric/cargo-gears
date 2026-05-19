@@ -22,21 +22,21 @@ Both share the same generation pipeline (manifest resolution -> module resolutio
 ### Synopsis
 
 ```bash
-cargo cyberfabric run [--app <app>] [--env <env>] [-c <config>] [-w <workspace>] [--name <name>] [--watch] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
+cargo cyberware run [--app <app>] [--env <env>] [-c <config>] [-w <workspace>] [--name <name>] [--watch] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
 
-1. Resolve manifest app with `cargo cyberfabric run --app app1 --env dev`.
-2. Generate `.cyberfabric/<app>-<env>/` with a cargo manifest, a main function and a .cargo config.
+1. Resolve manifest app with `cargo cyberware run --app app1 --env dev`.
+2. Generate `.cyberware/<app>-<env>/` with a cargo manifest, a main function and a .cargo config.
 3. Execute `cargo run` inside the generated project while providing as first argument the resolved config path.
 
 ### Name Resolution
 
-| Input                      | Generated Project Path      |
-|----------------------------|-----------------------------|
-| `--app app1 --env dev`     | `.cyberfabric/app1-dev/`    |
-| `--name demo-server`       | `.cyberfabric/demo-server/` |
+| Input                  | Generated Project Path    |
+|------------------------|---------------------------|
+| `--app app1 --env dev` | `.cyberware/app1-dev/`    |
+| `--name demo-server`   | `.cyberware/demo-server/` |
 
 `--name` always takes highest precedence.
 
@@ -45,7 +45,7 @@ cargo cyberfabric run [--app <app>] [--env <env>] [-c <config>] [-w <workspace>]
 ### Synopsis
 
 ```bash
-cargo cyberfabric build [--app <app>] [--env <env>] [-c <config>] [-w <workspace>] [--name <name>] [--output <output>] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
+cargo cyberware build [--app <app>] [--env <env>] [-c <config>] [-w <workspace>] [--name <name>] [--output <output>] [--otel] [--no-otel] [--fips] [--no-fips] [--release] [--clean] [--dry-run]
 ```
 
 ### Behavior
@@ -55,18 +55,18 @@ Same pipeline as `run`, but invokes `cargo build` instead of `cargo run` and sup
 ## Build Outputs
 
 ```bash
-cargo cyberfabric build --app app1 --env prod
+cargo cyberware build --app app1 --env prod
 ```
 
 ### Binary Build
 
 ```toml
-[env.app1.prod.build]
+[apps.app1.prod.build]
 profile = "release"
 name = "app1"
 ```
 
-The generated project path is deterministic: `.cyberfabric/<app>-<env>/`. The binary is placed in the generated
+The generated project path is deterministic: `.cyberware/<app>-<env>/`. The binary is placed in the generated
 project's `target/<profile>/` directory.
 
 ## Feature Flags
@@ -76,7 +76,7 @@ FIPS and OpenTelemetry are Cargo features on the generated project, controlled b
 ### FIPS
 
 ```toml
-[env.app1.prod.run]
+[apps.app1.prod.run]
 fips = true
 ```
 
@@ -92,7 +92,7 @@ Validation:
 ### OpenTelemetry
 
 ```toml
-[env.app1.prod.run]
+[apps.app1.prod.run]
 otel = true
 ```
 
@@ -113,7 +113,7 @@ opentelemetry:
 ### Synopsis
 
 ```bash
-cargo cyberfabric run --app app1 --env dev --watch
+cargo cyberware run --app app1 --env dev --watch
 ```
 
 ### Watched Paths
@@ -122,7 +122,7 @@ Watch mode observes:
 
 - Workspace module source directories (path-based dependencies).
 - Runtime config file.
-- Manifest file (`Cyberfabric.toml`).
+- Manifest file (`Cyberware.toml`).
 - Workspace `Cargo.toml`.
 
 When a change is detected, the CLI:
@@ -137,10 +137,10 @@ All notify events will have a debounced of 300ms
 To override default values(detected members, configs and generated files)
 
 ```toml
-[env.app1.dev.run.watch]
+[apps.app1.dev.run.watch]
 enabled = true
-paths = ["modules", "config/app1-dev.yml", "Cyberfabric.toml"]
-ignore = ["target", ".cyberfabric"]
+paths = ["modules", "config/app1-dev.yml", "Cyberware.toml"]
+ignore = ["target", ".cyberware"]
 ```
 
 ### Watch Flags
@@ -161,7 +161,7 @@ customization from the manifest follows.
 For all action commands, settings are resolved in this order:
 
 1. **CLI flags** (highest precedence).
-2. **App manifest policy** (`env.<app>.<env>.run`, `.build`).
+2. **App manifest policy** (`apps.<app>.<env>.run`, `.build`).
 3. **CLI defaults** (lowest precedence).
 
 ### Resolved Run Model
@@ -169,7 +169,7 @@ For all action commands, settings are resolved in this order:
 The resolved model can be inspected with `--dry-run`:
 
 ```bash
-cargo cyberfabric run --app app1 --env dev --dry-run --format json
+cargo cyberware run --app app1 --env dev --dry-run --format json
 ```
 
 ```json
@@ -177,7 +177,7 @@ cargo cyberfabric run --app app1 --env dev --dry-run --format json
   "environment": "dev",
   "app": "app1",
   "config": "config/app1-dev.yml",
-  "generated_project": ".cyberfabric/app1-dev",
+  "generated_project": ".cyberware/app1-dev",
   "modules": [
     "background-worker",
     "credstore"
@@ -199,10 +199,10 @@ It prints the resolved execution plan without performing side effects:
 
 ## Generated Server Project
 
-The generated project under `.cyberfabric/<name>/` contains:
+The generated project under `.cyberware/<name>/` contains:
 
 ```text
-.cyberfabric/<name>/
+.cyberware/<name>/
 ├── Cargo.toml             # Generated from manifest module list
 ├── .cargo/
 │   └── config.toml        # Cargo configuration
@@ -271,9 +271,9 @@ target-dir = "../../target"
 build-dir = "../../target"
 ```
 
-### `.cyberfabric/` Is Derived Output
+### `.cyberware/` Is Derived Output
 
-The `.cyberfabric/` directory is **derived output** that can be regenerated at any time. It is:
+The `.cyberware/` directory is **derived output** that can be regenerated at any time. It is:
 
 - Listed in `.gitignore`.
 - Never manually edited.

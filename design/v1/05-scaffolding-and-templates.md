@@ -16,7 +16,7 @@
 
 Template generation should become a first-class CLI surface instead of being
 limited to `init` and `mod add`. The goal is to let users scaffold a full
-CyberFabric workspace, individual modules, runtime config, CLI manifest, build
+Cyberware workspace, individual modules, runtime config, CLI manifest, build
 artifacts, and automation guidance files.
 
 ### Current Behavior
@@ -32,13 +32,13 @@ Current generation behavior:
 We replace the current `init` and `mod add` commands with a more structured one:
 
 ```text
-cargo cyberfabric generate workspace <path> [flags]
-cargo cyberfabric generate module --template <template> [--name <name>] [flags]
-cargo cyberfabric generate config <kind> [flags]
-cargo cyberfabric generate manifest [flags]
-cargo cyberfabric generate build <kind> [flags]
-cargo cyberfabric generate agents [flags]
-cargo cyberfabric generate skill [flags]
+cargo cyberware generate workspace <path> [flags]
+cargo cyberware generate module --template <template> [--name <name>] [flags]
+cargo cyberware generate config <kind> [flags]
+cargo cyberware generate manifest [flags]
+cargo cyberware generate build <kind> [flags]
+cargo cyberware generate agents [flags]
+cargo cyberware generate skill [flags]
 ```
 
 Aliases:
@@ -67,20 +67,20 @@ path = "templates/grpc-service"
 
 [templates.agents.custom-agent]
 source = "git"
-url = "ssh://github.com/cyberfabric/cf-template-rust.git"
+url = "ssh://github.com/cyberware/cf-template-rust.git"
 rev = "f1e6ad66"
 subfolder = "Agents/custom-agent"
 ```
 
-This catalog is optional and can be placed in `Cyberfabric-templates.toml` or by its own section in the manifest.
+This catalog is optional and can be placed in `Cyberware-templates.toml` or by its own section in the manifest.
 
 ## Initial Scaffolding
 
 Command:
 
 ```text
-cargo cyberfabric generate workspace ./my-app [--name my-app]
-cargo cyberfabric init ./my-app [--name my-app]
+cargo cyberware generate workspace ./my-app [--name my-app]
+cargo cyberware init ./my-app [--name my-app]
 ```
 
 Should create:
@@ -88,10 +88,10 @@ Should create:
 - `Cargo.toml` workspace
 - `modules/` (with a simple module)
 - `config/` (with a simple default runtime config with that previous module)
-- `Cyberfabric.toml` (manifest to run the previous module with the config)
-- `.cyberfabric/` ignored by Git in .gitignore
+- `Cyberware.toml` (manifest to run the previous module with the config)
+- `.cyberware/` ignored by Git in .gitignore
 - optional `AGENTS.md`, `CLAUDE.md`
-- optional `SKILL.md` in `.agents/skills/cyberfabric` or `.claude/skills/cyberfabric`
+- optional `SKILL.md` in `.agents/skills/cyberware` or `.claude/skills/cyberware`
 - optional Docker build templates in `deploy/`
 
 Recommended flags:
@@ -106,7 +106,7 @@ Recommended flags:
 Command:
 
 ```text
-cargo cyberfabric generate module --template background-worker --name jobs
+cargo cyberware generate module --template background-worker --name jobs
 ```
 
 Initial module template set:
@@ -131,7 +131,7 @@ Module generation should:
 Recommended flags:
 
 ```text
---add-to-manifest env.<app>.dev,env.<app>.prod
+--add-to-manifest apps.<app>.dev,apps.<app>.prod
 --add-to-config config/app-dev.yml,config/app-prod.yml
 ```
 
@@ -140,7 +140,7 @@ Recommended flags:
 Command:
 
 ```text
-cargo cyberfabric generate config --app app1 --env dev --name custom_name
+cargo cyberware generate config --app app1 --env dev --name custom_name
 ```
 
 Config templates:
@@ -165,10 +165,10 @@ contain runtime values.
 Command:
 
 ```text
-cargo cyberfabric generate manifest
+cargo cyberware generate manifest
 ```
 
-Should create `Cyberfabric.toml` and optionally infer:
+Should create `Cyberware.toml` and optionally infer:
 
 - generate a default config in `config/` based on the app/environment pair
 - local modules from workspace metadata
@@ -188,8 +188,8 @@ Recommended flags:
 Commands:
 
 ```text
-cargo cyberfabric generate ai --agents
-cargo cyberfabric generate ai --skill --provider <provider>
+cargo cyberware generate ai --agents
+cargo cyberware generate ai --skill --provider <provider>
 ```
 
 `AGENTS.md` should include:
@@ -206,6 +206,6 @@ cargo cyberfabric generate ai --skill --provider <provider>
 - common workflows
 - schema snippets
 - examples that prefer manifest-first commands
-- warning that generated `.cyberfabric/` is derived output
+- warning that generated `.cyberware/` is derived output
 
 These templates are useful for humans, Codex-like coding agents, and CI bots.

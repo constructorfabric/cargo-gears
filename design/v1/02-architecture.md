@@ -31,7 +31,7 @@ crates/
 
 - **`core`** owns the manifest and config domain types, validation logic, and module resolution. Extracting this from
   `cli` enables unit testing without clap and enables reuse from a potential library API.
-- **`codegen`** owns the generation of `.cyberfabric/<name>/` projects. Isolating generation makes it testable with
+- **`codegen`** owns the generation of `.cyberware/<name>/` projects. Isolating generation makes it testable with
   snapshot assertions and decouples it from command parsing.
 - **`templates`** owns the template registry and `cargo-generate` integration. Separating this from `cli` allows
   template logic to evolve independently.
@@ -46,11 +46,11 @@ members when the API stabilizes.
 Every command that builds or runs follows this pipeline:
 
 ```text
-1. Discover manifest (Cyberfabric.toml or --manifest)
+1. Discover manifest (Cyberware.toml or --manifest)
 2. Select app and environment (--app, --env, or defaults)
 3. Validate manifest structure and references
 4. Resolve modules (local discovery + registry lookup)
-5. Generate server project (.cyberfabric/<app>-<env>/)
+5. Generate server project (.cyberware/<app>-<env>/)
 6. Execute operation (cargo build, cargo run, etc.)
 ```
 
@@ -126,5 +126,5 @@ The architecture provides these extension points without requiring a plugin syst
 - **Module sources**: the `ModuleSource` enum can be extended for private registries.
 
 A formal plugin system (e.g., WASM-based or subprocess-based) is a future consideration. The current extension model
-is sufficient for the CyberFabric team's needs and avoids the complexity of a plugin API before usage patterns are
+is sufficient for the Cyberware team's needs and avoids the complexity of a plugin API before usage patterns are
 established.

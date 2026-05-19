@@ -10,7 +10,7 @@
 
 ## Overview
 
-The CyberFabric CLI is a **deterministic enforcement layer** for the CyberFabric framework. It exists because:
+The Cyberware CLI is a **deterministic enforcement layer** for the Cyberware framework. It exists because:
 
 - Framework adoption has a high cognitive barrier regardless of developer background.
 - LLM-generated code is fast but non-deterministic and can drift from approved conventions.
@@ -18,23 +18,23 @@ The CyberFabric CLI is a **deterministic enforcement layer** for the CyberFabric
 - Without a canonical tool, teams make divergent decisions that compound over time.
 
 The CLI makes the correct path the easiest path. Every command, default, and validation rule should guide developers
-toward CyberFabric-approved patterns without requiring them to read or memorize the framework's internal design.
+toward Cyberware-approved patterns without requiring them to read or memorize the framework's internal design.
 
 ## Core Principles
 
 ### 1. Convention Over Configuration
 
-Every command has sensible defaults derived from CyberFabric conventions. Explicit overrides are available but never
+Every command has sensible defaults derived from Cyberware conventions. Explicit overrides are available but never
 required for the common case.
 
 - `new` produces a workspace that compiles and runs without further configuration.
 - `lint` runs all quality gates by default; individual suites are opt-in only when narrowing scope.
 - `run` resolves config path, module set, and features from the manifest without requiring flags.
-- Generated project paths follow a deterministic naming convention: `.cyberfabric/<app>-<env>`.
+- Generated project paths follow a deterministic naming convention: `.cyberware/<app>-<env>`.
 
 ### 2. Manifest-First Orchestration
 
-The manifest (`Cyberfabric.toml`) is the single source of truth for what the CLI generates and orchestrates. Runtime
+The manifest (`Cyberware.toml`) is the single source of truth for what the CLI generates and orchestrates. Runtime
 configuration is the single source of truth for runtime values. This separation eliminates the ambiguity of the current
 config-centric model where dependency metadata and runtime values coexist.
 
@@ -156,4 +156,4 @@ The CLI intentionally does not:
 - **Enforce at runtime.** The CLI enforces standards at development time. Runtime enforcement is the framework's
   responsibility.
 - **Provide a GUI.** The CLI is a terminal tool. IDE integration should consume the CLI's JSON output, not replace it.
-- **Support non-Rust languages.** CyberFabric is a Rust framework. The CLI is Rust-specific.
+- **Support non-Rust languages.** Cyberware is a Rust framework. The CLI is Rust-specific.

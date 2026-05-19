@@ -30,11 +30,11 @@ workspace/app overview as well.
 ## Proposed Commands
 
 ```text
-cargo cyberfabric list modules
-cargo cyberfabric list system-modules
-cargo cyberfabric list local-modules
-cargo cyberfabric list configs
-cargo cyberfabric list apps
+cargo cyberware list modules
+cargo cyberware list system-modules
+cargo cyberware list local-modules
+cargo cyberware list configs
+cargo cyberware list apps
 ```
 
 ## System Modules
@@ -42,7 +42,7 @@ cargo cyberfabric list apps
 Command:
 
 ```text
-cargo cyberfabric list system-modules [--verbose] [--registry crates.io]
+cargo cyberware list system-modules [--verbose] [--registry crates.io]
 ```
 
 Output should include:
@@ -82,7 +82,7 @@ persist that resolved value instead of depending on time-relative "latest" wordi
 Command:
 
 ```text
-cargo cyberfabric list local-modules [--verbose]
+cargo cyberware list local-modules [--verbose]
 ```
 
 Output should include:
@@ -103,9 +103,9 @@ This can reuse existing `get_module_name_from_crate()` discovery.
 Commands:
 
 ```text
-cargo cyberfabric list configs
-cargo cyberfabric list apps
-cargo cyberfabric list modules --app app1 --env dev
+cargo cyberware list configs
+cargo cyberware list apps
+cargo cyberware list modules --app app1 --env dev
 ```
 
 `list configs` should show:

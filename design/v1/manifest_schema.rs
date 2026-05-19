@@ -1,5 +1,7 @@
+use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -19,12 +21,12 @@ pub type Environments = BTreeMap<String, Environment>;
 pub struct Workspace {
     #[serde(default = "default_version")]
     pub version: u32,
-    #[serde(default = "default_workspace_root")]
-    pub root: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub root: Option<PathBuf>,
     #[serde(default = "default_config_dir", rename = "config-dir")]
-    pub config_dir: String,
+    pub config_dir: PathBuf,
     #[serde(default = "default_generated_dir", rename = "generated-dir")]
-    pub generated_dir: String,
+    pub generated_dir: PathBuf,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub global_env: Option<Environment>,
 }
@@ -33,7 +35,7 @@ impl Default for Workspace {
     fn default() -> Self {
         Self {
             version: 1,
-            root: default_workspace_root(),
+            root: None,
             config_dir: default_config_dir(),
             generated_dir: default_generated_dir(),
             global_env: None,
@@ -44,7 +46,7 @@ impl Default for Workspace {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Environment {
-    pub config: String,
+    pub config: PathBuf,
     pub test: TestPolicy,
     pub lint: LintPolicy,
     pub modules: Vec<ModuleRef>,
@@ -59,7 +61,6 @@ pub struct Environment {
 pub enum ModuleRef {
     Local(LocalModuleRef),
     Remote(RemoteModuleRef),
-    Registry(RegistryModuleRef),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -67,7 +68,7 @@ pub enum ModuleRef {
 pub struct LocalModuleRef {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
+    pub version: Option<VersionReq>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,
 }
@@ -76,18 +77,10 @@ pub struct LocalModuleRef {
 #[serde(deny_unknown_fields)]
 pub struct RemoteModuleRef {
     pub name: String,
-    pub version: String,
+    pub version: VersionReq,
+    pub package: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub package: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct RegistryModuleRef {
-    pub name: String,
-    pub version: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub package: Option<String>,
+    pub registry: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -107,9 +100,9 @@ pub struct WatchPolicy {
     #[serde(default = "default_true")]
     pub enabled: bool,
     #[serde(default)]
-    pub paths: Vec<String>,
+    pub paths: Vec<PathBuf>,
     #[serde(default)]
-    pub ignore: Vec<String>,
+    pub ignore: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -181,8 +174,6 @@ pub struct TestPolicy {
     pub r#ref: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runner: Option<TestRunner>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub config: Option<String>,
     #[serde(default)]
     pub coverage: bool,
     #[serde(
@@ -250,16 +241,12 @@ fn default_version() -> u32 {
     1
 }
 
-fn default_workspace_root() -> String {
-    ".".to_owned()
+fn default_config_dir() -> PathBuf {
+    PathBuf::from("config")
 }
 
-fn default_config_dir() -> String {
-    "config".to_owned()
-}
-
-fn default_generated_dir() -> String {
-    ".cyberfabric".to_owned()
+fn default_generated_dir() -> PathBuf {
+    PathBuf::from(".cyberware")
 }
 
 const fn default_true() -> bool {
@@ -273,7 +260,7 @@ mod tests {
     #[test]
     fn parse_manifest_example_toml() {
         let manifest: Manifest = toml::from_str(include_str!("manifest_example.toml")).unwrap();
-        assert_eq!(manifest.workspace.config_dir, "config");
+        assert!(manifest.workspace.config_dir.ends_with("config"));
         assert_eq!(manifest.apps.len(), 1);
 
         let app = manifest.apps.get("app1").unwrap();
@@ -286,16 +273,16 @@ mod tests {
     }
 
     #[test]
-    fn rejects_environment_shape_under_lint() {
+    fn rejects_environment_missing_policy_shape() {
         let err = toml::from_str::<Manifest>(
             r#"
-[env.app1.lint]
+[apps.app1.dev]
 config = "app1-dev.yml"
 modules = []
 "#,
         )
         .unwrap_err();
 
-        assert!(err.message().contains("unknown field `config`"));
+        assert!(err.message().contains("missing field"));
     }
 }

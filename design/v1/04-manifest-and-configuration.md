@@ -15,7 +15,7 @@ The manifest detaches the **orchestration layer** from the **configuration layer
 module dependency metadata that the CLI uses to shape generated `Cargo.toml` and `src/main.rs`. The manifest makes this
 explicit:
 
-- **Manifest** (`Cyberfabric.toml`): what the CLI builds, how it builds it, and which policies apply.
+- **Manifest** (`Cyberware.toml`): what the CLI builds, how it builds it, and which policies apply.
 - **Runtime config** (`config/*.yml`): what the generated server reads at runtime.
 
 This separation eliminates metadata duplication, reduces config-file complexity, and makes the CLI's behavior
@@ -31,7 +31,7 @@ For the rest of proposed commands, the manifest will not be required. For exampl
 Default file name:
 
 ```text
-Cyberfabric.toml
+Cyberware.toml
 ```
 
 TOML is recommended because the current ecosystem in Rust for handling `toml`, with the `toml_edit` crate, allows us to
@@ -55,7 +55,6 @@ Initial enum:
 
 - `local`: discovered from current Cargo workspace metadata and `src/module.rs`.
 - `remote`: resolved from the configured registry, defaulting to `crates.io`.
-- `registry`: explicit registry-qualified remote module.
 
 For `local`, we treat it as module name first, then package
 name and library name as a fallback, and print the resolved package name in verbose output.
@@ -65,13 +64,13 @@ Recommendation: Always use the `package`'s name to be precise.
 ## Commands
 
 ```text
-cargo cyberfabric manifest [--manifest Cyberfabric.toml] <CMD>
-cargo cyberfabric manifest validate 
-cargo cyberfabric manifest ls [flags]
-cargo cyberfabric manifest add <app> <env> [<module-ref1> <module-ref2> ...]
-cargo cyberfabric manifest edit <app> <env> [flags]
-cargo cyberfabric manifest rm <app> <env> <module-ref>
-cargo cyberfabric manifest render <app> <env>
+cargo cyberware manifest [--manifest Cyberware.toml] <CMD>
+cargo cyberware manifest validate
+cargo cyberware manifest ls [flags]
+cargo cyberware manifest add <app> <env> [<module-ref1> <module-ref2> ...]
+cargo cyberware manifest edit <app> <env> [flags]
+cargo cyberware manifest rm <app> <env> <module-ref>
+cargo cyberware manifest render <app> <env>
 ```
 
 `manifest render` should produce the resolved generation model:
@@ -80,7 +79,7 @@ cargo cyberfabric manifest render <app> <env>
 - module dependency metadata
 - generated Cargo dependencies
 - generated features
-- generated `.cyberfabric` inputs
+- generated `.cyberware` inputs
 
 This command is useful for debugging and for LLMs because it exposes the exact
 input to generation without executing Cargo.
@@ -110,6 +109,6 @@ New flow:
    `--config`.
 4. Resolve modules from manifest.
 5. Merge discovered metadata with manifest constraints.
-6. Generate `.cyberfabric/<app>-<env>` or configured generated name.
+6. Generate `.cyberware/<app>-<env>` or configured generated name.
 7. Provide the relative path in the first argument to the config file.
 8. Run the selected operation.

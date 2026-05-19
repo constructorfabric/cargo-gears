@@ -1,16 +1,16 @@
 [workspace]
 version = 1
-root = "." # default
+root = "." # default, current working directory
 config-dir = "config" # default
-generated-dir = ".cyberfabric" # default
+generated-dir = ".cyberware" # default
 
 [apps.app1.dev]
 config = "app1-dev.yml" # relative from config_dir
 modules = [
     {
         name = "module1",
-        source = "local", # local | remote | registry
-        version = "1.2.0", # required for remote and registry
+        source = "local", # local | remote
+        version = "1.2.0", # required for remote
         package = "crate1",
     },
     {
@@ -18,6 +18,7 @@ modules = [
         source = "remote",
         version = "0.1.0",
         package = "crate2",
+        registry = "https://crates.io" # optional, by default is crates.io
     }
 ]
 run = {
@@ -45,7 +46,6 @@ feature-set-test = true # inherits the feature set to test
 
 [apps.app1.dev.test]
 runner = "nextest"
-config = "app1-test.yml"
 coverage = true
 feature-set = {
     "module1" = [
@@ -98,6 +98,6 @@ path = "templates/grpc-service"
 
 [templates.agents.custom-agent]
 source = "git"
-url = "ssh://github.com/cyberfabric/cf-template-rust.git"
+url = "ssh://github.com/cyberware/cf-template-rust.git"
 rev = "f1e6ad66"
 subfolder = "Agents/custom-agent"

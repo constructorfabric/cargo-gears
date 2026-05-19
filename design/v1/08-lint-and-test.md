@@ -52,8 +52,8 @@ Dylint runs embedded custom rules when the binary is built with `dylint-rules`.
 Add lint targets from the manifest:
 
 ```text
-cargo cyberfabric lint
-cargo cyberfabric lint --app app1
+cargo cyberware lint
+cargo cyberware lint --app app1
 ```
 
 ### Manifest Integration
@@ -61,7 +61,7 @@ cargo cyberfabric lint --app app1
 Manifest example:
 
 ```toml
-[env.app1.lint]
+[apps.app1.dev.lint]
 skip-dylint = [
     "rule-name"
 ]
@@ -105,12 +105,12 @@ command and fail unless `--install-missing-tools` is passed.
 
 ### Testing matrix
 
-Testing matrix is a list of test sets that can be run with `cargo cyberfabric test --app app1 --matrix default`.
+Testing matrix is a list of test sets that can be run with `cargo cyberware test --app app1 --env dev --matrix default`.
+Test execution uses the runtime config declared by the selected environment, for example `apps.app1.dev.config`.
 
 ```toml
-[env.app1.test.default]
+[apps.app1.dev.test.default]
 runner = "nextest"
-config = "app1-test.yml"
 feature-set = {
     "module1" = [
         ["unit", "integration"],
@@ -124,7 +124,7 @@ feature-set = {
 ```
 
 ```toml
-[env.app1.test.integration]
+[apps.app1.dev.test.integration]
 custom-command = "./scripts/integration-tests.sh"
 # custom-command = "uv run e2e/python/test_cases.py"
 ```
@@ -142,9 +142,9 @@ cargo llvm-cov
 Suggested commands:
 
 ```text
-cargo cyberfabric test --coverage
-cargo cyberfabric test --coverage --coverage-format lcov
-cargo cyberfabric test --coverage --coverage-format html
+cargo cyberware test --coverage
+cargo cyberware test --coverage --coverage-format lcov
+cargo cyberware test --coverage --coverage-format html
 ```
 
 Coverage format enum:
