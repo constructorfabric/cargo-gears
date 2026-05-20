@@ -60,3 +60,7 @@ These are expanded in [01-principles-and-philosophy.md](v1/01-principles-and-phi
 3. **Deterministic outputs** -- same inputs always produce the same artifacts
 4. **Fail fast, fail clearly** -- validate early, report structured errors
 5. **Orchestrate, don't replace** -- wrap existing Rust tools, never reinvent them
+
+## ROADMAP
+
+The roadmap is in [ROADMAP.md](v1/ROADMAP.md).
