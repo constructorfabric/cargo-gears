@@ -206,7 +206,12 @@ pub struct TemplateRegistry {
 pub enum TemplateSource {
     Git {
         url: String,
-        rev: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        revision: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tag: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        branch: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         subfolder: Option<String>,
     },

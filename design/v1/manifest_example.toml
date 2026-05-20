@@ -90,7 +90,7 @@ test = { ref = "dev", }
 [templates.module.background-worker]
 source = "git"
 url = "ssh://github.com/username/repository.git"
-rev = "eb5a0f5d"
+revision = "eb5a0f5d"
 
 [templates.config.grpc-service]
 source = "local"
@@ -99,5 +99,5 @@ path = "templates/grpc-service"
 [templates.agents.custom-agent]
 source = "git"
 url = "ssh://github.com/cyberware/cf-template-rust.git"
-rev = "f1e6ad66"
+tag = "0.2"
 subfolder = "Agents/custom-agent"
