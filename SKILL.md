@@ -7,7 +7,8 @@ description: cli reference to help with the development of cyberfabric framework
 
 # CyberFabric CLI Skills Guide
 
-This document summarizes the CLI implemented under `crates/cli/src`.
+This document summarizes the CLI parser implemented under `crates/cyberware-cli/src`
+and the orchestration logic implemented under `crates/cyberware-cli-core/src`.
 It focuses on:
 
 - **[command surface]** Every top-level command and nested subcommand

@@ -1,0 +1,37 @@
+[package]
+name = "cyberware-cli"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+description.workspace = true
+readme.workspace = true
+publish = false
+autobins = false
+
+[[bin]]
+name = "cargo-cyberfabric"
+path = "src/main.rs"
+
+[[test]]
+name = "manifest_schema"
+path = "../../design/v1/manifest_schema.rs"
+
+[features]
+default = []
+dylint-rules = ["cyberware-cli-core/dylint-rules"]
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+cyberware-cli-core = { workspace = true }
+semver = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+cyberware-cli-core = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+toml.workspace = true

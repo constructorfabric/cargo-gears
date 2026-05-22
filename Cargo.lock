@@ -395,29 +395,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8d4a3bb8b1e0c1050499d1815f5ab16d04f0959b233085fb31653fbfc9d98f9"
 
 [[package]]
-name = "cli"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "cargo-generate",
- "clap",
- "dylint",
- "flate2",
- "module-parser",
- "notify",
- "reqwest",
- "semver",
- "serde",
- "serde-saphyr",
- "serde_json",
- "tar",
- "tempfile",
- "tokio",
- "toml 1.1.2+spec-1.1.0",
- "toml_edit",
-]
-
-[[package]]
 name = "cmake"
 version = "0.1.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -566,6 +543,43 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2ae9bf77fbf2d39ef573205d554d87e86c12f1994e9ea335b0651b9b278bcf1"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "cyberware-cli"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cyberware-cli-core",
+ "semver",
+ "serde",
+ "toml 1.1.2+spec-1.1.0",
+]
+
+[[package]]
+name = "cyberware-cli-core"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "cargo-generate",
+ "cargo_metadata",
+ "dylint",
+ "flate2",
+ "notify",
+ "prettyplease",
+ "proc-macro2",
+ "reqwest",
+ "semver",
+ "serde",
+ "serde-saphyr",
+ "serde_json",
+ "syn",
+ "tar",
+ "tempfile",
+ "tokio",
+ "toml 1.1.2+spec-1.1.0",
+ "toml_edit",
 ]
 
 [[package]]
@@ -1939,19 +1953,6 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "module-parser"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "cargo_metadata",
- "prettyplease",
- "proc-macro2",
- "serde",
- "syn",
- "tempfile",
 ]
 
 [[package]]
