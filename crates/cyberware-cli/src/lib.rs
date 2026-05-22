@@ -45,17 +45,23 @@ pub enum Commands {
 
 impl Cli {
     pub fn run(self) -> anyhow::Result<()> {
-        match self.command {
-            Commands::Init(init) => init.run(),
-            Commands::Mod(r#mod) => r#mod.run(),
-            Commands::Config(config) => config.run(),
-            Commands::Docs(docs) => docs.run(),
-            Commands::Lint(lint) => lint.run(),
-            Commands::Test(test) => test.run(),
-            Commands::Tools(tools) => tools.run(),
-            Commands::Run(run) => run.run(),
-            Commands::Build(build) => build.run(),
-            Commands::Deploy(deploy) => deploy.run(),
+        cyberware_cli_core::CyberfabricCommand::from(self).run()
+    }
+}
+
+impl From<Cli> for cyberware_cli_core::CyberfabricCommand {
+    fn from(cli: Cli) -> Self {
+        match cli.command {
+            Commands::Init(init) => Self::Init(init.into()),
+            Commands::Mod(r#mod) => Self::Mod(r#mod.into()),
+            Commands::Config(config) => Self::Config((*config).into()),
+            Commands::Docs(docs) => Self::Docs(docs.into()),
+            Commands::Lint(lint) => Self::Lint(lint.into()),
+            Commands::Test(test) => Self::Test(test.into()),
+            Commands::Tools(tools) => Self::Tools(tools.into()),
+            Commands::Run(run) => Self::Run(run.into()),
+            Commands::Build(build) => Self::Build(build.into()),
+            Commands::Deploy(deploy) => Self::Deploy(deploy.into()),
         }
     }
 }

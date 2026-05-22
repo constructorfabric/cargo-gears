@@ -25,15 +25,20 @@ pub struct LintArgs {
 
 impl LintArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::lint::LintArgs {
-            all: self.all,
-            path: self.path,
-            fmt: self.fmt,
-            clippy: self.clippy,
-            strict: self.strict,
-            dylint: self.dylint,
+        cyberware_cli_core::lint::LintArgs::from(self).run()
+    }
+}
+
+impl From<LintArgs> for cyberware_cli_core::lint::LintArgs {
+    fn from(args: LintArgs) -> Self {
+        Self {
+            all: args.all,
+            path: args.path,
+            fmt: args.fmt,
+            clippy: args.clippy,
+            strict: args.strict,
+            dylint: args.dylint,
         }
-        .run()
     }
 }
 

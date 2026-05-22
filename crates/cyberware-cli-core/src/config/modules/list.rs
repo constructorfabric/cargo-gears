@@ -1,4 +1,4 @@
-use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule, load_config, resolve_modules_context};
+use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule, load_config};
 use crate::app_config::ModuleConfig;
 use crate::common::{PathConfigArgs, Registry};
 use crate::module_parser::{
@@ -15,6 +15,7 @@ use std::io::{Cursor, Read};
 use std::path::Path;
 use std::time::Duration;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ListArgs {
     pub path_config: PathConfigArgs,
     /// Show system crates also. If verbose is enabled,
@@ -30,82 +31,80 @@ pub struct ListArgs {
 
 impl ListArgs {
     pub fn run(&self) -> anyhow::Result<()> {
-        let context = resolve_modules_context(&self.path_config)?;
-        let local_modules = get_module_name_from_crate()?;
-        let config = load_config(&context.config_path)?;
-        let enabled_modules: BTreeSet<_> = config.modules.keys().map(String::as_str).collect();
+        self.path_config.with_workspace_dir(|config_path| {
+            let local_modules = get_module_name_from_crate()?;
+            let config = load_config(config_path)?;
+            let enabled_modules: BTreeSet<_> = config.modules.keys().map(String::as_str).collect();
 
-        if self.system {
-            println!("System crates:");
-            if self.verbose {
-                let runtime = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .context("failed to build tokio runtime for registry queries")?;
+            if self.system {
+                println!("System crates:");
+                if self.verbose {
+                    let runtime = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .context("failed to build tokio runtime for registry queries")?;
 
-                let metadata_by_crate =
-                    runtime.block_on(fetch_all_registry_metadata(self.registry))?;
+                    let metadata_by_crate =
+                        runtime.block_on(fetch_all_registry_metadata(self.registry))?;
 
-                for module in SYSTEM_REGISTRY_MODULES {
-                    let Some(metadata) = metadata_by_crate.get(module.crate_name) else {
-                        bail!("missing fetched metadata for '{}'", module.crate_name);
-                    };
+                    for module in SYSTEM_REGISTRY_MODULES {
+                        let Some(metadata) = metadata_by_crate.get(module.crate_name) else {
+                            bail!("missing fetched metadata for '{}'", module.crate_name);
+                        };
 
-                    print_system_registry_metadata(module, metadata);
+                        print_system_registry_metadata(module, metadata);
+                    }
+                } else {
+                    for module in SYSTEM_REGISTRY_MODULES {
+                        println!("  - {}", module.module_name);
+                    }
                 }
+            }
+
+            println!();
+            println!("Workspace modules:");
+            if local_modules.is_empty() {
+                println!("  (none)");
             } else {
-                for module in SYSTEM_REGISTRY_MODULES {
-                    println!("  - {}", module.module_name);
+                let mut local_entries: Vec<_> = local_modules.iter().collect();
+                local_entries.sort_by_key(|(left_name, _)| *left_name);
+                for (module_name, module) in local_entries {
+                    let enabled_label = if enabled_modules.contains(module_name.as_str()) {
+                        " (enabled in config)"
+                    } else {
+                        ""
+                    };
+                    println!("  - {module_name}{enabled_label}");
+
+                    if self.verbose {
+                        print_local_metadata(module);
+                    }
                 }
             }
-        }
 
-        println!();
-        println!("Workspace modules:");
-        if local_modules.is_empty() {
-            println!("  (none)");
-        } else {
-            let mut local_entries: Vec<_> = local_modules.iter().collect();
-            local_entries.sort_by_key(|(left_name, _)| *left_name);
-            for (module_name, module) in local_entries {
-                let enabled_label = if enabled_modules.contains(module_name.as_str()) {
-                    " (enabled in config)"
-                } else {
-                    ""
-                };
-                println!("  - {module_name}{enabled_label}");
+            println!();
+            println!("Modules enabled in config ({}):", config_path.display());
+            if config.modules.is_empty() {
+                println!("  (none)");
+            } else {
+                let mut configured_entries: Vec<_> = config.modules.iter().collect();
+                configured_entries.sort_by_key(|(left_name, _)| *left_name);
+                for (module_name, module) in configured_entries {
+                    let location_label = if local_modules.contains_key(module_name.as_str()) {
+                        " (local workspace)"
+                    } else {
+                        " (not found in workspace)"
+                    };
+                    println!("  - {module_name}{location_label}");
 
-                if self.verbose {
-                    print_local_metadata(module);
+                    if self.verbose {
+                        print_config_metadata(module);
+                    }
                 }
             }
-        }
 
-        println!();
-        println!(
-            "Modules enabled in config ({}):",
-            context.config_path.display()
-        );
-        if config.modules.is_empty() {
-            println!("  (none)");
-        } else {
-            let mut configured_entries: Vec<_> = config.modules.iter().collect();
-            configured_entries.sort_by_key(|(left_name, _)| *left_name);
-            for (module_name, module) in configured_entries {
-                let location_label = if local_modules.contains_key(module_name.as_str()) {
-                    " (local workspace)"
-                } else {
-                    " (not found in workspace)"
-                };
-                println!("  - {module_name}{location_label}");
-
-                if self.verbose {
-                    print_config_metadata(module);
-                }
-            }
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 }
 

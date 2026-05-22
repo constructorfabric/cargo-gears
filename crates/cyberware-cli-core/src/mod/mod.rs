@@ -1,5 +1,6 @@
 pub mod add;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ModArgs {
     pub command: ModCommand,
 }
@@ -10,6 +11,7 @@ impl ModArgs {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum ModCommand {
     Add(add::AddArgs),
 }

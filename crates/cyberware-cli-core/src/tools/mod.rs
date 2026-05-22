@@ -3,6 +3,7 @@ use std::io::{self, Write};
 use std::process::Command;
 use std::{fmt, slice};
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ToolsArgs {
     /// Install all tools
     pub all: bool,

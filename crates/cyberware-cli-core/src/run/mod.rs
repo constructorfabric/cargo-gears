@@ -3,6 +3,7 @@ mod run_loop;
 use crate::common::BuildRunArgs;
 use crate::run::run_loop::RunSignal;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct RunArgs {
     /// Watch for changes
     pub watch: bool,
@@ -11,18 +12,26 @@ pub struct RunArgs {
 
 impl RunArgs {
     pub fn run(&self) -> anyhow::Result<()> {
-        let (config_path, project_name) = self.br_args.resolve_config_and_name()?;
-
-        let rl = run_loop::RunLoop::new(config_path, project_name);
-        run_loop::OTEL.store(self.br_args.otel, std::sync::atomic::Ordering::Relaxed);
-        run_loop::FIPS.store(self.br_args.fips, std::sync::atomic::Ordering::Relaxed);
-        run_loop::RELEASE.store(self.br_args.release, std::sync::atomic::Ordering::Relaxed);
-
-        loop {
-            match rl.run(self.watch)? {
-                RunSignal::Rerun => {}
-                RunSignal::Stop => break Ok(()),
+        self.br_args.path_config.with_workspace_dir(|config_path| {
+            let project_name = crate::common::resolve_generated_project_name(
+                config_path,
+                self.br_args.name.as_deref(),
+            )?;
+            if self.br_args.clean {
+                crate::common::remove_from_file_structure(&project_name, "Cargo.lock")?;
             }
-        }
+
+            let rl = run_loop::RunLoop::new(config_path.to_path_buf(), project_name);
+            run_loop::OTEL.store(self.br_args.otel, std::sync::atomic::Ordering::Relaxed);
+            run_loop::FIPS.store(self.br_args.fips, std::sync::atomic::Ordering::Relaxed);
+            run_loop::RELEASE.store(self.br_args.release, std::sync::atomic::Ordering::Relaxed);
+
+            loop {
+                match rl.run(self.watch)? {
+                    RunSignal::Rerun => {}
+                    RunSignal::Stop => break Ok(()),
+                }
+            }
+        })
     }
 }

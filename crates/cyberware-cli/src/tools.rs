@@ -21,16 +21,21 @@ pub struct ToolsArgs {
 
 impl ToolsArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::tools::ToolsArgs {
-            all: self.all,
-            upgrade: self.upgrade,
-            install: self
+        cyberware_cli_core::tools::ToolsArgs::from(self).run()
+    }
+}
+
+impl From<ToolsArgs> for cyberware_cli_core::tools::ToolsArgs {
+    fn from(args: ToolsArgs) -> Self {
+        Self {
+            all: args.all,
+            upgrade: args.upgrade,
+            install: args
                 .install
                 .map(|tools| tools.into_iter().map(Into::into).collect()),
-            yolo: self.yolo,
-            verbose: self.verbose,
+            yolo: args.yolo,
+            verbose: args.verbose,
         }
-        .run()
     }
 }
 

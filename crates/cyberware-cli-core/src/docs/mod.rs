@@ -16,6 +16,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 /// Resolve Rust source code from a crate
+#[derive(Debug, Eq, PartialEq)]
 pub struct DocsArgs {
     /// Path to the Cargo workspace or crate to inspect
     pub path: PathBuf,

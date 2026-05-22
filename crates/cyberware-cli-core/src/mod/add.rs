@@ -5,6 +5,7 @@ use semver::{Comparator, Op, Version, VersionReq};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
     /// Module template and module name to generate
     pub name: ModuleTemplateName,
@@ -22,7 +23,7 @@ pub struct AddArgs {
     pub branch: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ModuleTemplateName {
     BackgroundWorker,
     ApiDbHandler,

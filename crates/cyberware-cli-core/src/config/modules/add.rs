@@ -1,10 +1,11 @@
-use super::{load_config, resolve_modules_context, save_config, validate_module_name};
+use super::{load_config, save_config, validate_module_name};
 use crate::app_config::AppConfig;
 use crate::common::PathConfigArgs;
 use crate::module_parser::{ConfigModule, ConfigModuleMetadata, get_module_name_from_crate};
 use anyhow::{Context, bail};
 use std::collections::HashMap;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
     pub path_config: PathConfigArgs,
     /// Module name
@@ -23,16 +24,17 @@ pub struct AddArgs {
 
 impl AddArgs {
     pub fn run(&self) -> anyhow::Result<()> {
-        validate_module_name(&self.module)?;
-        let context = resolve_modules_context(&self.path_config)?;
+        self.path_config.with_workspace_dir(|config_path| {
+            validate_module_name(&self.module)?;
 
-        let mut config = load_config(&context.config_path)?;
-        let local_modules = discover_local_modules(self)?;
-        let metadata = build_required_metadata(self, local_modules.get(&self.module))?;
+            let mut config = load_config(config_path)?;
+            let local_modules = discover_local_modules(self)?;
+            let metadata = build_required_metadata(self, local_modules.get(&self.module))?;
 
-        upsert_module_config(&mut config, self, metadata);
+            upsert_module_config(&mut config, self, metadata);
 
-        save_config(&context.config_path, &config)
+            save_config(config_path, &config)
+        })
     }
 }
 

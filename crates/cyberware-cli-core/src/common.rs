@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::LazyLock;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct PathConfigArgs {
     /// Path to the module workspace root
     pub path: Option<PathBuf>,
@@ -27,6 +28,9 @@ pub fn parse_and_chdir(s: &str) -> Result<PathBuf, String> {
         return Err(format!("not a directory: {}", path.display()));
     }
 
+    let path = path
+        .canonicalize()
+        .map_err(|e| format!("failed to canonicalize {}: {e}", path.display()))?;
     env::set_current_dir(&path)
         .map_err(|e| format!("failed to change directory to {}: {e}", path.display()))?;
 
@@ -35,9 +39,69 @@ pub fn parse_and_chdir(s: &str) -> Result<PathBuf, String> {
 
 impl PathConfigArgs {
     pub fn resolve_config(&self) -> anyhow::Result<PathBuf> {
-        self.config
-            .canonicalize()
-            .context("can't canonicalize config")
+        let workspace_path = resolve_workspace_path(self.path.as_deref())?;
+        resolve_config_from_workspace(&workspace_path, &self.config)
+    }
+
+    pub fn with_workspace_dir<T>(
+        &self,
+        f: impl FnOnce(&Path) -> anyhow::Result<T>,
+    ) -> anyhow::Result<T> {
+        let workspace_path = resolve_workspace_path(self.path.as_deref())?;
+        let config_path = resolve_config_from_workspace(&workspace_path, &self.config)?;
+        with_current_dir(&workspace_path, || f(&config_path))
+    }
+}
+
+pub fn resolve_workspace_path(path: Option<&Path>) -> anyhow::Result<PathBuf> {
+    path.map_or_else(workspace_root, |path| {
+        path.canonicalize()
+            .with_context(|| format!("can't canonicalize workspace path {}", path.display()))
+    })
+}
+
+fn resolve_config_from_workspace(workspace_path: &Path, config: &Path) -> anyhow::Result<PathBuf> {
+    let config_path = if config.is_absolute() {
+        config.to_path_buf()
+    } else {
+        workspace_path.join(config)
+    };
+
+    config_path
+        .canonicalize()
+        .with_context(|| format!("can't canonicalize config {}", config_path.display()))
+}
+
+pub fn with_current_dir<T>(
+    path: &Path,
+    f: impl FnOnce() -> anyhow::Result<T>,
+) -> anyhow::Result<T> {
+    let original_dir = env::current_dir().context("can't determine current working directory")?;
+    env::set_current_dir(path)
+        .with_context(|| format!("failed to change directory to {}", path.display()))?;
+
+    let result = f();
+    let restore_result = env::set_current_dir(&original_dir).with_context(|| {
+        format!(
+            "failed to restore current directory to {}",
+            original_dir.display()
+        )
+    });
+
+    restore_result?;
+    result
+}
+
+pub fn with_current_dir_for_optional_path<T>(
+    path: Option<&Path>,
+    f: impl FnOnce() -> anyhow::Result<T>,
+) -> anyhow::Result<T> {
+    match path {
+        Some(path) => {
+            let workspace_path = resolve_workspace_path(Some(path))?;
+            with_current_dir(&workspace_path, f)
+        }
+        None => f(),
     }
 }
 
@@ -45,6 +109,7 @@ pub fn workspace_root() -> anyhow::Result<PathBuf> {
     env::current_dir().context("can't determine current working directory")
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct BuildRunArgs {
     pub path_config: PathConfigArgs,
     /// Use OpenTelemetry tracing
@@ -82,13 +147,14 @@ impl Display for Registry {
 
 impl BuildRunArgs {
     pub fn resolve_config_and_name(&self) -> anyhow::Result<(PathBuf, String)> {
-        let config_path = self.path_config.resolve_config()?;
-        let project_name = resolve_generated_project_name(&config_path, self.name.as_deref())?;
-        if self.clean {
-            remove_from_file_structure(&project_name, "Cargo.lock")?;
-        }
+        self.path_config.with_workspace_dir(|config_path| {
+            let project_name = resolve_generated_project_name(config_path, self.name.as_deref())?;
+            if self.clean {
+                remove_from_file_structure(&project_name, "Cargo.lock")?;
+            }
 
-        Ok((config_path, project_name))
+            Ok((config_path.to_path_buf(), project_name))
+        })
     }
 }
 
@@ -347,7 +413,10 @@ fn create_file_structure(
         .context("can't write to file")
 }
 
-fn remove_from_file_structure(project_name: &str, relative_path: &str) -> anyhow::Result<()> {
+pub(crate) fn remove_from_file_structure(
+    project_name: &str,
+    relative_path: &str,
+) -> anyhow::Result<()> {
     let path = generated_project_dir(project_name)?.join(relative_path);
     if path.exists() {
         fs::remove_file(path).context("can't remove file")?;

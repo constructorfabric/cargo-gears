@@ -12,11 +12,16 @@ pub struct TestArgs {
 
 impl TestArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::test::TestArgs {
-            e2e: self.e2e,
-            module: self.module,
-            coverage: self.coverage,
+        cyberware_cli_core::test::TestArgs::from(self).run()
+    }
+}
+
+impl From<TestArgs> for cyberware_cli_core::test::TestArgs {
+    fn from(args: TestArgs) -> Self {
+        Self {
+            e2e: args.e2e,
+            module: args.module,
+            coverage: args.coverage,
         }
-        .run()
     }
 }

@@ -8,6 +8,7 @@ use crate::app_config::{AppConfig, DbConnConfig};
 pub mod db;
 pub mod modules;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ConfigArgs {
     pub command: ConfigCommand,
 }
@@ -18,6 +19,7 @@ impl ConfigArgs {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum ConfigCommand {
     Mod(modules::ModulesArgs),
     Db(Box<db::DbArgs>),

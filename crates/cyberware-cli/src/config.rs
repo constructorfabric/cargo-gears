@@ -9,10 +9,15 @@ pub struct ConfigArgs {
 
 impl ConfigArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::config::ConfigArgs {
-            command: self.command.into(),
+        cyberware_cli_core::config::ConfigArgs::from(self).run()
+    }
+}
+
+impl From<ConfigArgs> for cyberware_cli_core::config::ConfigArgs {
+    fn from(args: ConfigArgs) -> Self {
+        Self {
+            command: args.command.into(),
         }
-        .run()
     }
 }
 

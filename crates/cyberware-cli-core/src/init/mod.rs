@@ -11,6 +11,7 @@ const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
 /// Content of .dockerignore embedded at compile time
 const DOCKERIGNORE_CONTENT: &str = include_str!("../../shared/.dockerignore");
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct InitArgs {
     /// Path to initialize the project
     pub path: PathBuf,

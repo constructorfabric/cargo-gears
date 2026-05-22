@@ -8,6 +8,7 @@ use std::str::FromStr;
 
 const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct DeployArgs {
     pub path_config: PathConfigArgs,
     /// Tag to apply to the generated Docker image
@@ -24,69 +25,71 @@ pub struct DeployArgs {
 
 impl DeployArgs {
     pub fn run(&self) -> anyhow::Result<()> {
-        let config_path = self.path_config.resolve_config()?;
-        let (manifest_path, artifact_name) = if let Some(manifest) = &self.manifest {
-            let manifest_path = resolve_manifest(manifest)?;
-            let artifact_name = manifest_package_name(&manifest_path)?;
-            (manifest_path, artifact_name)
-        } else {
-            let project_name = common::resolve_generated_project_name(&config_path, None)?;
-            let dependencies = common::get_config(&config_path)?.create_dependencies()?;
-            common::generate_server_structure(&project_name, &dependencies)?;
-            (
-                common::generated_project_dir(&project_name)?.join("Cargo.toml"),
-                project_name,
-            )
-        };
+        self.path_config.with_workspace_dir(|config_path| {
+            let (manifest_path, artifact_name) = if let Some(manifest) = &self.manifest {
+                let manifest_path = resolve_manifest(manifest)?;
+                let artifact_name = manifest_package_name(&manifest_path)?;
+                (manifest_path, artifact_name)
+            } else {
+                let project_name = common::resolve_generated_project_name(config_path, None)?;
+                let dependencies = common::get_config(config_path)?.create_dependencies()?;
+                common::generate_server_structure(&project_name, &dependencies)?;
+                (
+                    common::generated_project_dir(&project_name)?.join("Cargo.toml"),
+                    project_name,
+                )
+            };
 
-        let workspace_root = common::workspace_root()?
-            .canonicalize()
-            .context("can't canonicalize workspace root")?;
-        ensure_dockerfile(&workspace_root)?;
-
-        let manifest_arg = path_inside_build_context(&manifest_path, &workspace_root, "manifest")?;
-        let config_arg = path_inside_build_context(&config_path, &workspace_root, "config")?;
-        let config_ext = config_path
-            .extension()
-            .and_then(std::ffi::OsStr::to_str)
-            .context("config must have a file extension")?;
-
-        let mut command = Command::new("docker");
-        command.arg("build");
-        add_build_arg(&mut command, "BUILDER_MANIFEST", &manifest_arg);
-        add_build_arg(
-            &mut command,
-            "BUILD_MODE",
-            if self.debug { "debug" } else { "release" },
-        );
-        add_build_arg(&mut command, "ARTIFACT_NAME", &artifact_name);
-        add_build_arg(&mut command, "LOCAL_CONFIG_PATH", &config_arg);
-        add_build_arg(&mut command, "CONFIG_EXT", config_ext);
-        for arg in &self.args {
-            command.arg("--build-arg").arg(arg.to_string());
-        }
-        if let Some(tag) = &self.tag {
-            command.arg("--tag").arg(tag);
-        } else {
-            let default_tag = format!("cyberfabric:{}", env!("CARGO_PKG_VERSION"));
-            command.arg("--tag").arg(default_tag);
-        }
-        if let Some(dockerfile) = &self.dockerfile {
-            let canonical_dockerfile = dockerfile
+            let workspace_root = common::workspace_root()?
                 .canonicalize()
-                .with_context(|| format!("dockerfile doesn't exists: {}", dockerfile.display()))?;
-            command.arg("--file").arg(&canonical_dockerfile);
-        }
+                .context("can't canonicalize workspace root")?;
+            ensure_dockerfile(&workspace_root)?;
 
-        command.arg(".");
-        command.current_dir(&workspace_root);
+            let manifest_arg =
+                path_inside_build_context(&manifest_path, &workspace_root, "manifest")?;
+            let config_arg = path_inside_build_context(config_path, &workspace_root, "config")?;
+            let config_ext = config_path
+                .extension()
+                .and_then(std::ffi::OsStr::to_str)
+                .context("config must have a file extension")?;
 
-        let status = command.status().context("failed to run docker build")?;
-        if !status.success() {
-            bail!("docker build exited with {status}");
-        }
+            let mut command = Command::new("docker");
+            command.arg("build");
+            add_build_arg(&mut command, "BUILDER_MANIFEST", &manifest_arg);
+            add_build_arg(
+                &mut command,
+                "BUILD_MODE",
+                if self.debug { "debug" } else { "release" },
+            );
+            add_build_arg(&mut command, "ARTIFACT_NAME", &artifact_name);
+            add_build_arg(&mut command, "LOCAL_CONFIG_PATH", &config_arg);
+            add_build_arg(&mut command, "CONFIG_EXT", config_ext);
+            for arg in &self.args {
+                command.arg("--build-arg").arg(arg.to_string());
+            }
+            if let Some(tag) = &self.tag {
+                command.arg("--tag").arg(tag);
+            } else {
+                let default_tag = format!("cyberfabric:{}", env!("CARGO_PKG_VERSION"));
+                command.arg("--tag").arg(default_tag);
+            }
+            if let Some(dockerfile) = &self.dockerfile {
+                let canonical_dockerfile = dockerfile.canonicalize().with_context(|| {
+                    format!("dockerfile doesn't exists: {}", dockerfile.display())
+                })?;
+                command.arg("--file").arg(&canonical_dockerfile);
+            }
 
-        Ok(())
+            command.arg(".");
+            command.current_dir(&workspace_root);
+
+            let status = command.status().context("failed to run docker build")?;
+            if !status.success() {
+                bail!("docker build exited with {status}");
+            }
+
+            Ok(())
+        })
     }
 }
 

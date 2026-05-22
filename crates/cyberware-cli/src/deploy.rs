@@ -25,14 +25,19 @@ pub struct DeployArgs {
 
 impl DeployArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::deploy::DeployArgs {
-            path_config: self.path_config.into(),
-            tag: self.tag,
-            manifest: self.manifest,
-            debug: self.debug,
-            dockerfile: self.dockerfile,
-            args: self.args,
+        cyberware_cli_core::deploy::DeployArgs::from(self).run()
+    }
+}
+
+impl From<DeployArgs> for cyberware_cli_core::deploy::DeployArgs {
+    fn from(args: DeployArgs) -> Self {
+        Self {
+            path_config: args.path_config.into(),
+            tag: args.tag,
+            manifest: args.manifest,
+            debug: args.debug,
+            dockerfile: args.dockerfile,
+            args: args.args,
         }
-        .run()
     }
 }

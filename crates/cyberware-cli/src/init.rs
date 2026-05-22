@@ -17,7 +17,7 @@ pub struct InitArgs {
     /// url to the git repo
     #[arg(
         long,
-        default_value = "https://github.com/cyberfabric/cf-template-rust"
+        default_value = "git@github.com:cyberfabric/cf-template-rust.git"
     )]
     git: Option<String>,
     /// Subfolder relative to the git repo
@@ -32,16 +32,21 @@ pub struct InitArgs {
 
 impl InitArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::init::InitArgs {
-            path: self.path,
-            name: self.name,
-            verbose: self.verbose,
-            local_path: self.local_path,
-            git: self.git,
-            subfolder: self.subfolder,
-            branch: self.branch,
-            r#override: self.r#override,
+        cyberware_cli_core::init::InitArgs::from(self).run()
+    }
+}
+
+impl From<InitArgs> for cyberware_cli_core::init::InitArgs {
+    fn from(args: InitArgs) -> Self {
+        Self {
+            path: args.path,
+            name: args.name,
+            verbose: args.verbose,
+            local_path: args.local_path,
+            git: args.git,
+            subfolder: args.subfolder,
+            branch: args.branch,
+            r#override: args.r#override,
         }
-        .run()
     }
 }

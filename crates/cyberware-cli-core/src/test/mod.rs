@@ -1,3 +1,4 @@
+#[derive(Debug, Eq, PartialEq)]
 pub struct TestArgs {
     pub e2e: bool,
     pub module: Option<String>,

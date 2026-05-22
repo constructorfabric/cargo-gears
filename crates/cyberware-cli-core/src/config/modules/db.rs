@@ -1,14 +1,16 @@
-use super::{load_config, resolve_modules_context, save_config, validate_module_name};
+use super::{load_config, save_config, validate_module_name};
 use crate::app_config::{AppConfig, DbConnConfig, ModuleConfig};
 use crate::common::PathConfigArgs;
 use crate::config::ensure_conn_payload;
 use anyhow::{Context, bail};
 use std::path::Path;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ModuleDbArgs {
     pub command: ModuleDbCommand,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum ModuleDbCommand {
     /// Add or update (upsert) a module-level database configuration
     Add(AddArgs),
@@ -28,6 +30,7 @@ impl ModuleDbArgs {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
     pub path_config: PathConfigArgs,
     /// Module name under `modules.<module>`
@@ -37,27 +40,29 @@ pub struct AddArgs {
 
 impl AddArgs {
     fn run(&self) -> anyhow::Result<()> {
-        validate_module_db_payload(&self.module, &self.conn)?;
+        self.path_config.with_workspace_dir(|config_path| {
+            validate_module_db_payload(&self.module, &self.conn)?;
 
-        let context = resolve_modules_context(&self.path_config)?;
-        let mut config = load_config(&context.config_path)?;
-        if !config.modules.contains_key(&self.module) {
-            bail!(
-                "module '{}' not found in {}; use `config mod add` first",
-                self.module,
-                context.config_path.display()
-            );
-        }
-        let module_cfg = get_module_cfg_mut(&mut config, &self.module, &context.config_path)?;
-        if let Some(existing) = module_cfg.database.as_mut() {
-            existing.apply_patch(self.conn.clone());
-        } else {
-            module_cfg.database = Some(self.conn.clone());
-        }
-        save_config(&context.config_path, &config)
+            let mut config = load_config(config_path)?;
+            if !config.modules.contains_key(&self.module) {
+                bail!(
+                    "module '{}' not found in {}; use `config mod add` first",
+                    self.module,
+                    config_path.display()
+                );
+            }
+            let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
+            if let Some(existing) = module_cfg.database.as_mut() {
+                existing.apply_patch(self.conn.clone());
+            } else {
+                module_cfg.database = Some(self.conn.clone());
+            }
+            save_config(config_path, &config)
+        })
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct EditArgs {
     pub path_config: PathConfigArgs,
     /// Module name under `modules.<module>`
@@ -67,23 +72,25 @@ pub struct EditArgs {
 
 impl EditArgs {
     fn run(&self) -> anyhow::Result<()> {
-        validate_module_db_payload(&self.module, &self.conn)?;
+        self.path_config.with_workspace_dir(|config_path| {
+            validate_module_db_payload(&self.module, &self.conn)?;
 
-        let context = resolve_modules_context(&self.path_config)?;
-        let mut config = load_config(&context.config_path)?;
-        let module_cfg = get_module_cfg_mut(&mut config, &self.module, &context.config_path)?;
-        let db_cfg = module_cfg.database.as_mut().with_context(|| {
-            format!(
-                "module '{}' has no database config; use `config mod db add` first",
-                self.module
-            )
-        })?;
-        db_cfg.apply_patch(self.conn.clone());
+            let mut config = load_config(config_path)?;
+            let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
+            let db_cfg = module_cfg.database.as_mut().with_context(|| {
+                format!(
+                    "module '{}' has no database config; use `config mod db add` first",
+                    self.module
+                )
+            })?;
+            db_cfg.apply_patch(self.conn.clone());
 
-        save_config(&context.config_path, &config)
+            save_config(config_path, &config)
+        })
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct RemoveArgs {
     pub path_config: PathConfigArgs,
     /// Module name under `modules.<module>`
@@ -92,17 +99,18 @@ pub struct RemoveArgs {
 
 impl RemoveArgs {
     fn run(&self) -> anyhow::Result<()> {
-        validate_module_name(&self.module)?;
+        self.path_config.with_workspace_dir(|config_path| {
+            validate_module_name(&self.module)?;
 
-        let context = resolve_modules_context(&self.path_config)?;
-        let mut config = load_config(&context.config_path)?;
-        let module_cfg = get_module_cfg_mut(&mut config, &self.module, &context.config_path)?;
-        if module_cfg.database.take().is_none() {
-            let module = &self.module;
-            bail!("module '{module}' has no database config");
-        }
+            let mut config = load_config(config_path)?;
+            let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
+            if module_cfg.database.take().is_none() {
+                let module = &self.module;
+                bail!("module '{module}' has no database config");
+            }
 
-        save_config(&context.config_path, &config)
+            save_config(config_path, &config)
+        })
     }
 }
 

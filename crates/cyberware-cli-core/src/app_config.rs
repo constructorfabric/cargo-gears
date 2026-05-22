@@ -202,7 +202,7 @@ pub struct GlobalDatabaseConfig {
 }
 
 /// Reusable DB connection config for both global servers and modules.
-#[derive(Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct DbConnConfig {
     /// Explicit database engine for this connection.
@@ -239,7 +239,7 @@ pub struct DbConnConfig {
 }
 
 /// Serializable engine selector for configuration.
-#[derive(Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum DbEngineCfg {
     Postgres,
@@ -248,7 +248,7 @@ pub enum DbEngineCfg {
 }
 
 /// Connection pool configuration.
-#[derive(Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct PoolCfg {
     #[serde(default, skip_serializing_if = "Option::is_none")]

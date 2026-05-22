@@ -1,6 +1,4 @@
 use super::{load_config, save_config, validate_name};
-use crate::common::PathConfigArgs;
-use std::path::PathBuf;
 
 pub mod add;
 pub mod db;
@@ -76,10 +74,12 @@ pub(super) const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
     },
 ];
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ModulesArgs {
     pub command: ModulesCommand,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum ModulesCommand {
     /// List available system crates
     List(list::ListArgs),
@@ -91,10 +91,6 @@ pub enum ModulesCommand {
     Rm(remove::RemoveArgs),
 }
 
-pub(super) struct ModulesContext {
-    config_path: PathBuf,
-}
-
 impl ModulesArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
@@ -104,14 +100,6 @@ impl ModulesArgs {
             ModulesCommand::Rm(args) => args.run(),
         }
     }
-}
-
-pub(super) fn resolve_modules_context(
-    path_config: &PathConfigArgs,
-) -> anyhow::Result<ModulesContext> {
-    Ok(ModulesContext {
-        config_path: path_config.resolve_config()?,
-    })
 }
 
 pub(super) fn validate_module_name(module: &str) -> anyhow::Result<()> {

@@ -3,10 +3,12 @@ use crate::app_config::DbConnConfig;
 use crate::common::PathConfigArgs;
 use anyhow::{Context, bail};
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct DbArgs {
     pub command: DbCommand,
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum DbCommand {
     /// Add or update (upsert) a global database server config under `database.servers`
     Add(AddArgs),
@@ -26,6 +28,7 @@ impl DbArgs {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
     pub path_config: PathConfigArgs,
     /// Server name under `database.servers.<name>`
@@ -52,6 +55,7 @@ impl AddArgs {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct EditArgs {
     pub path_config: PathConfigArgs,
     /// Server name under `database.servers.<name>`
@@ -83,6 +87,7 @@ impl EditArgs {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct RemoveArgs {
     pub path_config: PathConfigArgs,
     /// Server name under `database.servers.<name>`

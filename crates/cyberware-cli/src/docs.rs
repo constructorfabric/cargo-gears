@@ -34,15 +34,20 @@ pub struct DocsArgs {
 
 impl DocsArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::docs::DocsArgs {
-            path: self.path,
-            registry: self.registry.into(),
-            verbose: self.verbose,
-            libs: self.libs,
-            version: self.version,
-            clean: self.clean,
-            query: self.query,
+        cyberware_cli_core::docs::DocsArgs::from(self).run()
+    }
+}
+
+impl From<DocsArgs> for cyberware_cli_core::docs::DocsArgs {
+    fn from(args: DocsArgs) -> Self {
+        Self {
+            path: args.path,
+            registry: args.registry.into(),
+            verbose: args.verbose,
+            libs: args.libs,
+            version: args.version,
+            clean: args.clean,
+            query: args.query,
         }
-        .run()
     }
 }

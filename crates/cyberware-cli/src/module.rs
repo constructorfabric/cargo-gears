@@ -9,10 +9,15 @@ pub struct ModArgs {
 
 impl ModArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::r#mod::ModArgs {
-            command: self.command.into(),
+        cyberware_cli_core::r#mod::ModArgs::from(self).run()
+    }
+}
+
+impl From<ModArgs> for cyberware_cli_core::r#mod::ModArgs {
+    fn from(args: ModArgs) -> Self {
+        Self {
+            command: args.command.into(),
         }
-        .run()
     }
 }
 

@@ -18,6 +18,7 @@ mod ensure_toolchain_installed_shared {
 #[cfg(feature = "dylint-rules")]
 use ensure_toolchain_installed_shared::ensure_toolchain_installed;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct LintArgs {
     /// Run all available lint rules
     pub all: bool,
@@ -64,21 +65,23 @@ impl LintArgs {
     }
 
     pub fn run(&self) -> Result<()> {
-        let selection = self.validate()?;
+        crate::common::with_current_dir_for_optional_path(self.path.as_deref(), || {
+            let selection = self.validate()?;
 
-        if selection.fmt {
-            run_fmt()?;
-        }
+            if selection.fmt {
+                run_fmt()?;
+            }
 
-        if selection.clippy {
-            run_clippy(self.strict)?;
-        }
+            if selection.clippy {
+                run_clippy(self.strict)?;
+            }
 
-        if selection.dylint {
-            run_dylint()?;
-        }
+            if selection.dylint {
+                run_dylint()?;
+            }
 
-        Ok(())
+            Ok(())
+        })
     }
 }
 

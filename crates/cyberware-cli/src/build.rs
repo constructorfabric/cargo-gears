@@ -9,9 +9,14 @@ pub struct BuildArgs {
 
 impl BuildArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::build::BuildArgs {
-            build_run_args: self.build_run_args.into(),
+        cyberware_cli_core::build::BuildArgs::from(self).run()
+    }
+}
+
+impl From<BuildArgs> for cyberware_cli_core::build::BuildArgs {
+    fn from(args: BuildArgs) -> Self {
+        Self {
+            build_run_args: args.build_run_args.into(),
         }
-        .run()
     }
 }
