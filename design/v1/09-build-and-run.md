@@ -232,7 +232,7 @@ cf-modkit = "..." # Same version as the workspace plus the bootstrap feature
 # module dependencies generated based on the manifest
 # {{dependencies}}
 
-[workspace] # We stop cargo workspace resolution here 
+[workspace] # We stop cargo workspace resolution here
 ```
 
 ### `main.rs`
@@ -249,7 +249,7 @@ so that manual modification is abstracted.
 ```rust
 use anyhow::{Context, Result};
 // ALL module dependencies are added here
-// {{dependencies}} 
+// {{dependencies}}
 
 #[tokio::main]
 async fn main() -> Result<()> {
