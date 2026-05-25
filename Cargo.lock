@@ -565,6 +565,7 @@ dependencies = [
  "anyhow",
  "cargo-generate",
  "cargo_metadata",
+ "clap",
  "dylint",
  "flate2",
  "notify",
