@@ -73,7 +73,7 @@ pub struct CargoToml {
 
 pub type CargoTomlDependencies = BTreeMap<String, CargoTomlDependency>;
 
-#[derive(Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct CargoTomlDependency {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,

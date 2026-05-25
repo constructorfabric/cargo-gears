@@ -41,7 +41,7 @@ fn parses_config_module_add_into_core_command() {
                         cyberware_cli_core::config::modules::add::AddArgs {
                             path_config: PathConfigArgs {
                                 path: None,
-                                config: PathBuf::from("config.yml"),
+                                config: Some(PathBuf::from("config.yml")),
                             },
                             module: "api-gateway".to_owned(),
                             package: Some("cf-api-gateway".to_owned()),
@@ -100,7 +100,7 @@ fn parses_config_db_add_into_core_command() {
                         cyberware_cli_core::config::db::AddArgs {
                             path_config: PathConfigArgs {
                                 path: None,
-                                config: PathBuf::from("config.yml"),
+                                config: Some(PathBuf::from("config.yml")),
                             },
                             name: "primary".to_owned(),
                             conn: DbConnConfig {
@@ -160,7 +160,7 @@ fn parses_config_module_db_edit_into_core_command() {
                                 cyberware_cli_core::config::modules::db::EditArgs {
                                     path_config: PathConfigArgs {
                                         path: None,
-                                        config: PathBuf::from("config.yml"),
+                                        config: Some(PathBuf::from("config.yml")),
                                     },
                                     module: "api-gateway".to_owned(),
                                     conn: DbConnConfig {

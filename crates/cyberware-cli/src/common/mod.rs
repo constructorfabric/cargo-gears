@@ -1,4 +1,4 @@
-use clap::Args;
+use clap::{ArgAction, Args};
 use cyberware_cli_core::app_config;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -14,7 +14,7 @@ pub struct PathConfigArgs {
     pub path: Option<PathBuf>,
     /// Path to the config file
     #[arg(short = 'c', long)]
-    pub config: PathBuf,
+    pub config: Option<PathBuf>,
 }
 
 impl From<PathConfigArgs> for cyberware_cli_core::common::PathConfigArgs {
@@ -28,20 +28,38 @@ impl From<PathConfigArgs> for cyberware_cli_core::common::PathConfigArgs {
 
 #[derive(Args)]
 pub struct BuildRunArgs {
+    /// Path to the module workspace root
+    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
+    pub path: Option<PathBuf>,
     #[command(flatten)]
-    pub path_config: PathConfigArgs,
+    pub manifest: ManifestTargetArgs,
     /// Use OpenTelemetry tracing
-    #[arg(long)]
+    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_otel")]
     pub otel: bool,
+    /// Disable OpenTelemetry tracing
+    #[arg(long = "no-otel", action = ArgAction::SetTrue, conflicts_with = "otel")]
+    pub no_otel: bool,
     /// Enable FIPS mode
-    #[arg(long)]
+    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_fips")]
     pub fips: bool,
+    /// Disable FIPS mode
+    #[arg(long = "no-fips", action = ArgAction::SetTrue, conflicts_with = "fips")]
+    pub no_fips: bool,
     /// Build/run in release mode
-    #[arg(short = 'r', long)]
+    #[arg(short = 'r', long, action = ArgAction::SetTrue, conflicts_with = "no_release")]
     pub release: bool,
+    /// Build/run without release mode
+    #[arg(long = "no-release", action = ArgAction::SetTrue, conflicts_with = "release")]
+    pub no_release: bool,
     /// Remove Cargo.lock at the start of the execution
-    #[arg(long)]
+    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_clean")]
     pub clean: bool,
+    /// Do not remove Cargo.lock at the start of the execution
+    #[arg(long = "no-clean", action = ArgAction::SetTrue, conflicts_with = "clean")]
+    pub no_clean: bool,
+    /// Print the resolved generation model without building or running
+    #[arg(long)]
+    pub dry_run: bool,
     /// Override the generated server and binary name
     #[arg(long)]
     pub name: Option<String>,
@@ -50,12 +68,45 @@ pub struct BuildRunArgs {
 impl From<BuildRunArgs> for cyberware_cli_core::common::BuildRunArgs {
     fn from(args: BuildRunArgs) -> Self {
         Self {
-            path_config: args.path_config.into(),
-            otel: args.otel,
-            fips: args.fips,
-            release: args.release,
-            clean: args.clean,
+            path: args.path,
+            manifest: args.manifest.into_selection(),
+            otel: ordered_bool(args.otel, args.no_otel),
+            fips: ordered_bool(args.fips, args.no_fips),
+            release: ordered_bool(args.release, args.no_release),
+            clean: ordered_bool(args.clean, args.no_clean),
+            dry_run: args.dry_run,
             name: args.name,
+        }
+    }
+}
+
+const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
+    match (positive, negative) {
+        (true, false) => Some(true),
+        (false, true) => Some(false),
+        _ => None,
+    }
+}
+
+#[derive(Args)]
+pub struct ManifestTargetArgs {
+    /// Path to the Cyberware manifest file
+    #[arg(long, default_value = cyberware_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
+    pub manifest: PathBuf,
+    /// Manifest app to select
+    #[arg(long)]
+    pub app: String,
+    /// Manifest environment to select
+    #[arg(long)]
+    pub env: String,
+}
+
+impl ManifestTargetArgs {
+    pub fn into_selection(self) -> cyberware_cli_core::manifest::ManifestSelection {
+        cyberware_cli_core::manifest::ManifestSelection {
+            manifest: self.manifest,
+            app: self.app,
+            env: self.env,
         }
     }
 }

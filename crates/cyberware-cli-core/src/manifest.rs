@@ -1,0 +1,687 @@
+use crate::common;
+use crate::module_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
+use anyhow::{Context, bail};
+use semver::VersionReq;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+pub const DEFAULT_MANIFEST_FILE: &str = "Cyberware.toml";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManifestSelection {
+    pub manifest: PathBuf,
+    pub app: String,
+    pub env: String,
+}
+
+impl ManifestSelection {
+    pub fn resolve(&self, workspace_root: &Path) -> anyhow::Result<ResolvedManifest> {
+        let manifest_path = resolve_manifest_path(workspace_root, &self.manifest)?;
+        let manifest = Manifest::load(&manifest_path)?;
+        manifest.resolve(workspace_root, &manifest_path, &self.app, &self.env, None)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManifestArgs {
+    pub manifest: PathBuf,
+    pub command: ManifestCommand,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ManifestCommand {
+    Validate { format: common::OutputFormat },
+    Ls { format: common::OutputFormat },
+}
+
+impl ManifestArgs {
+    pub fn run(&self) -> anyhow::Result<()> {
+        let workspace_root = common::workspace_root()?;
+        let manifest_path = resolve_manifest_path(&workspace_root, &self.manifest)?;
+        let manifest = Manifest::load(&manifest_path)?;
+
+        match &self.command {
+            ManifestCommand::Validate { format } => {
+                let report = manifest.validate(&workspace_root, &manifest_path)?;
+                print_value(*format, &report)
+            }
+            ManifestCommand::Ls { format } => {
+                let entries = manifest.entries();
+                print_value(*format, &entries)
+            }
+        }
+    }
+}
+
+pub fn print_rendered_manifest(resolved: &ResolvedManifest) -> anyhow::Result<()> {
+    print_value(common::OutputFormat::Json, &resolved.render())
+}
+
+fn print_value<T: Serialize>(format: common::OutputFormat, value: &T) -> anyhow::Result<()> {
+    match format {
+        common::OutputFormat::Json | common::OutputFormat::Table => {
+            println!("{}", serde_json::to_string_pretty(value)?);
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Manifest {
+    #[serde(default)]
+    pub workspace: Workspace,
+    pub apps: Apps,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub templates: Option<TemplateRegistry>,
+}
+
+pub type Apps = BTreeMap<String, Environments>;
+pub type Environments = BTreeMap<String, Environment>;
+
+impl Manifest {
+    pub fn load(path: &Path) -> anyhow::Result<Self> {
+        let manifest = fs::read_to_string(path)
+            .with_context(|| format!("manifest not available at {}", path.display()))?;
+        toml::from_str(&manifest)
+            .with_context(|| format!("manifest not valid at {}", path.display()))
+    }
+
+    pub fn validate(
+        &self,
+        workspace_root: &Path,
+        manifest_path: &Path,
+    ) -> anyhow::Result<ValidationReport> {
+        let mut entries = Vec::new();
+        for (app, envs) in &self.apps {
+            for env in envs.keys() {
+                let resolved = self.resolve(workspace_root, manifest_path, app, env, None)?;
+                entries.push(resolved.render());
+            }
+        }
+
+        Ok(ValidationReport {
+            valid: true,
+            entries,
+        })
+    }
+
+    #[must_use]
+    pub fn entries(&self) -> Vec<ManifestEntry> {
+        self.apps
+            .iter()
+            .flat_map(|(app, envs)| {
+                envs.keys().map(|env| ManifestEntry {
+                    app: app.clone(),
+                    env: env.clone(),
+                })
+            })
+            .collect()
+    }
+
+    pub fn resolve(
+        &self,
+        workspace_root: &Path,
+        manifest_path: &Path,
+        app: &str,
+        env: &str,
+        config_override: Option<&Path>,
+    ) -> anyhow::Result<ResolvedManifest> {
+        let environment = self
+            .apps
+            .get(app)
+            .with_context(|| format!("manifest app '{app}' does not exist"))?
+            .get(env)
+            .with_context(|| format!("manifest environment '{app}.{env}' does not exist"))?;
+        let manifest_dir = manifest_path
+            .parent()
+            .context("manifest path has no parent")?;
+        let workspace_base = self.workspace.root.as_ref().map_or_else(
+            || workspace_root.to_path_buf(),
+            |root| resolve_relative_to(manifest_dir, root),
+        );
+        let config_path = config_override.map_or_else(
+            || {
+                resolve_relative_to(
+                    &workspace_base.join(&self.workspace.config_dir),
+                    &environment.config,
+                )
+            },
+            |config| resolve_relative_to(&workspace_base, config),
+        );
+        let generated_name = environment
+            .build
+            .as_ref()
+            .and_then(|build| build.name.clone())
+            .unwrap_or_else(|| format!("{app}-{env}"));
+        let dependencies = resolve_dependencies(&workspace_base, &environment.modules)?;
+        let generated_dir = resolve_relative_to(&workspace_base, &self.workspace.generated_dir);
+
+        Ok(ResolvedManifest {
+            app: app.to_owned(),
+            env: env.to_owned(),
+            workspace_root: workspace_base,
+            generated_dir,
+            config_path,
+            generated_name,
+            run: environment.run.clone().unwrap_or_default(),
+            build: environment.build.clone().unwrap_or_default(),
+            lint: environment.lint.clone(),
+            test: environment.test.clone(),
+            modules: environment.modules.clone(),
+            dependencies,
+        })
+    }
+}
+
+fn resolve_manifest_path(workspace_root: &Path, manifest: &Path) -> anyhow::Result<PathBuf> {
+    let path = resolve_relative_to(workspace_root, manifest);
+    path.canonicalize()
+        .with_context(|| format!("can't canonicalize manifest {}", path.display()))
+}
+
+fn resolve_relative_to(base: &Path, path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        base.join(path)
+    }
+}
+
+fn resolve_dependencies(
+    workspace_root: &Path,
+    modules: &[ModuleRef],
+) -> anyhow::Result<CargoTomlDependencies> {
+    let local_modules = modules
+        .iter()
+        .any(|module| matches!(module, ModuleRef::Local(_)))
+        .then(|| crate::module_parser::get_module_name_from_crate(Some(workspace_root)))
+        .transpose()?
+        .unwrap_or_default();
+    let mut dependencies = CargoTomlDependencies::new();
+
+    for module in modules {
+        let (name, metadata) = match module {
+            ModuleRef::Local(local) => {
+                let discovered = local_modules.get(&local.name).with_context(|| {
+                    format!("local module '{}' cannot be discovered", local.name)
+                })?;
+                let mut metadata = discovered.metadata.clone();
+                if let Some(package) = &local.package {
+                    metadata.package = Some(package.clone());
+                }
+                if let Some(version) = &local.version {
+                    metadata.version = version_req_to_metadata(version);
+                }
+                (local.name.clone(), metadata)
+            }
+            ModuleRef::Remote(remote) => (
+                remote.name.clone(),
+                ConfigModuleMetadata {
+                    package: Some(remote.package.clone()),
+                    version: version_req_to_metadata(&remote.version),
+                    ..Default::default()
+                },
+            ),
+        };
+
+        let package = metadata.package.clone().with_context(|| {
+            format!("module '{name}' doesn't have package associated, please review")
+        })?;
+        let dependency_name = package.replace('-', "_");
+        if dependencies.contains_key(&dependency_name) {
+            bail!("multiple manifest modules resolve to package name '{dependency_name}'");
+        }
+
+        dependencies.insert(
+            dependency_name,
+            CargoTomlDependency {
+                package: metadata.package,
+                version: metadata.version,
+                features: metadata.features.into_iter().collect(),
+                default_features: metadata.default_features,
+                path: metadata.path,
+            },
+        );
+    }
+
+    Ok(dependencies)
+}
+
+fn version_req_to_metadata(version: &VersionReq) -> Option<String> {
+    let version = version.to_string();
+    (version != "*").then_some(version)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedManifest {
+    pub app: String,
+    pub env: String,
+    pub workspace_root: PathBuf,
+    pub generated_dir: PathBuf,
+    pub config_path: PathBuf,
+    pub generated_name: String,
+    pub run: RunPolicy,
+    pub build: BuildPolicy,
+    pub lint: LintPolicy,
+    pub test: TestPolicy,
+    pub modules: Vec<ModuleRef>,
+    pub dependencies: CargoTomlDependencies,
+}
+
+impl ResolvedManifest {
+    #[must_use]
+    pub fn render(&self) -> RenderedManifest {
+        RenderedManifest {
+            app: self.app.clone(),
+            env: self.env.clone(),
+            workspace_root: self.workspace_root.clone(),
+            generated_dir: self.generated_dir.clone(),
+            config_path: self.config_path.clone(),
+            generated_name: self.generated_name.clone(),
+            modules: self.modules.clone(),
+            cargo_dependencies: self.dependencies.clone(),
+            cargo_features: vec!["default".to_owned(), "otel".to_owned(), "fips".to_owned()],
+            cyberware_inputs: vec![self.config_path.clone()],
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ValidationReport {
+    pub valid: bool,
+    pub entries: Vec<RenderedManifest>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ManifestEntry {
+    pub app: String,
+    pub env: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct RenderedManifest {
+    pub app: String,
+    pub env: String,
+    pub workspace_root: PathBuf,
+    pub generated_dir: PathBuf,
+    pub config_path: PathBuf,
+    pub generated_name: String,
+    pub modules: Vec<ModuleRef>,
+    pub cargo_dependencies: CargoTomlDependencies,
+    pub cargo_features: Vec<String>,
+    pub cyberware_inputs: Vec<PathBuf>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Workspace {
+    #[serde(default = "default_version")]
+    pub version: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub root: Option<PathBuf>,
+    #[serde(default = "default_config_dir", rename = "config-dir")]
+    pub config_dir: PathBuf,
+    #[serde(default = "default_generated_dir", rename = "generated-dir")]
+    pub generated_dir: PathBuf,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub global_env: Option<Environment>,
+}
+
+impl Default for Workspace {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            root: None,
+            config_dir: default_config_dir(),
+            generated_dir: default_generated_dir(),
+            global_env: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Environment {
+    pub config: PathBuf,
+    #[serde(default)]
+    pub test: TestPolicy,
+    #[serde(default)]
+    pub lint: LintPolicy,
+    #[serde(default)]
+    pub modules: Vec<ModuleRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run: Option<RunPolicy>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub build: Option<BuildPolicy>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "source", rename_all = "kebab-case")]
+pub enum ModuleRef {
+    Local(LocalModuleRef),
+    Remote(RemoteModuleRef),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalModuleRef {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<VersionReq>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RemoteModuleRef {
+    pub name: String,
+    pub version: VersionReq,
+    pub package: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub registry: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RunPolicy {
+    #[serde(default)]
+    pub watch: WatchPolicy,
+    #[serde(default)]
+    pub fips: bool,
+    #[serde(default)]
+    pub otel: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct WatchPolicy {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default)]
+    pub paths: Vec<PathBuf>,
+    #[serde(default)]
+    pub ignore: Vec<PathBuf>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct BuildPolicy {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile: Option<BuildProfile>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clean: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(try_from = "String", into = "String")]
+pub enum BuildProfile {
+    Debug,
+    Release,
+    Custom(String),
+}
+
+impl From<String> for BuildProfile {
+    fn from(value: String) -> Self {
+        match value.to_lowercase().as_str() {
+            "debug" => Self::Debug,
+            "release" => Self::Release,
+            _ => Self::Custom(value),
+        }
+    }
+}
+
+impl From<BuildProfile> for String {
+    fn from(profile: BuildProfile) -> Self {
+        match profile {
+            BuildProfile::Debug => "debug".to_owned(),
+            BuildProfile::Release => "release".to_owned(),
+            BuildProfile::Custom(value) => value,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct LintPolicy {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r#ref: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dylint: Option<Dylint>,
+    #[serde(default = "default_true")]
+    pub clippy: bool,
+    #[serde(default = "default_true")]
+    pub fmt: bool,
+    #[serde(default = "default_true", rename = "feature-set-test")]
+    pub feature_set_test: bool,
+}
+
+impl Default for LintPolicy {
+    fn default() -> Self {
+        Self {
+            r#ref: None,
+            dylint: None,
+            clippy: true,
+            fmt: true,
+            feature_set_test: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct Dylint {
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub skip: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TestPolicy {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub r#ref: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub runner: Option<TestRunner>,
+    #[serde(default)]
+    pub coverage: bool,
+    #[serde(
+        default,
+        rename = "feature-set",
+        skip_serializing_if = "BTreeMap::is_empty"
+    )]
+    pub feature_set: BTreeMap<String, ModuleFeatureSet>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        rename = "custom-command"
+    )]
+    pub custom_command: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct TemplateRegistry {
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub module: BTreeMap<String, TemplateSource>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub config: BTreeMap<String, TemplateSource>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub agents: BTreeMap<String, TemplateSource>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(tag = "source", rename_all = "kebab-case")]
+pub enum TemplateSource {
+    Git {
+        url: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        revision: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        tag: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        branch: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        subfolder: Option<String>,
+    },
+    Local {
+        path: String,
+    },
+    Embedded,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum TestRunner {
+    Cargo,
+    Nextest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum ModuleFeatureSet {
+    All(bool),
+    Sets(Vec<FeatureSet>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum FeatureSet {
+    Disabled(bool),
+    Features(Vec<String>),
+}
+
+const fn default_version() -> u32 {
+    1
+}
+fn default_config_dir() -> PathBuf {
+    PathBuf::from("config")
+}
+fn default_generated_dir() -> PathBuf {
+    PathBuf::from(".cyberware")
+}
+const fn default_true() -> bool {
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::module_parser::test_utils::TempDirExt;
+    use tempfile::TempDir;
+
+    #[test]
+    fn parse_manifest_example_toml() {
+        let manifest: Manifest =
+            toml::from_str(include_str!("../../../design/v1/manifest_example.toml")).unwrap();
+        assert!(manifest.workspace.config_dir.ends_with("config"));
+        assert_eq!(manifest.apps.len(), 1);
+    }
+
+    #[test]
+    fn render_resolves_remote_dependency_and_config_path() {
+        let temp = TempDir::new().unwrap();
+        temp.write(
+            "Cyberware.toml",
+            r#"
+[workspace]
+generated-dir = "custom-generated"
+
+[apps.app.dev]
+config = "app-dev.yml"
+modules = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
+"#,
+        );
+        temp.write("config/app-dev.yml", "server: {}\n");
+        let manifest = Manifest::load(&temp.path().join(DEFAULT_MANIFEST_FILE)).unwrap();
+
+        let resolved = manifest
+            .resolve(
+                temp.path(),
+                &temp.path().join(DEFAULT_MANIFEST_FILE),
+                "app",
+                "dev",
+                None,
+            )
+            .unwrap();
+
+        assert_eq!(resolved.generated_name, "app-dev");
+        assert_eq!(resolved.generated_dir, temp.path().join("custom-generated"));
+        assert_eq!(resolved.config_path, temp.path().join("config/app-dev.yml"));
+        assert!(resolved.dependencies.contains_key("cf_module"));
+    }
+
+    #[test]
+    fn generated_dir_is_relative_to_manifest_workspace_root() {
+        let temp = TempDir::new().unwrap();
+        temp.write(
+            "Cyberware.toml",
+            r#"
+[workspace]
+root = "workspace"
+generated-dir = "target/generated"
+
+[apps.app.dev]
+config = "app-dev.yml"
+modules = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
+"#,
+        );
+        let manifest = Manifest::load(&temp.path().join(DEFAULT_MANIFEST_FILE)).unwrap();
+
+        let resolved = manifest
+            .resolve(
+                temp.path(),
+                &temp.path().join(DEFAULT_MANIFEST_FILE),
+                "app",
+                "dev",
+                None,
+            )
+            .unwrap();
+
+        assert_eq!(resolved.workspace_root, temp.path().join("workspace"));
+        assert_eq!(
+            resolved.generated_dir,
+            temp.path().join("workspace/target/generated")
+        );
+    }
+
+    #[test]
+    fn absolute_generated_dir_is_used_as_is() {
+        let temp = TempDir::new().unwrap();
+        let absolute_generated_dir = temp.path().join("absolute-generated");
+        temp.write(
+            "Cyberware.toml",
+            &format!(
+                r#"
+[workspace]
+root = "workspace"
+generated-dir = "{}"
+
+[apps.app.dev]
+config = "app-dev.yml"
+modules = [{{ source = "remote", name = "module", package = "cf-module", version = "1.2" }}]
+"#,
+                absolute_generated_dir.display()
+            ),
+        );
+        let manifest = Manifest::load(&temp.path().join(DEFAULT_MANIFEST_FILE)).unwrap();
+
+        let resolved = manifest
+            .resolve(
+                temp.path(),
+                &temp.path().join(DEFAULT_MANIFEST_FILE),
+                "app",
+                "dev",
+                None,
+            )
+            .unwrap();
+
+        assert_eq!(resolved.workspace_root, temp.path().join("workspace"));
+        assert_eq!(resolved.generated_dir, absolute_generated_dir);
+    }
+}

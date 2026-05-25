@@ -14,9 +14,11 @@ pub(super) enum RunSignal {
 }
 
 pub(super) struct RunLoop {
+    generated_dir: PathBuf,
     workspace_path: PathBuf,
     config_path: PathBuf,
     project_name: String,
+    dependencies: Option<crate::module_parser::CargoTomlDependencies>,
 }
 
 pub(super) static OTEL: AtomicBool = AtomicBool::new(false);
@@ -25,24 +27,42 @@ pub(super) static RELEASE: AtomicBool = AtomicBool::new(false);
 
 impl RunLoop {
     pub(super) const fn new(
+        generated_dir: PathBuf,
         workspace_path: PathBuf,
         config_path: PathBuf,
         project_name: String,
     ) -> Self {
         Self {
+            generated_dir,
             workspace_path,
             config_path,
             project_name,
+            dependencies: None,
         }
+    }
+
+    pub(super) fn with_dependencies(
+        mut self,
+        dependencies: crate::module_parser::CargoTomlDependencies,
+    ) -> Self {
+        self.dependencies = Some(dependencies);
+        self
     }
 
     pub(super) fn run(&self, watch: bool) -> anyhow::Result<RunSignal> {
         let workspace_path = &self.workspace_path;
-        let dependencies =
-            common::get_config(workspace_path, &self.config_path)?.create_dependencies()?;
-        common::generate_server_structure(workspace_path, &self.project_name, &dependencies)?;
+        let dependencies = self.dependencies.as_ref().map_or_else(
+            || common::get_config(workspace_path, &self.config_path)?.create_dependencies(),
+            |dependencies| Ok(dependencies.clone()),
+        )?;
+        common::generate_server_structure(
+            workspace_path,
+            &self.generated_dir,
+            &self.project_name,
+            &dependencies,
+        )?;
 
-        let cargo_dir = common::generated_project_dir(workspace_path, &self.project_name);
+        let cargo_dir = common::generated_project_dir(&self.generated_dir, &self.project_name);
 
         if !watch {
             let status = cargo_run(&cargo_dir, &self.config_path)?
@@ -117,13 +137,19 @@ impl RunLoop {
                 );
 
             if is_config_change || is_workspace_manifest_change {
-                match common::get_config(workspace_path, &self.config_path)
-                    .and_then(app_config::AppConfig::create_dependencies)
-                {
+                let new_deps = self.dependencies.as_ref().map_or_else(
+                    || {
+                        common::get_config(workspace_path, &self.config_path)
+                            .and_then(app_config::AppConfig::create_dependencies)
+                    },
+                    |dependencies| Ok(dependencies.clone()),
+                );
+                match new_deps {
                     Ok(new_deps) => {
                         if new_deps != current_deps {
                             if let Err(e) = common::generate_server_structure(
                                 workspace_path,
+                                &self.generated_dir,
                                 &self.project_name,
                                 &new_deps,
                             ) {

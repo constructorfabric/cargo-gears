@@ -6,6 +6,7 @@ mod docs;
 mod init;
 mod lint;
 mod list;
+mod manifest;
 mod module;
 mod run;
 mod testing;
@@ -34,6 +35,8 @@ pub enum Commands {
     Lint(lint::LintArgs),
     /// Inspect workspace modules, system modules, and project state
     List(list::ListArgs),
+    /// Inspect and validate Cyberware.toml manifests
+    Manifest(manifest::ManifestArgs),
     /// Orchestrate the testing process of the project
     Test(testing::TestArgs),
     /// Handle the required or optional tools for the project
@@ -61,6 +64,7 @@ impl From<Cli> for cyberware_cli_core::CyberfabricCommand {
             Commands::Docs(docs) => Self::Docs(docs.into()),
             Commands::Lint(lint) => Self::Lint(lint.into()),
             Commands::List(list) => Self::List(list.into()),
+            Commands::Manifest(manifest) => Self::Manifest(manifest.into()),
             Commands::Test(test) => Self::Test(test.into()),
             Commands::Tools(tools) => Self::Tools(tools.into()),
             Commands::Run(run) => Self::Run(run.into()),

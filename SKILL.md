@@ -67,6 +67,9 @@ cargo cyberfabric
 │   ├── system-modules
 │   ├── configs
 │   └── apps
+├── manifest
+│   ├── validate
+│   └── ls
 ├── test
 ├── tools
 ├── run
@@ -80,9 +83,11 @@ cargo cyberfabric
   `lint`, the CLI immediately changes the current working directory to this directory. Relative config paths, generated
   project locations, and workspace-scoped lint resolution then resolve from that directory. When omitted, the current
   working directory is left unchanged.
-- **[`-c, --config <PATH>`]** Config file path. This is required for `config ...`, `build`, `run`, and `deploy` commands
-  because there is no default. For `build` and `run`, the CLI forwards this path to the generated server through the
-  `CF_CLI_CONFIG` environment variable.
+- **[`-c, --config <PATH>`]** Config file path. This is required for `config ...` and `deploy` commands because there is
+  no default. `build` and `run` no longer accept `--config`; they compose their generation inputs from `Cyberware.toml`
+  and forward the manifest-declared runtime config path through the `CF_CLI_CONFIG` environment variable.
+- **[`--manifest <PATH>`]** Cyberware manifest path, defaulting to `Cyberware.toml`, for `manifest`, `build`, and `run`.
+- **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build` and `run`.
 - **[`--name <NAME>`]** For `build` and `run`, overrides the generated server project and binary name that would
   otherwise default to the config filename stem.
 - **[`-v, --verbose`]** Usually enables more logging or richer output.
@@ -95,7 +100,9 @@ From the current implementation, the CLI is mainly for:
 
 - **[workspace scaffolding]** Initialize a CyberFabric workspace and add module templates
 - **[config management]** Enable modules and patch YAML config sections
-- **[server generation]** Generate a runnable Cargo project under `.cyberfabric/<name>/`
+- **[server generation]** Generate a runnable Cargo project under the manifest `workspace.generated-dir` directory
+  (default `.cyberware/<name>/`)
+- **[manifest orchestration]** Read `Cyberware.toml` to separate generation metadata from runtime YAML config
 - **[build/run/deploy]** Build, run, or package that generated server as a Docker image
 - **[source inspection]** Resolve Rust source for crates/items through workspace metadata or crates.io
 - **[module inspection]** List workspace-discovered and system-registry modules
@@ -575,38 +582,44 @@ cargo cyberfabric tools --install rustup,clippy --upgrade --verbose
 
 ### `run`
 
-Generate a server project under `.cyberfabric/<name>/` and run it.
+Generate a server project under the manifest `<workspace.generated-dir>/<name>` and run it.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric run -c <CONFIG> [-p <PATH>] [--name <NAME>] [--watch] [--otel] [--fips] [--release] [--clean]
+cargo cyberfabric run --app <APP> --env <ENV> [--manifest <Cyberware.toml>] [-p <PATH>] [--name <NAME>] [--watch|--no-watch] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
 
-- **[`-c, --config <CONFIG>`]** Required config file path
+- **[`--manifest <PATH>`]** Manifest file, defaults to `Cyberware.toml`
+- **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
 - **[`-p, --path <PATH>`]** Optional workspace directory
 - **[`--name <NAME>`]** Override the generated server project and binary name; defaults to the config filename stem
-- **[`-w, --watch`]** Re-run when watched inputs change
-- **[`--otel`]** Pass Cargo feature `otel`
-- **[`--fips`]** Pass Cargo feature `fips`
-- **[`-r, --release`]** Use release mode
-- **[`--clean`]** Remove `.cyberfabric/<name>/Cargo.lock` before running
+- **[`-w, --watch` / `--no-watch`]** Override manifest watch policy on or off
+- **[`--otel` / `--no-otel`]** Override manifest OpenTelemetry policy on or off
+- **[`--fips` / `--no-fips`]** Override manifest FIPS policy on or off
+- **[`-r, --release` / `--no-release`]** Override manifest build profile to release or non-release
+- **[`--clean` / `--no-clean`]** Override manifest clean policy on or off
+- **[`--dry-run`]** Generate the project structure and print the generated files without building or running
 
 Behavior:
 
-- **[name resolution]** Uses the config filename stem by default, so `config/quickstart.yml` generates under
-  `.cyberfabric/quickstart/`; `--name` overrides that default
+- **[name resolution]** Uses the manifest build policy name when present, otherwise `<app>-<env>`
 - **[path activation]** If `-p/--path` is provided, Clap changes the current working directory while parsing that value,
-  before `-c/--config` is resolved and `.cyberfabric/<name>/` is generated
-- **[generates server structure]** Writes `.cyberfabric/<name>/Cargo.toml`, `.cyberfabric/<name>/.cargo/config.toml`,
-  and `.cyberfabric/<name>/src/main.rs`
+  before `Cyberware.toml` is resolved and the generated project directory is created
+- **[generates server structure]** Writes `<generated-dir>/<name>/Cargo.toml`,
+  `<generated-dir>/<name>/.cargo/config.toml`, and `<generated-dir>/<name>/src/main.rs`; `generated-dir` comes from
+  manifest `workspace.generated-dir` and defaults to `.cyberware`
 - **[runtime config handoff]** The generated `src/main.rs` reads the config path from `CF_CLI_CONFIG`, and
   `cargo cyberfabric run` sets that environment variable automatically before invoking `cargo run`
-- **[loads config dependencies]** Builds dependencies from the config and local module metadata
-- **[feature passthrough]** `--otel` and `--fips` enable the generated project's matching Cargo features
-- **[runs inside `.cyberfabric/<name>`]** Executes `cargo run` in the generated directory
+- **[dry run]** `--dry-run` writes the generated project structure under `<generated-dir>/<name>/` and prints JSON with the
+  generated project directory plus each generated file path and contents; it does not invoke Cargo build/run
+- **[manifest mode]** Reads generation dependencies, runtime config path, and policies from `Cyberware.toml`; runtime YAML
+  stays focused on server configuration
+- **[exclusive boolean overrides]** Boolean flag pairs are mutually exclusive. Use either the positive or negative form,
+  not both; for example, `--otel --no-otel` is rejected. When neither side is present, the manifest policy is used.
+- **[runs inside generated project]** Executes `cargo run` in `<generated-dir>/<name>/`
 - **[watch mode]** Restarts on config changes, workspace `Cargo.toml` changes, and changes in path-based dependencies
 - **[dependency watch management]** Reconciles watched dependency paths when config dependencies change
 - **[manual generated-project execution]** If you invoke the generated project or compiled binary yourself instead of
@@ -615,76 +628,115 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --watch
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --watch
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --otel --fips --release --clean
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --otel --fips --release --clean
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --name demo-server
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --name demo-server
 ```
 
-### `build`
+```bash
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --dry-run
+```
 
-Generate a server project under `.cyberfabric/<name>/` and build it.
+```bash
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --manifest /tmp/cf-demo/Cyberware.toml
+```
+
+### `manifest`
+
+Inspect and validate Cyberware manifest files.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric build -c <CONFIG> [-p <PATH>] [--name <NAME>] [--otel] [--fips] [--release] [--clean]
+cargo cyberfabric manifest [--manifest <Cyberware.toml>] validate [--format table|json]
+cargo cyberfabric manifest [--manifest <Cyberware.toml>] ls [--format table|json]
+```
+
+Behavior:
+
+- **[validate]** Parses the manifest and resolves every app/environment entry.
+- **[ls]** Lists configured app/environment pairs.
+- **[generated structure]** Use `build --dry-run` or `run --dry-run` to write and print the generated project structure.
+
+### `build`
+
+Generate a server project under the manifest `<workspace.generated-dir>/<name>` and build it.
+
+Synopsis:
+
+```bash
+cargo cyberfabric build --app <APP> --env <ENV> [--manifest <Cyberware.toml>] [-p <PATH>] [--name <NAME>] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
 
-- **[`-c, --config <CONFIG>`]** Required config file path
+- **[`--manifest <PATH>`]** Manifest file, defaults to `Cyberware.toml`
+- **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
 - **[`-p, --path <PATH>`]** Optional workspace directory
 - **[`--name <NAME>`]** Override the generated server project and binary name; defaults to the config filename stem
-- **[`--otel`]** Pass Cargo feature `otel`
-- **[`--fips`]** Pass Cargo feature `fips`
-- **[`-r, --release`]** Use release mode
-- **[`--clean`]** Remove `.cyberfabric/<name>/Cargo.lock` before building
+- **[`--otel` / `--no-otel`]** Override manifest OpenTelemetry policy on or off
+- **[`--fips` / `--no-fips`]** Override manifest FIPS policy on or off
+- **[`-r, --release` / `--no-release`]** Override manifest build profile to release or non-release
+- **[`--clean` / `--no-clean`]** Override manifest clean policy on or off
+- **[`--dry-run`]** Generate the project structure and print the generated files without building
 
 Behavior:
 
 - **[generates before build]** Recreates the generated server project before invoking Cargo
-- **[name resolution]** Uses the config filename stem by default, so `config/quickstart.yml` builds from
-  `.cyberfabric/quickstart/`; `--name` overrides that default
+- **[name resolution]** Uses the manifest build policy name when present, otherwise `<app>-<env>`
 - **[path activation]** If `-p/--path` is provided, Clap changes the current working directory while parsing that value,
-  before `-c/--config` is resolved and `.cyberfabric/<name>/` is generated
-- **[feature passthrough]** `--otel` and `--fips` enable the generated project's matching Cargo features
-- **[builds inside `.cyberfabric/<name>`]** Executes `cargo build` in the generated directory
+  before `Cyberware.toml` is resolved and the generated project directory is created
+- **[exclusive boolean overrides]** Boolean flag pairs are mutually exclusive. Use either the positive or negative form,
+  not both; for example, `--clean --no-clean` is rejected. When neither side is present, the manifest policy is used.
+- **[manifest mode]** Reads module dependency metadata, runtime config path, and build/run policy from `Cyberware.toml`
+  instead of runtime YAML module metadata
+- **[builds inside generated project]** Executes `cargo build` in `<generated-dir>/<name>/`
 - **[runtime config source]** The generated server no longer embeds the config path; the resulting binary reads it from
   `CF_CLI_CONFIG` when you execute it
+- **[dry run]** `--dry-run` writes the generated project structure under `<generated-dir>/<name>/` and prints JSON with the
+  generated project directory plus each generated file path and contents; it does not invoke Cargo build
 - **[manual generated-project execution]** If you later run the generated project or binary outside the CLI, you must
   set `CF_CLI_CONFIG` yourself
 
 Examples:
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --release
+cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev --release
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --otel --fips --clean
+cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev --otel --fips --clean
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --name demo-server
+cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev --name demo-server
+```
+
+```bash
+cargo cyberfabric build -p /tmp/cf-demo --app app1 --env prod
+```
+
+```bash
+cargo cyberfabric build -p /tmp/cf-demo --app app1 --env prod --dry-run
 ```
 
 ### `deploy`
 
-Generate a server project under `.cyberfabric/<name>/` and build a Docker image with the workspace `Dockerfile`.
+Generate a server project under the default generated directory and build a Docker image with the workspace `Dockerfile`.
 
 Synopsis:
 
@@ -697,7 +749,7 @@ Arguments:
 - **[`-c, --config <CONFIG>`]** Required config file path; copied into the image and used as the runtime
   `CF_CLI_CONFIG` target
 - **[`-p, --path <PATH>`]** Optional workspace directory
-- **[`-m, --manifest <Cargo.toml>`]** Optional Cargo manifest to build instead of generating `.cyberfabric/<name>/`;
+- **[`-m, --manifest <Cargo.toml>`]** Optional Cargo manifest to build instead of generating the server project;
   the path must point to a file named `Cargo.toml`
 - **[`--debug`]** Docker build mode; defaults to release mode. Use this flag to build in debug mode.
 - **[`--dockerfile <Dockerfile>`]** Dockerfile path to use instead of the default(Dockerfile from cwd)
@@ -708,7 +760,7 @@ Behavior:
 
 - **[generates by default]** Without `--manifest`, recreates the generated server project from the config, matching
   `build` and `run`
-- **[manifest override]** With `--manifest`, does not generate `.cyberfabric/<name>/`; Docker builds the provided
+- **[manifest override]** With `--manifest`, does not generate the server project; Docker builds the provided
   manifest instead and uses its `package.name` as the artifact name
 - **[Dockerfile bootstrap]** If `Dockerfile` is missing from the selected workspace root, writes the shared CLI
   Dockerfile there before running Docker
@@ -955,7 +1007,7 @@ Current status:
 cargo cyberfabric init /tmp/cf-demo
 cargo cyberfabric mod add background-worker -p /tmp/cf-demo
 cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
-cargo cyberfabric run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev
 ```
 
 ### Add a module and wire a shared DB server
@@ -965,7 +1017,7 @@ cargo cyberfabric mod add api-db-handler -p /tmp/cf-demo
 cargo cyberfabric config db add primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb
 cargo cyberfabric config mod add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 cargo cyberfabric config mod db add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --server primary
-cargo cyberfabric run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --watch
+cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --watch
 ```
 
 ### Inspect source for a dependency
@@ -976,9 +1028,9 @@ cargo cyberfabric docs --verbose tokio::sync
 
 ## Important Caveats
 
-- **[`-c/--config` is mandatory]** For `config ...`, `build`, `run`, and `deploy`
+- **[`-c/--config` is mandatory]** For `config ...` and `deploy`; `build` and `run` use `Cyberware.toml` instead
 - **[generated servers expect `CF_CLI_CONFIG`]** `cargo cyberfabric run` sets it for you, but manual execution of
-  `.cyberfabric/<name>/` or its compiled binary must provide it explicitly
+  generated project directory or its compiled binary must provide it explicitly
 - **[`lint --dylint` needs the feature build]** Without the `dylint-rules` feature enabled, it currently reaches
   an error
 - **[`lint --strict` depends on Clippy]** Use it together with `--clippy` or `--all`
@@ -1015,6 +1067,6 @@ cargo cyberfabric list apps [-f table|json|yaml|toml]              # unimplement
 cargo cyberfabric docs [-p <path>] [--version <version>] [--clean] [<query>]
 cargo cyberfabric lint [-p <workspace>] [--all] [--clippy] [--strict] [--dylint]
 cargo cyberfabric tools --all
-cargo cyberfabric run [-p <workspace>] -c <config> [--name <name>] [--watch]
-cargo cyberfabric build [-p <workspace>] -c <config> [--name <name>]
+cargo cyberfabric run [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>] [--watch]
+cargo cyberfabric build [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>]
 cargo cyberfabric deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...

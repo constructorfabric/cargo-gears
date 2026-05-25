@@ -5,6 +5,7 @@ use crate::module_parser::{
     get_dependencies, get_module_name_from_crate,
 };
 use anyhow::Context;
+use serde::Serialize;
 use std::collections::{BTreeSet, HashMap};
 use std::env;
 use std::fmt::{self, Display};
@@ -18,7 +19,7 @@ pub struct PathConfigArgs {
     /// Path to the module workspace root
     pub path: Option<PathBuf>,
     /// Path to the config file
-    pub config: PathBuf,
+    pub config: Option<PathBuf>,
 }
 
 pub fn parse_path(s: &str) -> Result<PathBuf, String> {
@@ -35,7 +36,11 @@ pub fn parse_path(s: &str) -> Result<PathBuf, String> {
 impl PathConfigArgs {
     pub fn resolve_config(&self) -> anyhow::Result<PathBuf> {
         let workspace_path = resolve_workspace_path(self.path.as_deref())?;
-        resolve_config_from_workspace(&workspace_path, &self.config)
+        let config = self
+            .config
+            .as_ref()
+            .context("--config is required when no manifest app/environment is selected")?;
+        resolve_config_from_workspace(&workspace_path, config)
     }
 
     pub fn with_workspace_dir<T>(
@@ -43,7 +48,11 @@ impl PathConfigArgs {
         f: impl FnOnce(&Path, &Path) -> anyhow::Result<T>,
     ) -> anyhow::Result<T> {
         let workspace_path = resolve_workspace_path(self.path.as_deref())?;
-        let config_path = resolve_config_from_workspace(&workspace_path, &self.config)?;
+        let config = self
+            .config
+            .as_ref()
+            .context("--config is required when no manifest app/environment is selected")?;
+        let config_path = resolve_config_from_workspace(&workspace_path, config)?;
         f(&workspace_path, &config_path)
     }
 }
@@ -73,17 +82,53 @@ pub fn workspace_root() -> anyhow::Result<PathBuf> {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct BuildRunArgs {
-    pub path_config: PathConfigArgs,
+    /// Path to the module workspace root
+    pub path: Option<PathBuf>,
+    pub manifest: crate::manifest::ManifestSelection,
     /// Use OpenTelemetry tracing
-    pub otel: bool,
+    pub otel: Option<bool>,
     /// Enable FIPS mode
-    pub fips: bool,
+    pub fips: Option<bool>,
     /// Build/run in release mode
-    pub release: bool,
+    pub release: Option<bool>,
     /// Remove Cargo.lock at the start of the execution
-    pub clean: bool,
+    pub clean: Option<bool>,
+    /// Generate and print the project structure without building or running
+    pub dry_run: bool,
     /// Override the generated server and binary name
     pub name: Option<String>,
+}
+
+impl BuildRunArgs {
+    #[must_use]
+    pub fn clean_build(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
+        self.clean.unwrap_or_else(|| {
+            resolved
+                .build
+                .clean
+                .unwrap_or_else(|| self.release_build(resolved))
+        })
+    }
+
+    #[must_use]
+    pub fn release_build(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
+        self.release.unwrap_or({
+            matches!(
+                resolved.build.profile,
+                Some(crate::manifest::BuildProfile::Release)
+            )
+        })
+    }
+
+    #[must_use]
+    pub fn otel_enabled(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
+        self.otel.unwrap_or(resolved.run.otel)
+    }
+
+    #[must_use]
+    pub fn fips_enabled(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
+        self.fips.unwrap_or(resolved.run.fips)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -117,22 +162,7 @@ pub enum OutputFormat {
     Json,
 }
 
-impl BuildRunArgs {
-    pub fn resolve_config_and_name(&self) -> anyhow::Result<(PathBuf, String)> {
-        self.path_config
-            .with_workspace_dir(|workspace_path, config_path| {
-                let project_name =
-                    resolve_generated_project_name(config_path, self.name.as_deref())?;
-                if self.clean {
-                    remove_from_file_structure(workspace_path, &project_name, "Cargo.lock")?;
-                }
-
-                Ok((config_path.to_path_buf(), project_name))
-            })
-    }
-}
-
-pub const BASE_PATH: &str = ".cyberfabric";
+pub const DEFAULT_GENERATED_DIR: &str = ".cyberware";
 
 const CONFIG_PATH_ENV_VAR: &str = "CF_CLI_CONFIG";
 
@@ -291,9 +321,10 @@ fn create_required_deps() -> anyhow::Result<CargoTomlDependencies> {
 
 pub fn generate_server_structure(
     workspace_root: &Path,
+    generated_dir: &Path,
     project_name: &str,
     current_dependencies: &CargoTomlDependencies,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<GeneratedProjectStructure> {
     let workspace = workspace_root
         .to_str()
         .context("workspace path is not valid UTF-8")?
@@ -316,16 +347,48 @@ pub fn generate_server_structure(
         toml::to_string(&cargo_toml).context("something went wrong when transforming to toml")?;
     let main_rs = prepare_cargo_server_main(current_dependencies);
 
-    create_file_structure(workspace_root, project_name, "Cargo.toml", &cargo_toml_str)?;
-    create_file_structure(
-        workspace_root,
-        project_name,
-        ".cargo/config.toml",
-        CARGO_CONFIG_TOML,
-    )?;
-    create_file_structure(workspace_root, project_name, "src/main.rs", &main_rs)?;
+    let files = [
+        ("Cargo.toml", cargo_toml_str),
+        (".cargo/config.toml", CARGO_CONFIG_TOML.to_owned()),
+        ("src/main.rs", main_rs),
+    ]
+    .into_iter()
+    .map(|(relative_path, contents)| {
+        create_file_structure(generated_dir, project_name, relative_path, &contents)?;
+        Ok(GeneratedProjectFile {
+            relative_path: PathBuf::from(relative_path),
+            path: generated_project_dir(generated_dir, project_name).join(relative_path),
+            contents,
+        })
+    })
+    .collect::<anyhow::Result<Vec<_>>>()?;
 
-    Ok(())
+    Ok(GeneratedProjectStructure {
+        project_name: project_name.to_owned(),
+        project_dir: generated_project_dir(generated_dir, project_name),
+        files,
+    })
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct GeneratedProjectStructure {
+    pub project_name: String,
+    pub project_dir: PathBuf,
+    pub files: Vec<GeneratedProjectFile>,
+}
+
+impl GeneratedProjectStructure {
+    pub fn print_json(&self) -> anyhow::Result<()> {
+        println!("{}", serde_json::to_string_pretty(self)?);
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct GeneratedProjectFile {
+    pub relative_path: PathBuf,
+    pub path: PathBuf,
+    pub contents: String,
 }
 
 // Transforms absolute paths into relative paths, ugly but works
@@ -367,18 +430,18 @@ fn make_absolute_paths_relative(dep: &CargoTomlDependency, workspace: &str) -> C
 }
 
 #[must_use]
-pub fn generated_project_dir(workspace_root: &Path, project_name: &str) -> PathBuf {
-    workspace_root.join(BASE_PATH).join(project_name)
+pub fn generated_project_dir(generated_dir: &Path, project_name: &str) -> PathBuf {
+    generated_dir.join(project_name)
 }
 
 fn create_file_structure(
-    workspace_root: &Path,
+    generated_dir: &Path,
     project_name: &str,
     relative_path: &str,
     contents: &str,
 ) -> anyhow::Result<()> {
     use std::io::Write;
-    let path = generated_project_dir(workspace_root, project_name).join(relative_path);
+    let path = generated_project_dir(generated_dir, project_name).join(relative_path);
     fs::create_dir_all(
         path.parent().context(
             "this should be unreachable, the parent for the file structure always exists",
@@ -396,11 +459,11 @@ fn create_file_structure(
 }
 
 pub(crate) fn remove_from_file_structure(
-    workspace_root: &Path,
+    generated_dir: &Path,
     project_name: &str,
     relative_path: &str,
 ) -> anyhow::Result<()> {
-    let path = generated_project_dir(workspace_root, project_name).join(relative_path);
+    let path = generated_project_dir(generated_dir, project_name).join(relative_path);
     if path.exists() {
         fs::remove_file(path).context("can't remove file")?;
     }
@@ -445,15 +508,19 @@ fn prepare_cargo_server_main(dependencies: &CargoTomlDependencies) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        cargo_command, generate_server_structure, generated_project_dir,
+        BuildRunArgs, cargo_command, generate_server_structure, generated_project_dir,
         make_absolute_paths_relative, merge_module_metadata, prepare_cargo_server_main,
         resolve_generated_project_name,
+    };
+    use crate::manifest::{
+        BuildPolicy, BuildProfile, LintPolicy, ManifestSelection, ResolvedManifest, RunPolicy,
+        TestPolicy,
     };
     use crate::module_parser::{
         Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata,
         test_utils::TempDirExt,
     };
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
     use tempfile::TempDir;
 
     fn write_package(temp_dir: &TempDir, relative_path: &str, package_name: &str) {
@@ -559,6 +626,51 @@ path = "src/lib.rs"
     }
 
     #[test]
+    fn build_run_args_use_cli_boolean_overrides_before_manifest_policy() {
+        let resolved = ResolvedManifest {
+            app: "app".to_owned(),
+            env: "dev".to_owned(),
+            workspace_root: PathBuf::from("/workspace"),
+            generated_dir: PathBuf::from("/workspace/.generated"),
+            config_path: PathBuf::from("/workspace/config.yml"),
+            generated_name: "app-dev".to_owned(),
+            run: RunPolicy {
+                fips: true,
+                otel: true,
+                ..RunPolicy::default()
+            },
+            build: BuildPolicy {
+                profile: Some(BuildProfile::Release),
+                clean: Some(true),
+                ..BuildPolicy::default()
+            },
+            lint: LintPolicy::default(),
+            test: TestPolicy::default(),
+            modules: vec![],
+            dependencies: CargoTomlDependencies::default(),
+        };
+        let args = BuildRunArgs {
+            path: None,
+            manifest: ManifestSelection {
+                manifest: PathBuf::from("Cyberware.toml"),
+                app: "app".to_owned(),
+                env: "dev".to_owned(),
+            },
+            otel: Some(false),
+            fips: Some(false),
+            release: Some(false),
+            clean: Some(false),
+            dry_run: false,
+            name: None,
+        };
+
+        assert!(!args.otel_enabled(&resolved));
+        assert!(!args.fips_enabled(&resolved));
+        assert!(!args.release_build(&resolved));
+        assert!(!args.clean_build(&resolved));
+    }
+
+    #[test]
     fn make_absolute_paths_relative_rewrites_workspace_paths() {
         let dependency = CargoTomlDependency {
             path: Some("/tmp/workspace/crates/local-module".to_owned()),
@@ -628,10 +740,34 @@ resolver = "3"
                 },
             )]);
 
-            generate_server_structure(workspace_root, "generated", &current_dependencies)?;
+            let generated_dir = workspace_root.join("custom-generated-dir");
+            let generated = generate_server_structure(
+                workspace_root,
+                &generated_dir,
+                "generated",
+                &current_dependencies,
+            )?;
 
-            let generated_dir = generated_project_dir(workspace_root, "generated");
-            let generated_manifest = std::fs::read_to_string(generated_dir.join("Cargo.toml"))?;
+            assert_eq!(generated.project_name, "generated");
+            assert_eq!(generated.project_dir, generated_dir.join("generated"));
+            assert_eq!(generated.files.len(), 3);
+            assert!(
+                generated
+                    .files
+                    .iter()
+                    .all(|file| file.path.starts_with(generated_dir.join("generated")))
+            );
+            assert!(
+                generated
+                    .files
+                    .iter()
+                    .any(|file| file.relative_path == Path::new("Cargo.toml")
+                        && file.contents.contains("local-module"))
+            );
+
+            let generated_project_dir = generated_project_dir(&generated_dir, "generated");
+            let generated_manifest =
+                std::fs::read_to_string(generated_project_dir.join("Cargo.toml"))?;
             let cargo_toml: toml::Value = toml::from_str(&generated_manifest)?;
             let dependencies = cargo_toml
                 .get("dependencies")
@@ -659,7 +795,7 @@ resolver = "3"
                     "dependency {name} path should be relative: {path}"
                 );
                 assert!(
-                    generated_dir.join(dependency_path).exists(),
+                    generated_project_dir.join(dependency_path).exists(),
                     "dependency {name} path should exist: {path}"
                 );
             }
