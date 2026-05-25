@@ -414,6 +414,38 @@ fn parses_list_system_modules_into_core_command() {
 }
 
 #[test]
+fn parses_list_configs_into_core_command() {
+    let command = parse_command(&["cyberfabric", "list", "configs"]);
+
+    assert_eq!(
+        command,
+        CyberfabricCommand::List(cyberware_cli_core::list::ListArgs {
+            command: cyberware_cli_core::list::ListCommand::Configs(
+                cyberware_cli_core::list::ConfigsArgs {
+                    format: OutputFormat::Table,
+                },
+            ),
+        })
+    );
+}
+
+#[test]
+fn parses_list_apps_into_core_command() {
+    let command = parse_command(&["cyberfabric", "list", "apps"]);
+
+    assert_eq!(
+        command,
+        CyberfabricCommand::List(cyberware_cli_core::list::ListArgs {
+            command: cyberware_cli_core::list::ListCommand::Apps(
+                cyberware_cli_core::list::AppsArgs {
+                    format: OutputFormat::Table,
+                },
+            ),
+        })
+    );
+}
+
+#[test]
 fn rejects_conflicting_tool_selection() {
     let result = Cli::try_parse_from(["cyberfabric", "tools", "--all", "--install", "rustfmt"]);
     let Err(error) = result else {
