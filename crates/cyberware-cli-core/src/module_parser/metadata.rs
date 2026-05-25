@@ -22,11 +22,15 @@ pub struct ResolvedMetadataPath {
     pub source: String,
 }
 
-pub fn get_module_name_from_crate() -> anyhow::Result<HashMap<String, ConfigModule>> {
-    let res = cargo_metadata::MetadataCommand::new()
-        .no_deps()
-        .exec()
-        .context("failed to run cargo metadata")?;
+pub fn get_module_name_from_crate(
+    workspace_dir: Option<&Path>,
+) -> anyhow::Result<HashMap<String, ConfigModule>> {
+    let mut cmd = cargo_metadata::MetadataCommand::new();
+    cmd.no_deps();
+    if let Some(dir) = workspace_dir {
+        cmd.current_dir(dir);
+    }
+    let res = cmd.exec().context("failed to run cargo metadata")?;
     let mut members = HashMap::new();
     for pkg in res.packages {
         for t in &pkg.targets {

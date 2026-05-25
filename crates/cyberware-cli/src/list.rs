@@ -39,7 +39,7 @@ pub struct AppsArgs {
 #[derive(Args)]
 pub struct ModulesArgs {
     /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_and_chdir)]
+    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
     path: Option<PathBuf>,
     /// Show all information related to the modules (fetches registry metadata for system modules)
     #[arg(short = 'v', long)]
@@ -55,7 +55,7 @@ pub struct ModulesArgs {
 #[derive(Args)]
 pub struct LocalModulesArgs {
     /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_and_chdir)]
+    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
     path: Option<PathBuf>,
     /// Show all information related to the module
     #[arg(short = 'v', long)]

@@ -4,6 +4,7 @@ use crate::common::PathConfigArgs;
 use crate::module_parser::{ConfigModule, ConfigModuleMetadata, get_module_name_from_crate};
 use anyhow::{Context, bail};
 use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
@@ -24,17 +25,18 @@ pub struct AddArgs {
 
 impl AddArgs {
     pub fn run(&self) -> anyhow::Result<()> {
-        self.path_config.with_workspace_dir(|config_path| {
-            validate_module_name(&self.module)?;
+        self.path_config
+            .with_workspace_dir(|workspace_path, config_path| {
+                validate_module_name(&self.module)?;
 
-            let mut config = load_config(config_path)?;
-            let local_modules = discover_local_modules(self)?;
-            let metadata = build_required_metadata(self, local_modules.get(&self.module))?;
+                let mut config = load_config(config_path)?;
+                let local_modules = discover_local_modules(workspace_path, self)?;
+                let metadata = build_required_metadata(self, local_modules.get(&self.module))?;
 
-            upsert_module_config(&mut config, self, metadata);
+                upsert_module_config(&mut config, self, metadata);
 
-            save_config(config_path, &config)
-        })
+                save_config(config_path, &config)
+            })
     }
 }
 
@@ -100,8 +102,11 @@ fn merge_module_metadata(
     }
 }
 
-fn discover_local_modules(args: &AddArgs) -> anyhow::Result<HashMap<String, ConfigModule>> {
-    match get_module_name_from_crate() {
+fn discover_local_modules(
+    workspace_path: &Path,
+    args: &AddArgs,
+) -> anyhow::Result<HashMap<String, ConfigModule>> {
+    match get_module_name_from_crate(Some(workspace_path)) {
         Ok(modules) => Ok(modules),
         Err(_) if args.package.is_some() && args.module_version.is_some() => {
             // Allow remote module additions even if the provided -p path is not a Cargo workspace.

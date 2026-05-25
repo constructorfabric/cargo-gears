@@ -10,7 +10,7 @@ pub use cyberware_cli_core::common::{OutputFormat, Registry};
 #[derive(Args)]
 pub struct PathConfigArgs {
     /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_and_chdir)]
+    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
     pub path: Option<PathBuf>,
     /// Path to the config file
     #[arg(short = 'c', long)]

@@ -14,6 +14,7 @@ pub(super) enum RunSignal {
 }
 
 pub(super) struct RunLoop {
+    workspace_path: PathBuf,
     config_path: PathBuf,
     project_name: String,
 }
@@ -23,19 +24,25 @@ pub(super) static FIPS: AtomicBool = AtomicBool::new(false);
 pub(super) static RELEASE: AtomicBool = AtomicBool::new(false);
 
 impl RunLoop {
-    pub(super) const fn new(config_path: PathBuf, project_name: String) -> Self {
+    pub(super) const fn new(
+        workspace_path: PathBuf,
+        config_path: PathBuf,
+        project_name: String,
+    ) -> Self {
         Self {
+            workspace_path,
             config_path,
             project_name,
         }
     }
 
     pub(super) fn run(&self, watch: bool) -> anyhow::Result<RunSignal> {
-        let workspace_path = common::workspace_root()?;
-        let dependencies = common::get_config(&self.config_path)?.create_dependencies()?;
-        common::generate_server_structure(&self.project_name, &dependencies)?;
+        let workspace_path = &self.workspace_path;
+        let dependencies =
+            common::get_config(workspace_path, &self.config_path)?.create_dependencies()?;
+        common::generate_server_structure(workspace_path, &self.project_name, &dependencies)?;
 
-        let cargo_dir = common::generated_project_dir(&self.project_name)?;
+        let cargo_dir = common::generated_project_dir(workspace_path, &self.project_name);
 
         if !watch {
             let status = cargo_run(&cargo_dir, &self.config_path)?
@@ -77,13 +84,12 @@ impl RunLoop {
             .context("failed to watch config directory")?;
         if config_parent != workspace_path.as_path() {
             watcher
-                .watch(&workspace_path, RecursiveMode::NonRecursive)
+                .watch(workspace_path, RecursiveMode::NonRecursive)
                 .context("failed to watch workspace directory")?;
         }
 
         // Watch dependency paths that have `path` set
-        let mut watched_paths =
-            watch_dependency_paths(&dependencies, &mut watcher, &workspace_path);
+        let mut watched_paths = watch_dependency_paths(&dependencies, &mut watcher, workspace_path);
         let mut current_deps = dependencies;
 
         // Event loop - runs until the watcher channel closes
@@ -111,18 +117,20 @@ impl RunLoop {
                 );
 
             if is_config_change || is_workspace_manifest_change {
-                match common::get_config(&self.config_path)
+                match common::get_config(workspace_path, &self.config_path)
                     .and_then(app_config::AppConfig::create_dependencies)
                 {
                     Ok(new_deps) => {
                         if new_deps != current_deps {
-                            if let Err(e) =
-                                common::generate_server_structure(&self.project_name, &new_deps)
-                            {
+                            if let Err(e) = common::generate_server_structure(
+                                workspace_path,
+                                &self.project_name,
+                                &new_deps,
+                            ) {
                                 eprintln!("failed to regenerate server structure: {e}");
                             } else {
                                 // Reconcile watched dependency paths
-                                let new_watched = collect_dep_paths(&new_deps, &workspace_path);
+                                let new_watched = collect_dep_paths(&new_deps, workspace_path);
                                 for old in watched_paths.difference(&new_watched) {
                                     if let Err(err) = watcher.unwatch(old) {
                                         eprintln!("failed to unwatch {}: {err}", old.display());
