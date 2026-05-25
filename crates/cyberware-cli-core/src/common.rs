@@ -477,14 +477,11 @@ mod tests {
     };
     use crate::module_parser::{
         Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata,
-        test_utils::TempDirExt,
+        test_utils::{CWD_MUTEX, TempDirExt},
     };
     use std::env;
     use std::path::Path;
-    use std::sync::{LazyLock, Mutex};
     use tempfile::TempDir;
-
-    static CURRENT_DIR_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
     struct CwdRestoreGuard {
         original_dir: std::path::PathBuf,
@@ -632,7 +629,7 @@ path = "src/lib.rs"
 
     #[test]
     fn generate_server_structure_writes_existing_relative_dependency_paths() {
-        let _guard = CURRENT_DIR_LOCK
+        let _guard = CWD_MUTEX
             .lock()
             .expect("current-dir test lock should not be poisoned");
         let _cwd_guard = CwdRestoreGuard {

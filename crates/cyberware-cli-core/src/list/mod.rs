@@ -42,7 +42,7 @@ mod tests {
     use crate::common::{OutputFormat, Registry};
     use crate::config::modules::SYSTEM_REGISTRY_MODULES;
     use crate::module_parser::get_module_name_from_crate;
-    use crate::module_parser::test_utils::TempDirExt;
+    use crate::module_parser::test_utils::{CWD_MUTEX, TempDirExt};
     use tempfile::TempDir;
 
     /// Scaffolds a temporary Cargo workspace with the given module crates.
@@ -99,6 +99,7 @@ mod tests {
 
     #[test]
     fn local_modules_discovers_workspace_modules() {
+        let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
         let temp_dir = scaffold_workspace(&[("crate-alpha", "alpha"), ("crate-beta", "beta")]);
 
         let original_dir = std::env::current_dir().expect("failed to get cwd");
@@ -122,6 +123,7 @@ mod tests {
 
     #[test]
     fn local_modules_empty_workspace_finds_none() {
+        let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
         let temp_dir = TempDir::new().expect("failed to create temp dir");
         temp_dir.write(
             "Cargo.toml",
@@ -161,6 +163,7 @@ mod tests {
 
     #[test]
     fn list_local_modules_runs_successfully() {
+        let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
         let temp_dir = scaffold_workspace(&[("crate-gamma", "gamma")]);
 
         let args = LocalModulesArgs {
@@ -174,6 +177,7 @@ mod tests {
 
     #[test]
     fn list_local_modules_verbose_runs_successfully() {
+        let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
         let temp_dir = scaffold_workspace(&[("crate-delta", "delta")]);
 
         let args = LocalModulesArgs {
@@ -207,6 +211,7 @@ mod tests {
 
     #[test]
     fn list_modules_combines_system_and_local() {
+        let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
         let temp_dir = scaffold_workspace(&[("crate-one", "one"), ("crate-two", "two")]);
 
         let args = ModulesArgs {
@@ -221,6 +226,7 @@ mod tests {
 
     #[test]
     fn list_local_modules_verbose_includes_metadata() {
+        let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
         let temp_dir = scaffold_workspace(&[("crate-echo", "echo")]);
 
         let original_dir = std::env::current_dir().expect("failed to get cwd");

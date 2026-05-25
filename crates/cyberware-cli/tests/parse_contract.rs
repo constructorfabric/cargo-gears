@@ -7,6 +7,8 @@ use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
+use cyberware_cli_core::module_parser::test_utils::CWD_MUTEX;
+
 fn parse_command(args: &[&str]) -> CyberfabricCommand {
     Cli::try_parse_from(args).expect("argv should parse").into()
 }
@@ -457,6 +459,7 @@ fn rejects_conflicting_tool_selection() {
 
 #[test]
 fn path_parsing_changes_current_directory() -> anyhow::Result<()> {
+    let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
     let original_dir = std::env::current_dir()?;
     let temp_dir = tempfile::tempdir()?;
 
