@@ -62,6 +62,7 @@ cargo cyberfabric
 ├── docs
 ├── lint
 ├── list
+│   ├── modules
 │   ├── local-modules
 │   └── system-modules
 ├── test
@@ -794,6 +795,39 @@ cargo cyberfabric lint -p /tmp/cf-demo --dylint
 
 Inspect workspace modules, system modules, and project state.
 
+#### `list modules`
+
+List all modules — both system-registry and workspace-discovered — in a single unified view.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list modules [-p <PATH>] [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
+- **[`-v, --verbose`]** Show full metadata for both system and local modules (fetches registry metadata for system
+  modules)
+- **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Only `table` is currently implemented
+
+Behavior:
+
+- **[combined output]** Prints system modules first, then workspace modules, separated by a blank line
+- **[config-independent]** Does not require a `-c/--config` file
+
+Examples:
+
+```bash
+cargo cyberfabric list modules
+```
+
+```bash
+cargo cyberfabric list modules -p /tmp/cf-demo --verbose
+```
+
 #### `list local-modules`
 
 List workspace-discovered modules by scanning Cargo metadata for crates that contain `src/module.rs`.
@@ -944,6 +978,7 @@ cargo cyberfabric config db add <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db edit <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db rm <name> [-p <workspace>] -c <config>
 
+cargo cyberfabric list modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
 cargo cyberfabric list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
 cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
 
