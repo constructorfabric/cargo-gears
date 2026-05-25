@@ -64,7 +64,9 @@ cargo cyberfabric
 ├── list
 │   ├── modules
 │   ├── local-modules
-│   └── system-modules
+│   ├── system-modules
+│   ├── configs
+│   └── apps
 ├── test
 ├── tools
 ├── run
@@ -899,6 +901,32 @@ cargo cyberfabric list system-modules
 cargo cyberfabric list system-modules --verbose
 ```
 
+#### `list configs`
+
+List configuration files, their inferred app/environment links, and runtime sections.
+
+**Currently unimplemented** — blocked on the manifest-first design (`Cyberware.toml`). Requires manifest
+parsing to resolve app/environment links and runtime sections.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list configs [--format table|json|yaml|toml]
+```
+
+#### `list apps`
+
+List apps, environments, and build outputs.
+
+**Currently unimplemented** — blocked on the manifest-first design (`Cyberware.toml`). Requires manifest
+parsing to enumerate apps, environments, and build outputs.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list apps [--format table|json|yaml|toml]
+```
+
 ### `test`
 
 Declared in the CLI but **currently unimplemented**.
@@ -981,6 +1009,8 @@ cargo cyberfabric config db rm <name> [-p <workspace>] -c <config>
 cargo cyberfabric list modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
 cargo cyberfabric list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
 cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo cyberfabric list configs [-f table|json|yaml|toml]           # unimplemented
+cargo cyberfabric list apps [-f table|json|yaml|toml]              # unimplemented
 
 cargo cyberfabric docs [-p <path>] [--version <version>] [--clean] [<query>]
 cargo cyberfabric lint [-p <workspace>] [--all] [--clippy] [--strict] [--dylint]
