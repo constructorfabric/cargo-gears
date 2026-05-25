@@ -801,13 +801,15 @@ List workspace-discovered modules by scanning Cargo metadata for crates that con
 Synopsis:
 
 ```bash
-cargo cyberfabric list local-modules [-p <PATH>] [--verbose]
+cargo cyberfabric list local-modules [-p <PATH>] [--verbose] [--format table|json|yaml|toml]
 ```
 
 Arguments:
 
 - **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
 - **[`-v, --verbose`]** Show full module metadata: package, version, path, features, deps, and capabilities
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Supported values: `table`, `json`, `yaml`, `toml`.
+  Only `table` is currently implemented; other formats will be added in a future release
 
 Behavior:
 
@@ -834,7 +836,7 @@ List built-in system modules from the CyberFabric registry.
 Synopsis:
 
 ```bash
-cargo cyberfabric list system-modules [--verbose] [--registry crates.io]
+cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
 ```
 
 Arguments:
@@ -842,6 +844,8 @@ Arguments:
 - **[`-v, --verbose`]** Fetch registry metadata and show latest version, features, deps, and capabilities for each
   system module
 - **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Supported values: `table`, `json`, `yaml`, `toml`.
+  Only `table` is currently implemented; other formats will be added in a future release
 
 Behavior:
 
@@ -940,8 +944,8 @@ cargo cyberfabric config db add <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db edit <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db rm <name> [-p <workspace>] -c <config>
 
-cargo cyberfabric list local-modules [-p <workspace>] [--verbose]
-cargo cyberfabric list system-modules [--verbose] [--registry crates.io]
+cargo cyberfabric list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
+cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
 
 cargo cyberfabric docs [-p <path>] [--version <version>] [--clean] [<query>]
 cargo cyberfabric lint [-p <workspace>] [--all] [--clippy] [--strict] [--dylint]
