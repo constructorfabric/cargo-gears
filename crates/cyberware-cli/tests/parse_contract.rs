@@ -2,7 +2,7 @@ use clap::Parser;
 use cyberware_cli::Cli;
 use cyberware_cli_core::CyberfabricCommand;
 use cyberware_cli_core::app_config::{DbConnConfig, DbEngineCfg, PoolCfg};
-use cyberware_cli_core::common::{BuildRunArgs, PathConfigArgs, Registry};
+use cyberware_cli_core::common::{BuildRunArgs, OutputFormat, PathConfigArgs, Registry};
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -355,6 +355,7 @@ fn parses_list_local_modules_into_core_command() {
                 cyberware_cli_core::list::LocalModulesArgs {
                     path: None,
                     verbose: true,
+                    format: OutputFormat::Table,
                 },
             ),
         })
@@ -379,6 +380,7 @@ fn parses_list_system_modules_into_core_command() {
                 cyberware_cli_core::list::SystemModulesArgs {
                     verbose: true,
                     registry: Registry::CratesIo,
+                    format: OutputFormat::Table,
                 },
             ),
         })
