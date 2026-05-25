@@ -1,4 +1,4 @@
-use crate::common::with_current_dir_for_optional_path;
+use crate::common::{OutputFormat, with_current_dir_for_optional_path};
 use crate::module_parser::{ConfigModuleMetadata, get_module_name_from_crate};
 use std::fmt::Display;
 use std::path::PathBuf;
@@ -7,10 +7,16 @@ use std::path::PathBuf;
 pub struct LocalModulesArgs {
     pub path: Option<PathBuf>,
     pub verbose: bool,
+    pub format: OutputFormat,
 }
 
 impl LocalModulesArgs {
     pub fn run(&self) -> anyhow::Result<()> {
+        match self.format {
+            OutputFormat::Table => {}
+            other => todo!("output format {other:?} is not yet implemented for list local-modules"),
+        }
+
         with_current_dir_for_optional_path(self.path.as_deref(), || {
             let local_modules = get_module_name_from_crate()?;
 

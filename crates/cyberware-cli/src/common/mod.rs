@@ -72,6 +72,26 @@ impl From<Registry> for cyberware_cli_core::common::Registry {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
+pub enum OutputFormat {
+    #[default]
+    Table,
+    Json,
+    Yaml,
+    Toml,
+}
+
+impl From<OutputFormat> for cyberware_cli_core::common::OutputFormat {
+    fn from(format: OutputFormat) -> Self {
+        match format {
+            OutputFormat::Table => Self::Table,
+            OutputFormat::Json => Self::Json,
+            OutputFormat::Yaml => Self::Yaml,
+            OutputFormat::Toml => Self::Toml,
+        }
+    }
+}
+
 #[derive(Clone, Args)]
 pub struct DbConnConfig {
     /// Explicit database engine for this connection.

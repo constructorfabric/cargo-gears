@@ -1,4 +1,4 @@
-use crate::common::Registry;
+use crate::common::{OutputFormat, Registry};
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
 
@@ -24,6 +24,9 @@ pub struct LocalModulesArgs {
     /// Show all information related to the module
     #[arg(short = 'v', long)]
     verbose: bool,
+    /// Output format
+    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
+    format: OutputFormat,
 }
 
 #[derive(Args)]
@@ -34,6 +37,9 @@ pub struct SystemModulesArgs {
     /// Registry to query for system-crate metadata
     #[arg(long, value_enum, default_value_t = Registry::CratesIo)]
     registry: Registry,
+    /// Output format
+    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
+    format: OutputFormat,
 }
 
 impl ListArgs {
@@ -64,6 +70,7 @@ impl From<LocalModulesArgs> for cyberware_cli_core::list::LocalModulesArgs {
         Self {
             path: args.path,
             verbose: args.verbose,
+            format: args.format.into(),
         }
     }
 }
@@ -73,6 +80,7 @@ impl From<SystemModulesArgs> for cyberware_cli_core::list::SystemModulesArgs {
         Self {
             verbose: args.verbose,
             registry: args.registry.into(),
+            format: args.format.into(),
         }
     }
 }

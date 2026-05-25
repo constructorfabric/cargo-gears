@@ -1,4 +1,4 @@
-use crate::common::Registry;
+use crate::common::{OutputFormat, Registry};
 use crate::config::modules::list::{RegistryMetadata, fetch_all_registry_metadata};
 use crate::config::modules::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule};
 use anyhow::Context;
@@ -8,10 +8,18 @@ use std::fmt::Display;
 pub struct SystemModulesArgs {
     pub verbose: bool,
     pub registry: Registry,
+    pub format: OutputFormat,
 }
 
 impl SystemModulesArgs {
     pub fn run(&self) -> anyhow::Result<()> {
+        match self.format {
+            OutputFormat::Table => {}
+            other => {
+                todo!("output format {other:?} is not yet implemented for list system-modules")
+            }
+        }
+
         println!("System modules:");
         if self.verbose {
             let runtime = tokio::runtime::Builder::new_current_thread()

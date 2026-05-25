@@ -145,6 +145,15 @@ impl Display for Registry {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum OutputFormat {
+    #[default]
+    Table,
+    Json,
+    Yaml,
+    Toml,
+}
+
 impl BuildRunArgs {
     pub fn resolve_config_and_name(&self) -> anyhow::Result<(PathBuf, String)> {
         self.path_config.with_workspace_dir(|config_path| {
