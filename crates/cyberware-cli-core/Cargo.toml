@@ -13,6 +13,7 @@ publish = false
 default = []
 dylint-rules = ["dep:dylint"]
 test-utils = []
+clap = ["dep:clap"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -36,6 +37,7 @@ semver = { workspace = true }
 tempfile = { workspace = true }
 dylint = { workspace = true, optional = true }
 syn = { workspace = true }
+clap = { workspace = true, features = ["derive"], optional = true }
 
 [lints]
 workspace = true

@@ -188,7 +188,7 @@ impl From<ConfigModuleListArgs> for cyberware_cli_core::config::modules::list::L
             path_config: args.path_config.into(),
             system: args.system,
             verbose: args.verbose,
-            registry: args.registry.into(),
+            registry: args.registry,
         }
     }
 }

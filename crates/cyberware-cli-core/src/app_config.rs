@@ -240,6 +240,7 @@ pub struct DbConnConfig {
 
 /// Serializable engine selector for configuration.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "lowercase")]
 pub enum DbEngineCfg {
     Postgres,

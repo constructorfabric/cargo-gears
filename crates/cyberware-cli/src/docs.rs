@@ -42,7 +42,7 @@ impl From<DocsArgs> for cyberware_cli_core::docs::DocsArgs {
     fn from(args: DocsArgs) -> Self {
         Self {
             path: args.path,
-            registry: args.registry.into(),
+            registry: args.registry,
             verbose: args.verbose,
             libs: args.libs,
             version: args.version,

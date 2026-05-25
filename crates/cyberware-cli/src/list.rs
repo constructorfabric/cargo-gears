@@ -109,8 +109,8 @@ impl From<ModulesArgs> for cyberware_cli_core::list::ModulesArgs {
         Self {
             path: args.path,
             verbose: args.verbose,
-            registry: args.registry.into(),
-            format: args.format.into(),
+            registry: args.registry,
+            format: args.format,
         }
     }
 }
@@ -120,7 +120,7 @@ impl From<LocalModulesArgs> for cyberware_cli_core::list::LocalModulesArgs {
         Self {
             path: args.path,
             verbose: args.verbose,
-            format: args.format.into(),
+            format: args.format,
         }
     }
 }
@@ -129,8 +129,8 @@ impl From<SystemModulesArgs> for cyberware_cli_core::list::SystemModulesArgs {
     fn from(args: SystemModulesArgs) -> Self {
         Self {
             verbose: args.verbose,
-            registry: args.registry.into(),
-            format: args.format.into(),
+            registry: args.registry,
+            format: args.format,
         }
     }
 }
@@ -138,7 +138,7 @@ impl From<SystemModulesArgs> for cyberware_cli_core::list::SystemModulesArgs {
 impl From<ConfigsArgs> for cyberware_cli_core::list::ConfigsArgs {
     fn from(args: ConfigsArgs) -> Self {
         Self {
-            format: args.format.into(),
+            format: args.format,
         }
     }
 }
@@ -146,7 +146,7 @@ impl From<ConfigsArgs> for cyberware_cli_core::list::ConfigsArgs {
 impl From<AppsArgs> for cyberware_cli_core::list::AppsArgs {
     fn from(args: AppsArgs) -> Self {
         Self {
-            format: args.format.into(),
+            format: args.format,
         }
     }
 }

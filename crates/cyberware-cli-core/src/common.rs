@@ -125,8 +125,10 @@ pub struct BuildRunArgs {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum Registry {
     #[default]
+    #[cfg_attr(feature = "clap", value(name = "crates.io"))]
     CratesIo,
 }
 
@@ -146,6 +148,7 @@ impl Display for Registry {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum OutputFormat {
     #[default]
     Table,
