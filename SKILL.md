@@ -61,6 +61,9 @@ cargo cyberfabric
 │       └── rm
 ├── docs
 ├── lint
+├── list
+│   ├── local-modules
+│   └── system-modules
 ├── test
 ├── tools
 ├── run
@@ -92,6 +95,7 @@ From the current implementation, the CLI is mainly for:
 - **[server generation]** Generate a runnable Cargo project under `.cyberfabric/<name>/`
 - **[build/run/deploy]** Build, run, or package that generated server as a Docker image
 - **[source inspection]** Resolve Rust source for crates/items through workspace metadata or crates.io
+- **[module inspection]** List workspace-discovered and system-registry modules
 - **[tool bootstrap]** Install or upgrade `rustup`, `cargofmt`, and `clippy`
 
 ## Top-Level Commands
@@ -786,6 +790,77 @@ cargo cyberfabric lint --dylint
 cargo cyberfabric lint -p /tmp/cf-demo --dylint
 ```
 
+### `list`
+
+Inspect workspace modules, system modules, and project state.
+
+#### `list local-modules`
+
+List workspace-discovered modules by scanning Cargo metadata for crates that contain `src/module.rs`.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list local-modules [-p <PATH>] [--verbose]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
+- **[`-v, --verbose`]** Show full module metadata: package, version, path, features, deps, and capabilities
+
+Behavior:
+
+- **[workspace scanning]** Runs `cargo metadata --no-deps` and discovers crates with a `src/module.rs` target
+- **[config-independent]** Does not require a `-c/--config` file; only inspects the workspace
+- **[sorted output]** Modules are listed alphabetically by name
+- **[verbose metadata]** With `--verbose`, prints package name, version, path, default-features, features, deps, and
+  capabilities for each module
+
+Examples:
+
+```bash
+cargo cyberfabric list local-modules
+```
+
+```bash
+cargo cyberfabric list local-modules -p /tmp/cf-demo --verbose
+```
+
+#### `list system-modules`
+
+List built-in system modules from the CyberFabric registry.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list system-modules [--verbose] [--registry crates.io]
+```
+
+Arguments:
+
+- **[`-v, --verbose`]** Fetch registry metadata and show latest version, features, deps, and capabilities for each
+  system module
+- **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
+
+Behavior:
+
+- **[static list]** Without `--verbose`, prints the known system module names and their crate names from a compiled-in
+  registry
+- **[registry fetch]** With `--verbose`, fetches crate metadata and `src/module.rs` from the registry for each system
+  module (concurrent, capped at 4 in-flight requests)
+- **[config-independent]** Does not require a workspace or config file
+
+Examples:
+
+```bash
+cargo cyberfabric list system-modules
+```
+
+```bash
+cargo cyberfabric list system-modules --verbose
+```
+
 ### `test`
 
 Declared in the CLI but **currently unimplemented**.
@@ -864,6 +939,9 @@ cargo cyberfabric config mod db rm <module> [-p <workspace>] -c <config>
 cargo cyberfabric config db add <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db edit <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db rm <name> [-p <workspace>] -c <config>
+
+cargo cyberfabric list local-modules [-p <workspace>] [--verbose]
+cargo cyberfabric list system-modules [--verbose] [--registry crates.io]
 
 cargo cyberfabric docs [-p <path>] [--version <version>] [--clean] [<query>]
 cargo cyberfabric lint [-p <workspace>] [--all] [--clippy] [--strict] [--dylint]
