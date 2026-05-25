@@ -40,25 +40,26 @@ pub struct AddArgs {
 
 impl AddArgs {
     fn run(&self) -> anyhow::Result<()> {
-        self.path_config.with_workspace_dir(|config_path| {
-            validate_module_db_payload(&self.module, &self.conn)?;
+        self.path_config
+            .with_workspace_dir(|_workspace_path, config_path| {
+                validate_module_db_payload(&self.module, &self.conn)?;
 
-            let mut config = load_config(config_path)?;
-            if !config.modules.contains_key(&self.module) {
-                bail!(
-                    "module '{}' not found in {}; use `config mod add` first",
-                    self.module,
-                    config_path.display()
-                );
-            }
-            let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
-            if let Some(existing) = module_cfg.database.as_mut() {
-                existing.apply_patch(self.conn.clone());
-            } else {
-                module_cfg.database = Some(self.conn.clone());
-            }
-            save_config(config_path, &config)
-        })
+                let mut config = load_config(config_path)?;
+                if !config.modules.contains_key(&self.module) {
+                    bail!(
+                        "module '{}' not found in {}; use `config mod add` first",
+                        self.module,
+                        config_path.display()
+                    );
+                }
+                let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
+                if let Some(existing) = module_cfg.database.as_mut() {
+                    existing.apply_patch(self.conn.clone());
+                } else {
+                    module_cfg.database = Some(self.conn.clone());
+                }
+                save_config(config_path, &config)
+            })
     }
 }
 
@@ -72,21 +73,22 @@ pub struct EditArgs {
 
 impl EditArgs {
     fn run(&self) -> anyhow::Result<()> {
-        self.path_config.with_workspace_dir(|config_path| {
-            validate_module_db_payload(&self.module, &self.conn)?;
+        self.path_config
+            .with_workspace_dir(|_workspace_path, config_path| {
+                validate_module_db_payload(&self.module, &self.conn)?;
 
-            let mut config = load_config(config_path)?;
-            let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
-            let db_cfg = module_cfg.database.as_mut().with_context(|| {
-                format!(
-                    "module '{}' has no database config; use `config mod db add` first",
-                    self.module
-                )
-            })?;
-            db_cfg.apply_patch(self.conn.clone());
+                let mut config = load_config(config_path)?;
+                let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
+                let db_cfg = module_cfg.database.as_mut().with_context(|| {
+                    format!(
+                        "module '{}' has no database config; use `config mod db add` first",
+                        self.module
+                    )
+                })?;
+                db_cfg.apply_patch(self.conn.clone());
 
-            save_config(config_path, &config)
-        })
+                save_config(config_path, &config)
+            })
     }
 }
 
@@ -99,18 +101,19 @@ pub struct RemoveArgs {
 
 impl RemoveArgs {
     fn run(&self) -> anyhow::Result<()> {
-        self.path_config.with_workspace_dir(|config_path| {
-            validate_module_name(&self.module)?;
+        self.path_config
+            .with_workspace_dir(|_workspace_path, config_path| {
+                validate_module_name(&self.module)?;
 
-            let mut config = load_config(config_path)?;
-            let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
-            if module_cfg.database.take().is_none() {
-                let module = &self.module;
-                bail!("module '{module}' has no database config");
-            }
+                let mut config = load_config(config_path)?;
+                let module_cfg = get_module_cfg_mut(&mut config, &self.module, config_path)?;
+                if module_cfg.database.take().is_none() {
+                    let module = &self.module;
+                    bail!("module '{module}' has no database config");
+                }
 
-            save_config(config_path, &config)
-        })
+                save_config(config_path, &config)
+            })
     }
 }
 

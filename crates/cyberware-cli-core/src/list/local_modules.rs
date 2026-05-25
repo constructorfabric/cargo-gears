@@ -1,7 +1,7 @@
-use crate::common::{OutputFormat, with_current_dir_for_optional_path};
+use crate::common::OutputFormat;
 use crate::module_parser::{ConfigModuleMetadata, get_module_name_from_crate};
 use std::fmt::Display;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct LocalModulesArgs {
@@ -19,14 +19,15 @@ impl LocalModulesArgs {
             }
         }
 
-        with_current_dir_for_optional_path(self.path.as_deref(), || {
-            print_local_modules(self.verbose)
-        })
+        print_local_modules(self.verbose, self.path.as_deref())
     }
 }
 
-pub(super) fn print_local_modules(verbose: bool) -> anyhow::Result<()> {
-    let local_modules = get_module_name_from_crate()?;
+pub(super) fn print_local_modules(
+    verbose: bool,
+    workspace_dir: Option<&Path>,
+) -> anyhow::Result<()> {
+    let local_modules = get_module_name_from_crate(workspace_dir)?;
 
     println!("Workspace modules:");
     if local_modules.is_empty() {

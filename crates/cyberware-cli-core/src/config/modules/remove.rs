@@ -11,16 +11,17 @@ pub struct RemoveArgs {
 
 impl RemoveArgs {
     pub fn run(&self) -> anyhow::Result<()> {
-        self.path_config.with_workspace_dir(|config_path| {
-            validate_module_name(&self.module)?;
+        self.path_config
+            .with_workspace_dir(|_workspace_path, config_path| {
+                validate_module_name(&self.module)?;
 
-            let mut config = load_config(config_path)?;
-            if config.modules.remove(&self.module).is_none() {
-                let module = &self.module;
-                bail!("module '{module}' not found in modules section");
-            }
+                let mut config = load_config(config_path)?;
+                if config.modules.remove(&self.module).is_none() {
+                    let module = &self.module;
+                    bail!("module '{module}' not found in modules section");
+                }
 
-            save_config(config_path, &config)
-        })
+                save_config(config_path, &config)
+            })
     }
 }

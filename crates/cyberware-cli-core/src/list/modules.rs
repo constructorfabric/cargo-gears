@@ -1,4 +1,4 @@
-use crate::common::{OutputFormat, Registry, with_current_dir_for_optional_path};
+use crate::common::{OutputFormat, Registry};
 use std::path::PathBuf;
 
 use super::local_modules::print_local_modules;
@@ -21,8 +21,6 @@ impl ModulesArgs {
 
         print_system_modules(self.verbose, self.registry)?;
         println!();
-        with_current_dir_for_optional_path(self.path.as_deref(), || {
-            print_local_modules(self.verbose)
-        })
+        print_local_modules(self.verbose, self.path.as_deref())
     }
 }
