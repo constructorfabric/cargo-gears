@@ -345,6 +345,32 @@ fn parses_config_module_db_edit_into_core_command() {
 }
 
 #[test]
+fn parses_list_modules_into_core_command() {
+    let command = parse_command(&[
+        "cyberfabric",
+        "list",
+        "modules",
+        "--verbose",
+        "--registry",
+        "crates.io",
+    ]);
+
+    assert_eq!(
+        command,
+        CyberfabricCommand::List(cyberware_cli_core::list::ListArgs {
+            command: cyberware_cli_core::list::ListCommand::Modules(
+                cyberware_cli_core::list::ModulesArgs {
+                    path: None,
+                    verbose: true,
+                    registry: Registry::CratesIo,
+                    format: OutputFormat::Table,
+                },
+            ),
+        })
+    );
+}
+
+#[test]
 fn parses_list_local_modules_into_core_command() {
     let command = parse_command(&["cyberfabric", "list", "local-modules", "--verbose"]);
 
