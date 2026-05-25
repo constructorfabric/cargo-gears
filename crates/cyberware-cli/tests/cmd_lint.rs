@@ -3,7 +3,6 @@ mod common;
 use clap::Parser;
 use cyberware_cli::Cli;
 use cyberware_cli_core::CyberfabricCommand;
-use cyberware_cli_core::module_parser::test_utils::CWD_MUTEX;
 use std::ffi::OsString;
 
 use common::parse_command;
@@ -26,8 +25,7 @@ fn parses_lint_into_core_command() {
 }
 
 #[test]
-fn path_parsing_changes_current_directory() -> anyhow::Result<()> {
-    let _lock = CWD_MUTEX.lock().expect("cwd mutex should not be poisoned");
+fn path_parsing_does_not_change_current_directory() -> anyhow::Result<()> {
     let original_dir = std::env::current_dir()?;
     let temp_dir = tempfile::tempdir()?;
 
@@ -37,11 +35,9 @@ fn path_parsing_changes_current_directory() -> anyhow::Result<()> {
         OsString::from("-p"),
         temp_dir.path().as_os_str().to_owned(),
     ];
-    let result = Cli::try_parse_from(args);
-    let parsed_dir = std::env::current_dir()?;
-    std::env::set_current_dir(&original_dir)?;
+    Cli::try_parse_from(args).expect("path should parse successfully");
 
-    result.expect("path should parse and change cwd");
-    assert_eq!(parsed_dir, temp_dir.path().canonicalize()?);
+    // CWD must remain unchanged after parsing
+    assert_eq!(std::env::current_dir()?, original_dir);
     Ok(())
 }

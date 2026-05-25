@@ -7,7 +7,7 @@ pub struct LintArgs {
     #[arg(long)]
     all: bool,
     /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_and_chdir)]
+    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
     pub path: Option<PathBuf>,
     /// Check whether the workspace is formatted with `cargo fmt`.
     #[arg(long)]
