@@ -61,6 +61,12 @@ cargo cyberfabric
 │       └── rm
 ├── docs
 ├── lint
+├── list
+│   ├── modules
+│   ├── local-modules
+│   ├── system-modules
+│   ├── configs
+│   └── apps
 ├── test
 ├── tools
 ├── run
@@ -92,6 +98,7 @@ From the current implementation, the CLI is mainly for:
 - **[server generation]** Generate a runnable Cargo project under `.cyberfabric/<name>/`
 - **[build/run/deploy]** Build, run, or package that generated server as a Docker image
 - **[source inspection]** Resolve Rust source for crates/items through workspace metadata or crates.io
+- **[module inspection]** List workspace-discovered and system-registry modules
 - **[tool bootstrap]** Install or upgrade `rustup`, `cargofmt`, and `clippy`
 
 ## Top-Level Commands
@@ -786,6 +793,140 @@ cargo cyberfabric lint --dylint
 cargo cyberfabric lint -p /tmp/cf-demo --dylint
 ```
 
+### `list`
+
+Inspect workspace modules, system modules, and project state.
+
+#### `list modules`
+
+List all modules — both system-registry and workspace-discovered — in a single unified view.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list modules [-p <PATH>] [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
+- **[`-v, --verbose`]** Show full metadata for both system and local modules (fetches registry metadata for system
+  modules)
+- **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Only `table` is currently implemented
+
+Behavior:
+
+- **[combined output]** Prints system modules first, then workspace modules, separated by a blank line
+- **[config-independent]** Does not require a `-c/--config` file
+
+Examples:
+
+```bash
+cargo cyberfabric list modules
+```
+
+```bash
+cargo cyberfabric list modules -p /tmp/cf-demo --verbose
+```
+
+#### `list local-modules`
+
+List workspace-discovered modules by scanning Cargo metadata for crates that contain `src/module.rs`.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list local-modules [-p <PATH>] [--verbose] [--format table|json|yaml|toml]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
+- **[`-v, --verbose`]** Show full module metadata: package, version, path, features, deps, and capabilities
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Supported values: `table`, `json`, `yaml`, `toml`.
+  Only `table` is currently implemented; other formats will be added in a future release
+
+Behavior:
+
+- **[workspace scanning]** Runs `cargo metadata --no-deps` and discovers crates with a `src/module.rs` target
+- **[config-independent]** Does not require a `-c/--config` file; only inspects the workspace
+- **[sorted output]** Modules are listed alphabetically by name
+- **[verbose metadata]** With `--verbose`, prints package name, version, path, default-features, features, deps, and
+  capabilities for each module
+
+Examples:
+
+```bash
+cargo cyberfabric list local-modules
+```
+
+```bash
+cargo cyberfabric list local-modules -p /tmp/cf-demo --verbose
+```
+
+#### `list system-modules`
+
+List built-in system modules from the CyberFabric registry.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+```
+
+Arguments:
+
+- **[`-v, --verbose`]** Fetch registry metadata and show latest version, features, deps, and capabilities for each
+  system module
+- **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Supported values: `table`, `json`, `yaml`, `toml`.
+  Only `table` is currently implemented; other formats will be added in a future release
+
+Behavior:
+
+- **[static list]** Without `--verbose`, prints the known system module names and their crate names from a compiled-in
+  registry
+- **[registry fetch]** With `--verbose`, fetches crate metadata and `src/module.rs` from the registry for each system
+  module (concurrent, capped at 4 in-flight requests)
+- **[config-independent]** Does not require a workspace or config file
+
+Examples:
+
+```bash
+cargo cyberfabric list system-modules
+```
+
+```bash
+cargo cyberfabric list system-modules --verbose
+```
+
+#### `list configs`
+
+List configuration files, their inferred app/environment links, and runtime sections.
+
+**Currently unimplemented** — blocked on the manifest-first design (`Cyberware.toml`). Requires manifest
+parsing to resolve app/environment links and runtime sections.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list configs [--format table|json|yaml|toml]
+```
+
+#### `list apps`
+
+List apps, environments, and build outputs.
+
+**Currently unimplemented** — blocked on the manifest-first design (`Cyberware.toml`). Requires manifest
+parsing to enumerate apps, environments, and build outputs.
+
+Synopsis:
+
+```bash
+cargo cyberfabric list apps [--format table|json|yaml|toml]
+```
+
 ### `test`
 
 Declared in the CLI but **currently unimplemented**.
@@ -864,6 +1005,12 @@ cargo cyberfabric config mod db rm <module> [-p <workspace>] -c <config>
 cargo cyberfabric config db add <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db edit <name> [-p <workspace>] -c <config> ...
 cargo cyberfabric config db rm <name> [-p <workspace>] -c <config>
+
+cargo cyberfabric list modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo cyberfabric list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
+cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo cyberfabric list configs [-f table|json|yaml|toml]           # unimplemented
+cargo cyberfabric list apps [-f table|json|yaml|toml]              # unimplemented
 
 cargo cyberfabric docs [-p <path>] [--version <version>] [--clean] [<query>]
 cargo cyberfabric lint [-p <workspace>] [--all] [--clippy] [--strict] [--dylint]

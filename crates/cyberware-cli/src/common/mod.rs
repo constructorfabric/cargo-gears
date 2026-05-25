@@ -1,13 +1,16 @@
-use clap::{Args, ValueEnum};
+use clap::Args;
 use cyberware_cli_core::app_config;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
+pub use cyberware_cli_core::app_config::DbEngineCfg;
+pub use cyberware_cli_core::common::{OutputFormat, Registry};
+
 #[derive(Args)]
 pub struct PathConfigArgs {
     /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_and_chdir)]
+    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
     pub path: Option<PathBuf>,
     /// Path to the config file
     #[arg(short = 'c', long)]
@@ -57,21 +60,6 @@ impl From<BuildRunArgs> for cyberware_cli_core::common::BuildRunArgs {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, ValueEnum)]
-pub enum Registry {
-    #[default]
-    #[value(name = "crates.io")]
-    CratesIo,
-}
-
-impl From<Registry> for cyberware_cli_core::common::Registry {
-    fn from(registry: Registry) -> Self {
-        match registry {
-            Registry::CratesIo => Self::CratesIo,
-        }
-    }
-}
-
 #[derive(Clone, Args)]
 pub struct DbConnConfig {
     /// Explicit database engine for this connection.
@@ -110,7 +98,7 @@ pub struct DbConnConfig {
 impl From<DbConnConfig> for app_config::DbConnConfig {
     fn from(conn: DbConnConfig) -> Self {
         Self {
-            engine: conn.engine.map(Into::into),
+            engine: conn.engine,
             dsn: conn.dsn,
             host: conn.host,
             port: conn.port,
@@ -122,23 +110,6 @@ impl From<DbConnConfig> for app_config::DbConnConfig {
             path: conn.path,
             pool: conn.pool.map(Into::into),
             server: conn.server,
-        }
-    }
-}
-
-#[derive(Clone, Copy, ValueEnum)]
-pub enum DbEngineCfg {
-    Postgres,
-    Mysql,
-    Sqlite,
-}
-
-impl From<DbEngineCfg> for app_config::DbEngineCfg {
-    fn from(engine: DbEngineCfg) -> Self {
-        match engine {
-            DbEngineCfg::Postgres => Self::Postgres,
-            DbEngineCfg::Mysql => Self::Mysql,
-            DbEngineCfg::Sqlite => Self::Sqlite,
         }
     }
 }

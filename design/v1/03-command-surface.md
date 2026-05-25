@@ -54,7 +54,7 @@ cargo cyberware
 │
 ├── help
 │   ├── schema <manifest|config|module>             # Schema reference
-│   ├── docs <rust-path>                            # Rust source resolution 
+│   ├── docs <rust-path>                            # Rust source resolution
 │   └── topic <topic>                               # Operational topic docs
 │
 ├── config
@@ -77,7 +77,7 @@ cargo cyberware
 ├── tools                                           # Tool bootstrap (rustup, fmt, clippy)
 ├── run                                             # Generate and run server
 ├── build                                           # Generate and build server
-├── ci                                              # Alias (manifest verify + lint + test + build) 
+├── ci                                              # Alias (manifest verify + lint + test + build)
 └── completions --shell <shell>                     # Generate shell completions
 ```
 

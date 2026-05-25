@@ -6,12 +6,12 @@ pub mod list;
 pub mod remove;
 
 #[derive(Clone, Copy)]
-pub(super) struct SystemRegistryModule {
+pub struct SystemRegistryModule {
     pub module_name: &'static str,
     pub crate_name: &'static str,
 }
 
-pub(super) const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
+pub const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
     SystemRegistryModule {
         module_name: "credstore",
         crate_name: "cf-credstore",

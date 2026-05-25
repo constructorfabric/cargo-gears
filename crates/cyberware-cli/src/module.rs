@@ -1,4 +1,5 @@
-use clap::{Args, Subcommand, ValueEnum};
+use clap::{Args, Subcommand};
+use cyberware_cli_core::r#mod::add::ModuleTemplateName;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -65,33 +66,13 @@ pub struct ModuleAddArgs {
 impl From<ModuleAddArgs> for cyberware_cli_core::r#mod::add::AddArgs {
     fn from(args: ModuleAddArgs) -> Self {
         Self {
-            name: args.name.into(),
+            name: args.name,
             path: args.path,
             verbose: args.verbose,
             local_path: args.local_path,
             git: args.git,
             subfolder: args.subfolder,
             branch: args.branch,
-        }
-    }
-}
-
-#[derive(Clone, Debug, ValueEnum)]
-enum ModuleTemplateName {
-    #[value(name = "background-worker")]
-    BackgroundWorker,
-    #[value(name = "api-db-handler")]
-    ApiDbHandler,
-    #[value(name = "rest-gateway")]
-    RestGateway,
-}
-
-impl From<ModuleTemplateName> for cyberware_cli_core::r#mod::add::ModuleTemplateName {
-    fn from(name: ModuleTemplateName) -> Self {
-        match name {
-            ModuleTemplateName::BackgroundWorker => Self::BackgroundWorker,
-            ModuleTemplateName::ApiDbHandler => Self::ApiDbHandler,
-            ModuleTemplateName::RestGateway => Self::RestGateway,
         }
     }
 }

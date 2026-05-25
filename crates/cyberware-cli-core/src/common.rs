@@ -21,20 +21,15 @@ pub struct PathConfigArgs {
     pub config: PathBuf,
 }
 
-pub fn parse_and_chdir(s: &str) -> Result<PathBuf, String> {
+pub fn parse_path(s: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(s);
 
     if !path.is_dir() {
         return Err(format!("not a directory: {}", path.display()));
     }
 
-    let path = path
-        .canonicalize()
-        .map_err(|e| format!("failed to canonicalize {}: {e}", path.display()))?;
-    env::set_current_dir(&path)
-        .map_err(|e| format!("failed to change directory to {}: {e}", path.display()))?;
-
-    Ok(path)
+    path.canonicalize()
+        .map_err(|e| format!("failed to canonicalize {}: {e}", path.display()))
 }
 
 impl PathConfigArgs {
@@ -45,11 +40,11 @@ impl PathConfigArgs {
 
     pub fn with_workspace_dir<T>(
         &self,
-        f: impl FnOnce(&Path) -> anyhow::Result<T>,
+        f: impl FnOnce(&Path, &Path) -> anyhow::Result<T>,
     ) -> anyhow::Result<T> {
         let workspace_path = resolve_workspace_path(self.path.as_deref())?;
         let config_path = resolve_config_from_workspace(&workspace_path, &self.config)?;
-        with_current_dir(&workspace_path, || f(&config_path))
+        f(&workspace_path, &config_path)
     }
 }
 
@@ -72,39 +67,6 @@ fn resolve_config_from_workspace(workspace_path: &Path, config: &Path) -> anyhow
         .with_context(|| format!("can't canonicalize config {}", config_path.display()))
 }
 
-pub fn with_current_dir<T>(
-    path: &Path,
-    f: impl FnOnce() -> anyhow::Result<T>,
-) -> anyhow::Result<T> {
-    let original_dir = env::current_dir().context("can't determine current working directory")?;
-    env::set_current_dir(path)
-        .with_context(|| format!("failed to change directory to {}", path.display()))?;
-
-    let result = f();
-    let restore_result = env::set_current_dir(&original_dir).with_context(|| {
-        format!(
-            "failed to restore current directory to {}",
-            original_dir.display()
-        )
-    });
-
-    restore_result?;
-    result
-}
-
-pub fn with_current_dir_for_optional_path<T>(
-    path: Option<&Path>,
-    f: impl FnOnce() -> anyhow::Result<T>,
-) -> anyhow::Result<T> {
-    match path {
-        Some(path) => {
-            let workspace_path = resolve_workspace_path(Some(path))?;
-            with_current_dir(&workspace_path, f)
-        }
-        None => f(),
-    }
-}
-
 pub fn workspace_root() -> anyhow::Result<PathBuf> {
     env::current_dir().context("can't determine current working directory")
 }
@@ -125,8 +87,10 @@ pub struct BuildRunArgs {
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum Registry {
     #[default]
+    #[cfg_attr(feature = "clap", value(name = "crates.io"))]
     CratesIo,
 }
 
@@ -145,16 +109,26 @@ impl Display for Registry {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+pub enum OutputFormat {
+    #[default]
+    Table,
+    Json,
+}
+
 impl BuildRunArgs {
     pub fn resolve_config_and_name(&self) -> anyhow::Result<(PathBuf, String)> {
-        self.path_config.with_workspace_dir(|config_path| {
-            let project_name = resolve_generated_project_name(config_path, self.name.as_deref())?;
-            if self.clean {
-                remove_from_file_structure(&project_name, "Cargo.lock")?;
-            }
+        self.path_config
+            .with_workspace_dir(|workspace_path, config_path| {
+                let project_name =
+                    resolve_generated_project_name(config_path, self.name.as_deref())?;
+                if self.clean {
+                    remove_from_file_structure(workspace_path, &project_name, "Cargo.lock")?;
+                }
 
-            Ok((config_path.to_path_buf(), project_name))
-        })
+                Ok((config_path.to_path_buf(), project_name))
+            })
     }
 }
 
@@ -218,9 +192,9 @@ pub fn cargo_command(
     Ok(cmd)
 }
 
-pub fn get_config(config_path: &Path) -> anyhow::Result<AppConfig> {
+pub fn get_config(workspace_root: &Path, config_path: &Path) -> anyhow::Result<AppConfig> {
     let mut config = get_config_from_path(config_path)?;
-    let mut members = get_module_name_from_crate()?;
+    let mut members = get_module_name_from_crate(Some(workspace_root))?;
 
     config.modules.iter_mut().for_each(|module| {
         if let Some(module_metadata) = members.remove(module.0.as_str()) {
@@ -316,10 +290,11 @@ fn create_required_deps() -> anyhow::Result<CargoTomlDependencies> {
 }
 
 pub fn generate_server_structure(
+    workspace_root: &Path,
     project_name: &str,
     current_dependencies: &CargoTomlDependencies,
 ) -> anyhow::Result<()> {
-    let workspace = workspace_root()?
+    let workspace = workspace_root
         .to_str()
         .context("workspace path is not valid UTF-8")?
         .to_owned();
@@ -341,9 +316,14 @@ pub fn generate_server_structure(
         toml::to_string(&cargo_toml).context("something went wrong when transforming to toml")?;
     let main_rs = prepare_cargo_server_main(current_dependencies);
 
-    create_file_structure(project_name, "Cargo.toml", &cargo_toml_str)?;
-    create_file_structure(project_name, ".cargo/config.toml", CARGO_CONFIG_TOML)?;
-    create_file_structure(project_name, "src/main.rs", &main_rs)?;
+    create_file_structure(workspace_root, project_name, "Cargo.toml", &cargo_toml_str)?;
+    create_file_structure(
+        workspace_root,
+        project_name,
+        ".cargo/config.toml",
+        CARGO_CONFIG_TOML,
+    )?;
+    create_file_structure(workspace_root, project_name, "src/main.rs", &main_rs)?;
 
     Ok(())
 }
@@ -386,17 +366,19 @@ fn make_absolute_paths_relative(dep: &CargoTomlDependency, workspace: &str) -> C
     dep
 }
 
-pub fn generated_project_dir(project_name: &str) -> anyhow::Result<PathBuf> {
-    Ok(workspace_root()?.join(BASE_PATH).join(project_name))
+#[must_use]
+pub fn generated_project_dir(workspace_root: &Path, project_name: &str) -> PathBuf {
+    workspace_root.join(BASE_PATH).join(project_name)
 }
 
 fn create_file_structure(
+    workspace_root: &Path,
     project_name: &str,
     relative_path: &str,
     contents: &str,
 ) -> anyhow::Result<()> {
     use std::io::Write;
-    let path = generated_project_dir(project_name)?.join(relative_path);
+    let path = generated_project_dir(workspace_root, project_name).join(relative_path);
     fs::create_dir_all(
         path.parent().context(
             "this should be unreachable, the parent for the file structure always exists",
@@ -414,10 +396,11 @@ fn create_file_structure(
 }
 
 pub(crate) fn remove_from_file_structure(
+    workspace_root: &Path,
     project_name: &str,
     relative_path: &str,
 ) -> anyhow::Result<()> {
-    let path = generated_project_dir(project_name)?.join(relative_path);
+    let path = generated_project_dir(workspace_root, project_name).join(relative_path);
     if path.exists() {
         fs::remove_file(path).context("can't remove file")?;
     }
@@ -470,22 +453,8 @@ mod tests {
         Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata,
         test_utils::TempDirExt,
     };
-    use std::env;
     use std::path::Path;
-    use std::sync::{LazyLock, Mutex};
     use tempfile::TempDir;
-
-    static CURRENT_DIR_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
-
-    struct CwdRestoreGuard {
-        original_dir: std::path::PathBuf,
-    }
-
-    impl Drop for CwdRestoreGuard {
-        fn drop(&mut self) {
-            let _ = env::set_current_dir(&self.original_dir);
-        }
-    }
 
     fn write_package(temp_dir: &TempDir, relative_path: &str, package_name: &str) {
         temp_dir.write(
@@ -623,12 +592,6 @@ path = "src/lib.rs"
 
     #[test]
     fn generate_server_structure_writes_existing_relative_dependency_paths() {
-        let _guard = CURRENT_DIR_LOCK
-            .lock()
-            .expect("current-dir test lock should not be poisoned");
-        let _cwd_guard = CwdRestoreGuard {
-            original_dir: env::current_dir().expect("current dir should be available"),
-        };
         let temp_dir = TempDir::new().expect("temp dir should be created");
 
         write_package(&temp_dir, "crates/anyhow", "anyhow");
@@ -649,7 +612,7 @@ resolver = "3"
         );
 
         let result = (|| -> anyhow::Result<()> {
-            env::set_current_dir(temp_dir.path())?;
+            let workspace_root = temp_dir.path();
 
             let current_dependencies = CargoTomlDependencies::from([(
                 "local-module".to_owned(),
@@ -665,9 +628,9 @@ resolver = "3"
                 },
             )]);
 
-            generate_server_structure("generated", &current_dependencies)?;
+            generate_server_structure(workspace_root, "generated", &current_dependencies)?;
 
-            let generated_dir = generated_project_dir("generated")?;
+            let generated_dir = generated_project_dir(workspace_root, "generated");
             let generated_manifest = std::fs::read_to_string(generated_dir.join("Cargo.toml"))?;
             let cargo_toml: toml::Value = toml::from_str(&generated_manifest)?;
             let dependencies = cargo_toml

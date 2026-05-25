@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use std::collections::BTreeSet;
 #[cfg(feature = "dylint-rules")]
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(feature = "dylint-rules")]
 mod ensure_toolchain_installed_shared {
@@ -65,29 +65,29 @@ impl LintArgs {
     }
 
     pub fn run(&self) -> Result<()> {
-        crate::common::with_current_dir_for_optional_path(self.path.as_deref(), || {
-            let selection = self.validate()?;
+        let workspace_path = crate::common::resolve_workspace_path(self.path.as_deref())?;
+        let selection = self.validate()?;
 
-            if selection.fmt {
-                run_fmt()?;
-            }
+        if selection.fmt {
+            run_fmt(&workspace_path)?;
+        }
 
-            if selection.clippy {
-                run_clippy(self.strict)?;
-            }
+        if selection.clippy {
+            run_clippy(&workspace_path, self.strict)?;
+        }
 
-            if selection.dylint {
-                run_dylint()?;
-            }
+        if selection.dylint {
+            run_dylint(&workspace_path)?;
+        }
 
-            Ok(())
-        })
+        Ok(())
     }
 }
 
-fn run_fmt() -> Result<()> {
+fn run_fmt(workspace_path: &Path) -> Result<()> {
     let mut cmd = cargo_cmd()?;
     cmd.args(["fmt", "--check", "--all"]);
+    cmd.current_dir(workspace_path);
 
     let status = cmd.status().context("failed to run `cargo fmt --check`")?;
     if !status.success() {
@@ -97,9 +97,10 @@ fn run_fmt() -> Result<()> {
     Ok(())
 }
 
-fn run_clippy(strict: bool) -> Result<()> {
+fn run_clippy(workspace_path: &Path, strict: bool) -> Result<()> {
     let mut cmd = cargo_cmd()?;
     cmd.args(["clippy", "--workspace", "--all-targets", "--all-features"]);
+    cmd.current_dir(workspace_path);
 
     // TODO Analyse the features that each crate has and try to test them against the feature set.
 
@@ -131,7 +132,7 @@ fn embedded_toolchains() -> Result<BTreeSet<String>> {
 }
 
 #[cfg(feature = "dylint-rules")]
-fn run_dylint() -> Result<()> {
+fn run_dylint(workspace_path: &Path) -> Result<()> {
     for toolchain in embedded_toolchains()? {
         ensure_toolchain_installed(&toolchain)?;
     }
@@ -155,10 +156,15 @@ fn run_dylint() -> Result<()> {
         .collect::<Result<_>>()?;
 
     let opts = dylint::opts::Dylint {
-        // Check all packages in the workspace found in the current working
-        // directory.  No manifest_path → dylint resolves the workspace from
-        // the CWD, which is exactly what we want when the tool is invoked
-        // inside a project.
+        // Check all packages in the workspace rooted at `workspace_path`.
+        // `manifest_path` points dylint at the workspace so it does not
+        // depend on the process CWD.
+        manifest_path: Some(
+            workspace_path
+                .join("Cargo.toml")
+                .to_string_lossy()
+                .into_owned(),
+        ),
         operation: dylint::opts::Operation::Check(dylint::opts::Check {
             lib_sel: dylint::opts::LibrarySelection {
                 // Point directly at the extracted, versioned dylib files.
@@ -178,7 +184,7 @@ fn run_dylint() -> Result<()> {
 }
 
 #[cfg(not(feature = "dylint-rules"))]
-fn run_dylint() -> Result<()> {
+fn run_dylint(_workspace_path: &Path) -> Result<()> {
     anyhow::bail!("dylint-rules feature not enabled")
 }
 
@@ -186,6 +192,7 @@ fn run_dylint() -> Result<()> {
 mod tests {
     use super::LintArgs;
 
+    #[allow(clippy::fn_params_excessive_bools)]
     fn lint_args(all: bool, fmt: bool, clippy: bool, strict: bool, dylint: bool) -> LintArgs {
         LintArgs {
             all,

@@ -24,9 +24,13 @@ pub struct AddArgs {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum ModuleTemplateName {
+    #[cfg_attr(feature = "clap", value(name = "background-worker"))]
     BackgroundWorker,
+    #[cfg_attr(feature = "clap", value(name = "api-db-handler"))]
     ApiDbHandler,
+    #[cfg_attr(feature = "clap", value(name = "rest-gateway"))]
     RestGateway,
 }
 

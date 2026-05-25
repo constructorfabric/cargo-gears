@@ -21,7 +21,7 @@ explicit:
 This separation eliminates metadata duplication, reduces config-file complexity, and makes the CLI's behavior
 inspectable without reading YAML runtime values.
 
-The manifest will be required for the `run`, `test`, `lint` and `build` commands. These commands require the 
+The manifest will be required for the `run`, `test`, `lint` and `build` commands. These commands require the
 orchestration information that the manifest provides.
 
 For the rest of proposed commands, the manifest will not be required. For example: the `generate`, `help`, `list`, `config`, `tools` commands

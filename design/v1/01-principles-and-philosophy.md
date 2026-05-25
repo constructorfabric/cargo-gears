@@ -68,7 +68,7 @@ machine-readable.
 
 ### 5. Orchestrate, Don't Replace
 
-The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest` and `cargo-llvm-cov`. 
+The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest` and `cargo-llvm-cov`.
 It never reimplements their core functionality.
 
 - `lint` invokes `cargo fmt`, `cargo clippy` and compiled dylint libraries with the right flags, not a custom formatter.
@@ -137,7 +137,7 @@ When making design decisions, apply these tradeoff rules in order:
 3. **Convention over configuration.** If a reasonable default exists, it should be the default. Configuration is for
    exceptions, not the common case.
 
-4. **Explicit over implicit.** When the CLI takes a significant action (generating files, modifying config, invoking), 
+4. **Explicit over implicit.** When the CLI takes a significant action (generating files, modifying config, invoking),
    it should state what it is doing. Use `--dry-run` to preview.
 
 5. **Machine-first, human-friendly.** Design output for programmatic consumption first, then add human-friendly

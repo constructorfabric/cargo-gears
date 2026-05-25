@@ -25,7 +25,7 @@ dylint-rules = ["cyberware-cli-core/dylint-rules"]
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
-cyberware-cli-core = { workspace = true }
+cyberware-cli-core = { workspace = true, features = ["clap"] }
 semver = { workspace = true }
 
 [lints]
