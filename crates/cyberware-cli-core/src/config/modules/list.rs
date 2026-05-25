@@ -159,11 +159,11 @@ fn print_value_list<T: Display>(label: &str, values: &[T]) {
 }
 
 #[derive(Default)]
-struct RegistryMetadata {
-    latest_version: String,
-    features: Vec<String>,
-    deps: Vec<String>,
-    capabilities: Vec<Capability>,
+pub(crate) struct RegistryMetadata {
+    pub(crate) latest_version: String,
+    pub(crate) features: Vec<String>,
+    pub(crate) deps: Vec<String>,
+    pub(crate) capabilities: Vec<Capability>,
 }
 
 #[derive(Deserialize)]
@@ -185,7 +185,7 @@ struct CrateVersion {
     features: BTreeMap<String, Vec<String>>,
 }
 
-async fn fetch_all_registry_metadata(
+pub(crate) async fn fetch_all_registry_metadata(
     registry: Registry,
 ) -> anyhow::Result<HashMap<&'static str, RegistryMetadata>> {
     let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(4));

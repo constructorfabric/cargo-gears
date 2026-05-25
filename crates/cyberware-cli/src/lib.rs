@@ -5,6 +5,7 @@ mod deploy;
 mod docs;
 mod init;
 mod lint;
+mod list;
 mod module;
 mod run;
 mod testing;
@@ -31,6 +32,8 @@ pub enum Commands {
     Docs(docs::DocsArgs),
     /// Orchestrate the linting process of the project
     Lint(lint::LintArgs),
+    /// Inspect workspace modules, system modules, and project state
+    List(list::ListArgs),
     /// Orchestrate the testing process of the project
     Test(testing::TestArgs),
     /// Handle the required or optional tools for the project
@@ -57,6 +60,7 @@ impl From<Cli> for cyberware_cli_core::CyberfabricCommand {
             Commands::Config(config) => Self::Config((*config).into()),
             Commands::Docs(docs) => Self::Docs(docs.into()),
             Commands::Lint(lint) => Self::Lint(lint.into()),
+            Commands::List(list) => Self::List(list.into()),
             Commands::Test(test) => Self::Test(test.into()),
             Commands::Tools(tools) => Self::Tools(tools.into()),
             Commands::Run(run) => Self::Run(run.into()),
