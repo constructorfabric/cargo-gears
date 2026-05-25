@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     #[serde(default)]
@@ -122,15 +122,13 @@ pub enum BuildProfile {
     Custom(String),
 }
 
-impl TryFrom<String> for BuildProfile {
-    type Error = std::convert::Infallible;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(match value.as_str() {
-            "debug" => BuildProfile::Debug,
-            "release" => BuildProfile::Release,
-            _ => BuildProfile::Custom(value),
-        })
+impl From<String> for BuildProfile {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "debug" => Self::Debug,
+            "release" => Self::Release,
+            _ => Self::Custom(value),
+        }
     }
 }
 
@@ -242,7 +240,7 @@ pub enum FeatureSet {
     Features(Vec<String>),
 }
 
-fn default_version() -> u32 {
+const fn default_version() -> u32 {
     1
 }
 
@@ -272,7 +270,7 @@ mod tests {
         assert_eq!(app.len(), 2);
         let dev = app.get("dev").unwrap();
         let _prod = app.get("prod").unwrap();
-        assert_eq!(dev.lint.clippy, true);
+        assert!(dev.lint.clippy);
         assert_eq!(dev.test.runner.as_ref().unwrap(), &TestRunner::Nextest);
         // Add more assertions if required
     }
