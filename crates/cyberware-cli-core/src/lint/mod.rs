@@ -186,6 +186,7 @@ fn run_dylint() -> Result<()> {
 mod tests {
     use super::LintArgs;
 
+    #[allow(clippy::fn_params_excessive_bools)]
     fn lint_args(all: bool, fmt: bool, clippy: bool, strict: bool, dylint: bool) -> LintArgs {
         LintArgs {
             all,
