@@ -153,8 +153,6 @@ pub enum OutputFormat {
     #[default]
     Table,
     Json,
-    Yaml,
-    Toml,
 }
 
 impl BuildRunArgs {

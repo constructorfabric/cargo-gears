@@ -16,7 +16,7 @@ impl ModulesArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         match self.format {
             OutputFormat::Table => {}
-            other => todo!("output format {other:?} is not yet implemented for list modules"),
+            OutputFormat::Json => todo!("JSON output is not yet implemented for list modules"),
         }
 
         print_system_modules(self.verbose, self.registry)?;

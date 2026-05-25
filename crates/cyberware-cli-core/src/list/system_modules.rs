@@ -15,8 +15,8 @@ impl SystemModulesArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         match self.format {
             OutputFormat::Table => {}
-            other => {
-                todo!("output format {other:?} is not yet implemented for list system-modules")
+            OutputFormat::Json => {
+                todo!("JSON output is not yet implemented for list system-modules")
             }
         }
 

@@ -14,7 +14,9 @@ impl LocalModulesArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         match self.format {
             OutputFormat::Table => {}
-            other => todo!("output format {other:?} is not yet implemented for list local-modules"),
+            OutputFormat::Json => {
+                todo!("JSON output is not yet implemented for list local-modules")
+            }
         }
 
         with_current_dir_for_optional_path(self.path.as_deref(), || {
