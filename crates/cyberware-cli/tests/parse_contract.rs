@@ -345,6 +345,47 @@ fn parses_config_module_db_edit_into_core_command() {
 }
 
 #[test]
+fn parses_list_local_modules_into_core_command() {
+    let command = parse_command(&["cyberfabric", "list", "local-modules", "--verbose"]);
+
+    assert_eq!(
+        command,
+        CyberfabricCommand::List(cyberware_cli_core::list::ListArgs {
+            command: cyberware_cli_core::list::ListCommand::LocalModules(
+                cyberware_cli_core::list::LocalModulesArgs {
+                    path: None,
+                    verbose: true,
+                },
+            ),
+        })
+    );
+}
+
+#[test]
+fn parses_list_system_modules_into_core_command() {
+    let command = parse_command(&[
+        "cyberfabric",
+        "list",
+        "system-modules",
+        "--verbose",
+        "--registry",
+        "crates.io",
+    ]);
+
+    assert_eq!(
+        command,
+        CyberfabricCommand::List(cyberware_cli_core::list::ListArgs {
+            command: cyberware_cli_core::list::ListCommand::SystemModules(
+                cyberware_cli_core::list::SystemModulesArgs {
+                    verbose: true,
+                    registry: Registry::CratesIo,
+                },
+            ),
+        })
+    );
+}
+
+#[test]
 fn rejects_conflicting_tool_selection() {
     let result = Cli::try_parse_from(["cyberfabric", "tools", "--all", "--install", "rustfmt"]);
     let Err(error) = result else {
