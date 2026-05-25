@@ -18,25 +18,29 @@ impl LocalModulesArgs {
         }
 
         with_current_dir_for_optional_path(self.path.as_deref(), || {
-            let local_modules = get_module_name_from_crate()?;
-
-            println!("Workspace modules:");
-            if local_modules.is_empty() {
-                println!("  (none)");
-            } else {
-                let mut entries: Vec<_> = local_modules.iter().collect();
-                entries.sort_by_key(|(name, _)| *name);
-                for (module_name, module) in entries {
-                    println!("  - {module_name}");
-                    if self.verbose {
-                        print_metadata(&module.metadata);
-                    }
-                }
-            }
-
-            Ok(())
+            print_local_modules(self.verbose)
         })
     }
+}
+
+pub(super) fn print_local_modules(verbose: bool) -> anyhow::Result<()> {
+    let local_modules = get_module_name_from_crate()?;
+
+    println!("Workspace modules:");
+    if local_modules.is_empty() {
+        println!("  (none)");
+    } else {
+        let mut entries: Vec<_> = local_modules.iter().collect();
+        entries.sort_by_key(|(name, _)| *name);
+        for (module_name, module) in entries {
+            println!("  - {module_name}");
+            if verbose {
+                print_metadata(&module.metadata);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn print_metadata(metadata: &ConfigModuleMetadata) {

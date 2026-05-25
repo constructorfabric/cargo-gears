@@ -20,30 +20,34 @@ impl SystemModulesArgs {
             }
         }
 
-        println!("System modules:");
-        if self.verbose {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .context("failed to build tokio runtime for registry queries")?;
-
-            let metadata_by_crate = runtime.block_on(fetch_all_registry_metadata(self.registry))?;
-
-            for module in SYSTEM_REGISTRY_MODULES {
-                let Some(metadata) = metadata_by_crate.get(module.crate_name) else {
-                    anyhow::bail!("missing fetched metadata for '{}'", module.crate_name);
-                };
-
-                print_system_registry_metadata(module, metadata);
-            }
-        } else {
-            for module in SYSTEM_REGISTRY_MODULES {
-                println!("  - {} (crate: {})", module.module_name, module.crate_name);
-            }
-        }
-
-        Ok(())
+        print_system_modules(self.verbose, self.registry)
     }
+}
+
+pub(super) fn print_system_modules(verbose: bool, registry: Registry) -> anyhow::Result<()> {
+    println!("System modules:");
+    if verbose {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .context("failed to build tokio runtime for registry queries")?;
+
+        let metadata_by_crate = runtime.block_on(fetch_all_registry_metadata(registry))?;
+
+        for module in SYSTEM_REGISTRY_MODULES {
+            let Some(metadata) = metadata_by_crate.get(module.crate_name) else {
+                anyhow::bail!("missing fetched metadata for '{}'", module.crate_name);
+            };
+
+            print_system_registry_metadata(module, metadata);
+        }
+    } else {
+        for module in SYSTEM_REGISTRY_MODULES {
+            println!("  - {} (crate: {})", module.module_name, module.crate_name);
+        }
+    }
+
+    Ok(())
 }
 
 fn print_system_registry_metadata(module: &SystemRegistryModule, metadata: &RegistryMetadata) {
