@@ -100,14 +100,20 @@ pub struct BuildRunArgs {
 }
 
 impl BuildRunArgs {
-    #[must_use]
-    pub fn clean_build(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
-        self.clean.unwrap_or_else(|| {
+    pub fn clean_build(&self, resolved: &crate::manifest::ResolvedManifest) -> anyhow::Result<()> {
+        if self.clean.unwrap_or_else(|| {
             resolved
                 .build
                 .clean
                 .unwrap_or_else(|| self.release_build(resolved))
-        })
+        }) {
+            remove_from_file_structure(
+                &resolved.generated_dir,
+                &resolved.generated_name,
+                "Cargo.lock",
+            )?;
+        }
+        Ok(())
     }
 
     #[must_use]
@@ -667,7 +673,7 @@ path = "src/lib.rs"
         assert!(!args.otel_enabled(&resolved));
         assert!(!args.fips_enabled(&resolved));
         assert!(!args.release_build(&resolved));
-        assert!(!args.clean_build(&resolved));
+        assert!(args.clean_build(&resolved).is_ok());
     }
 
     #[test]

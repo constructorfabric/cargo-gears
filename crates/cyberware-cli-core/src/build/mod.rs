@@ -11,13 +11,7 @@ impl BuildArgs {
         let workspace_path = common::resolve_workspace_path(self.build_run_args.path.as_deref())?;
         let resolved = self.build_run_args.manifest.resolve(&workspace_path)?;
 
-        if self.build_run_args.clean_build(&resolved) {
-            common::remove_from_file_structure(
-                &resolved.generated_dir,
-                &resolved.generated_name,
-                "Cargo.lock",
-            )?;
-        }
+        self.build_run_args.clean_build(&resolved)?;
 
         let generated = common::generate_server_structure(
             &resolved.workspace_root,

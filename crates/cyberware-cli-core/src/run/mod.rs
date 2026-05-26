@@ -15,13 +15,7 @@ impl RunArgs {
         let workspace_path = crate::common::resolve_workspace_path(self.br_args.path.as_deref())?;
         let resolved = self.br_args.manifest.resolve(&workspace_path)?;
 
-        if self.br_args.clean_build(&resolved) {
-            crate::common::remove_from_file_structure(
-                &resolved.generated_dir,
-                &resolved.generated_name,
-                "Cargo.lock",
-            )?;
-        }
+        self.br_args.clean_build(&resolved)?;
 
         let otel = self.br_args.otel_enabled(&resolved);
         let fips = self.br_args.fips_enabled(&resolved);
