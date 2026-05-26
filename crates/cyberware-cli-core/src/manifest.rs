@@ -26,6 +26,7 @@ impl ManifestSelection {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestArgs {
+    pub path: Option<PathBuf>,
     pub manifest: PathBuf,
     pub command: ManifestCommand,
 }
@@ -38,7 +39,7 @@ pub enum ManifestCommand {
 
 impl ManifestArgs {
     pub fn run(&self) -> anyhow::Result<()> {
-        let workspace_root = common::workspace_root()?;
+        let workspace_root = common::resolve_workspace_path(self.path.as_deref())?;
         let manifest_path = resolve_manifest_path(&workspace_root, &self.manifest)?;
         let manifest = Manifest::load(&manifest_path)?;
 
@@ -665,5 +666,29 @@ modules = [{{ source = "remote", name = "module", package = "cf-module", version
 
         assert_eq!(resolved.workspace_root, temp.path().join("workspace"));
         assert_eq!(resolved.generated_dir, absolute_generated_dir);
+    }
+
+    #[test]
+    fn manifest_args_resolve_manifest_relative_to_selected_workspace_path() {
+        let temp = TempDir::new().unwrap();
+        temp.write(
+            "workspace/Cyberware.toml",
+            r#"
+[apps.app.dev]
+config = "app-dev.yml"
+modules = []
+"#,
+        );
+        temp.write("workspace/config/app-dev.yml", "server: {}\n");
+
+        let args = ManifestArgs {
+            path: Some(temp.path().join("workspace")),
+            manifest: PathBuf::from(DEFAULT_MANIFEST_FILE),
+            command: ManifestCommand::Ls {
+                format: common::OutputFormat::Json,
+            },
+        };
+
+        assert!(args.run().is_ok());
     }
 }

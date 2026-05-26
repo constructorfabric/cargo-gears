@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct ManifestArgs {
+    #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
+    path: Option<PathBuf>,
     /// Path to the Cyberware manifest file
     #[arg(long, default_value = cyberware_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
     manifest: PathBuf,
@@ -29,6 +31,7 @@ struct ManifestFormatArgs {
 impl From<ManifestArgs> for cyberware_cli_core::manifest::ManifestArgs {
     fn from(args: ManifestArgs) -> Self {
         Self {
+            path: args.path,
             manifest: args.manifest,
             command: match args.command {
                 ManifestCommand::Validate(args) => {

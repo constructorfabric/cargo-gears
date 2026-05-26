@@ -87,6 +87,7 @@ cargo cyberfabric
   no default. `build` and `run` no longer accept `--config`; they compose their generation inputs from `Cyberware.toml`
   and forward the manifest-declared runtime config path through the `CF_CLI_CONFIG` environment variable.
 - **[`--manifest <PATH>`]** Cyberware manifest path, defaulting to `Cyberware.toml`, for `manifest`, `build`, and `run`.
+  For `manifest`, you can combine this with `-p/--path` to resolve relative manifest paths from a selected workspace.
 - **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build` and `run`.
 - **[`--name <NAME>`]** For `build` and `run`, overrides the generated server project and binary name that would
   otherwise default to the config filename stem.
@@ -658,12 +659,13 @@ Inspect and validate Cyberware manifest files.
 Synopsis:
 
 ```bash
-cargo cyberfabric manifest [--manifest <Cyberware.toml>] validate [--format table|json]
-cargo cyberfabric manifest [--manifest <Cyberware.toml>] ls [--format table|json]
+cargo cyberfabric manifest [-p <PATH>] [--manifest <Cyberware.toml>] validate [--format table|json]
+cargo cyberfabric manifest [-p <PATH>] [--manifest <Cyberware.toml>] ls [--format table|json]
 ```
 
 Behavior:
 
+- **[path activation]** If `-p/--path` is provided, relative manifest paths are resolved from that workspace directory.
 - **[validate]** Parses the manifest and resolves every app/environment entry.
 - **[ls]** Lists configured app/environment pairs.
 - **[generated structure]** Use `build --dry-run` or `run --dry-run` to write and print the generated project structure.
