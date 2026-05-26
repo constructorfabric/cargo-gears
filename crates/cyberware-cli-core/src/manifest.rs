@@ -368,7 +368,7 @@ pub struct RunPolicy {
     pub otel: bool,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct WatchPolicy {
     #[serde(default = "default_true")]
@@ -377,6 +377,16 @@ pub struct WatchPolicy {
     pub paths: Vec<PathBuf>,
     #[serde(default)]
     pub ignore: Vec<PathBuf>,
+}
+
+impl Default for WatchPolicy {
+    fn default() -> Self {
+        WatchPolicy {
+            enabled: default_true(),
+            paths: vec![],
+            ignore: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -391,7 +401,7 @@ pub struct BuildPolicy {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(try_from = "String", into = "String")]
+#[serde(from = "String", into = "String")]
 pub enum BuildProfile {
     Debug,
     Release,
