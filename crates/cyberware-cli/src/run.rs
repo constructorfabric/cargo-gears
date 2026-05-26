@@ -22,11 +22,7 @@ impl RunArgs {
 impl From<RunArgs> for cyberware_cli_core::run::RunArgs {
     fn from(args: RunArgs) -> Self {
         Self {
-            watch: match (args.watch, args.no_watch) {
-                (true, false) => Some(true),
-                (false, true) => Some(false),
-                _ => None,
-            },
+            watch: crate::common::ordered_bool(args.watch, args.no_watch),
             br_args: args.br_args.into(),
         }
     }

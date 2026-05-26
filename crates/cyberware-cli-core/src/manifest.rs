@@ -42,21 +42,17 @@ impl ManifestArgs {
         let manifest_path = resolve_manifest_path(&workspace_root, &self.manifest)?;
         let manifest = Manifest::load(&manifest_path)?;
 
-        match &self.command {
+        match self.command {
             ManifestCommand::Validate { format } => {
-                let report = manifest.validate(&workspace_root, &manifest_path)?;
-                print_value(*format, &report)
+                let report = manifest.validate(&workspace_root, &manifest_path);
+                print_value(format, &report)
             }
             ManifestCommand::Ls { format } => {
                 let entries = manifest.entries();
-                print_value(*format, &entries)
+                print_value(format, &entries)
             }
         }
     }
-}
-
-pub fn print_rendered_manifest(resolved: &ResolvedManifest) -> anyhow::Result<()> {
-    print_value(common::OutputFormat::Json, &resolved.render())
 }
 
 fn print_value<T: Serialize>(format: common::OutputFormat, value: &T) -> anyhow::Result<()> {
@@ -89,23 +85,30 @@ impl Manifest {
             .with_context(|| format!("manifest not valid at {}", path.display()))
     }
 
-    pub fn validate(
-        &self,
-        workspace_root: &Path,
-        manifest_path: &Path,
-    ) -> anyhow::Result<ValidationReport> {
+    pub fn validate(&self, workspace_root: &Path, manifest_path: &Path) -> Vec<ValidationReport> {
         let mut entries = Vec::new();
         for (app, envs) in &self.apps {
             for env in envs.keys() {
-                let resolved = self.resolve(workspace_root, manifest_path, app, env, None)?;
-                entries.push(resolved.render());
+                let entry = ManifestEntry {
+                    app: app.clone(),
+                    env: env.clone(),
+                };
+                match self.resolve(workspace_root, manifest_path, app, env, None) {
+                    Ok(r) => entries.push(ValidationReport {
+                        error: None,
+                        entry,
+                        info: Some(r),
+                    }),
+                    Err(err) => entries.push(ValidationReport {
+                        error: Some(err.to_string()),
+                        entry,
+                        info: None,
+                    }),
+                }
             }
         }
 
-        Ok(ValidationReport {
-            valid: true,
-            entries,
-        })
+        entries
     }
 
     #[must_use]
@@ -255,7 +258,7 @@ fn version_req_to_metadata(version: &VersionReq) -> Option<String> {
     (version != "*").then_some(version)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ResolvedManifest {
     pub app: String,
     pub env: String,
@@ -271,48 +274,17 @@ pub struct ResolvedManifest {
     pub dependencies: CargoTomlDependencies,
 }
 
-impl ResolvedManifest {
-    #[must_use]
-    pub fn render(&self) -> RenderedManifest {
-        RenderedManifest {
-            app: self.app.clone(),
-            env: self.env.clone(),
-            workspace_root: self.workspace_root.clone(),
-            generated_dir: self.generated_dir.clone(),
-            config_path: self.config_path.clone(),
-            generated_name: self.generated_name.clone(),
-            modules: self.modules.clone(),
-            cargo_dependencies: self.dependencies.clone(),
-            cargo_features: vec!["default".to_owned(), "otel".to_owned(), "fips".to_owned()],
-            cyberware_inputs: vec![self.config_path.clone()],
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ValidationReport {
-    pub valid: bool,
-    pub entries: Vec<RenderedManifest>,
+    pub error: Option<String>,
+    pub entry: ManifestEntry,
+    pub info: Option<ResolvedManifest>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ManifestEntry {
     pub app: String,
     pub env: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct RenderedManifest {
-    pub app: String,
-    pub env: String,
-    pub workspace_root: PathBuf,
-    pub generated_dir: PathBuf,
-    pub config_path: PathBuf,
-    pub generated_name: String,
-    pub modules: Vec<ModuleRef>,
-    pub cargo_dependencies: CargoTomlDependencies,
-    pub cargo_features: Vec<String>,
-    pub cyberware_inputs: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
