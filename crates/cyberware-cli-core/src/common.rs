@@ -370,16 +370,16 @@ pub fn generate_server_structure(
     .collect::<anyhow::Result<Vec<_>>>()?;
 
     Ok(GeneratedProjectStructure {
-        project_name: project_name.to_owned(),
-        project_dir: generated_project_dir(generated_dir, project_name),
+        name: project_name.to_owned(),
+        dir: generated_project_dir(generated_dir, project_name),
         files,
     })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct GeneratedProjectStructure {
-    pub project_name: String,
-    pub project_dir: PathBuf,
+    pub name: String,
+    pub dir: PathBuf,
     pub files: Vec<GeneratedProjectFile>,
 }
 
@@ -754,8 +754,8 @@ resolver = "3"
                 &current_dependencies,
             )?;
 
-            assert_eq!(generated.project_name, "generated");
-            assert_eq!(generated.project_dir, generated_dir.join("generated"));
+            assert_eq!(generated.name, "generated");
+            assert_eq!(generated.dir, generated_dir.join("generated"));
             assert_eq!(generated.files.len(), 3);
             assert!(
                 generated
