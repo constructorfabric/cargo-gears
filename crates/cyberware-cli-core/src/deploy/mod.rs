@@ -35,13 +35,15 @@ impl DeployArgs {
                     let project_name = common::resolve_generated_project_name(config_path, None)?;
                     let dependencies =
                         common::get_config(workspace_path, config_path)?.create_dependencies()?;
+                    let generated_dir = workspace_path.join(common::DEFAULT_GENERATED_DIR);
                     common::generate_server_structure(
                         workspace_path,
+                        &generated_dir,
                         &project_name,
                         &dependencies,
                     )?;
                     (
-                        common::generated_project_dir(workspace_path, &project_name)
+                        common::generated_project_dir(&generated_dir, &project_name)
                             .join("Cargo.toml"),
                         project_name,
                     )

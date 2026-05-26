@@ -187,7 +187,7 @@ mod tests {
         let args = AddArgs {
             path_config: PathConfigArgs {
                 path: Some(PathBuf::from(".")),
-                config: PathBuf::from("."),
+                config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
             package: None,
@@ -219,7 +219,7 @@ mod tests {
         let args = AddArgs {
             path_config: PathConfigArgs {
                 path: Some(PathBuf::from(".")),
-                config: PathBuf::from("."),
+                config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
             package: None,
@@ -243,7 +243,7 @@ mod tests {
         let args = AddArgs {
             path_config: PathConfigArgs {
                 path: Some(PathBuf::from(".")),
-                config: PathBuf::from("."),
+                config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
             package: Some("cf-demo".to_owned()),
@@ -267,7 +267,7 @@ mod tests {
         let args = AddArgs {
             path_config: PathConfigArgs {
                 path: Some(PathBuf::from(".")),
-                config: PathBuf::from("."),
+                config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
             package: Some("cf-demo".to_owned()),
@@ -304,7 +304,7 @@ mod tests {
         let args = AddArgs {
             path_config: PathConfigArgs {
                 path: Some(PathBuf::from(".")),
-                config: PathBuf::from("."),
+                config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
             package: None,

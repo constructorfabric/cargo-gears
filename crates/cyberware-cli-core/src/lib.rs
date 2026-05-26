@@ -7,6 +7,7 @@ pub mod docs;
 pub mod init;
 pub mod lint;
 pub mod list;
+pub mod manifest;
 pub mod r#mod;
 pub mod module_parser;
 pub mod run;
@@ -21,6 +22,7 @@ pub enum CyberfabricCommand {
     Docs(docs::DocsArgs),
     Lint(lint::LintArgs),
     List(list::ListArgs),
+    Manifest(manifest::ManifestArgs),
     Test(test::TestArgs),
     Tools(tools::ToolsArgs),
     Run(run::RunArgs),
@@ -37,6 +39,7 @@ impl CyberfabricCommand {
             Self::Docs(args) => args.run(),
             Self::Lint(args) => args.run(),
             Self::List(args) => args.run(),
+            Self::Manifest(args) => args.run(),
             Self::Test(args) => args.run(),
             Self::Tools(args) => args.run(),
             Self::Run(args) => args.run(),

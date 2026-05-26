@@ -1,6 +1,6 @@
 ## General
 
-Always prefer `cargo clippy` over cargo check.
+Always prefer `cargo clippy` over cargo check. Do not run with `--all-features` as we are in a process of migration and `dylint-rules` feature from `cyberware-cli-core` member is failing.
 
 Always format the code with `cargo fmt` and run the test suite with `cargo test` before finalizing if any rust code was
 touched.

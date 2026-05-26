@@ -1,11 +1,14 @@
 use crate::common::BuildRunArgs;
-use clap::Args;
+use clap::{ArgAction, Args};
 
 #[derive(Args)]
 pub struct RunArgs {
     /// Watch for changes
-    #[arg(short = 'w', long)]
+    #[arg(short = 'w', long, action = ArgAction::SetTrue, conflicts_with = "no_watch")]
     watch: bool,
+    /// Do not watch for changes
+    #[arg(long = "no-watch", action = ArgAction::SetTrue, conflicts_with = "watch")]
+    no_watch: bool,
     #[command(flatten)]
     br_args: BuildRunArgs,
 }
@@ -19,7 +22,7 @@ impl RunArgs {
 impl From<RunArgs> for cyberware_cli_core::run::RunArgs {
     fn from(args: RunArgs) -> Self {
         Self {
-            watch: args.watch,
+            watch: crate::common::ordered_bool(args.watch, args.no_watch),
             br_args: args.br_args.into(),
         }
     }
