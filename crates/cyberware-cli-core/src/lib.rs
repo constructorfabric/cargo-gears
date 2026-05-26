@@ -4,11 +4,10 @@ pub mod common;
 pub mod config;
 pub mod deploy;
 pub mod docs;
-pub mod init;
+pub mod generate;
 pub mod lint;
 pub mod list;
 pub mod manifest;
-pub mod r#mod;
 pub mod module_parser;
 pub mod run;
 pub mod test;
@@ -16,8 +15,7 @@ pub mod tools;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum CyberfabricCommand {
-    Init(init::InitArgs),
-    Mod(r#mod::ModArgs),
+    Generate(generate::GenerateArgs),
     Config(config::ConfigArgs),
     Docs(docs::DocsArgs),
     Lint(lint::LintArgs),
@@ -33,8 +31,7 @@ pub enum CyberfabricCommand {
 impl CyberfabricCommand {
     pub fn run(&self) -> anyhow::Result<()> {
         match self {
-            Self::Init(args) => args.run(),
-            Self::Mod(args) => args.run(),
+            Self::Generate(args) => args.run(),
             Self::Config(args) => args.run(),
             Self::Docs(args) => args.run(),
             Self::Lint(args) => args.run(),

@@ -3,11 +3,10 @@ mod common;
 mod config;
 mod deploy;
 mod docs;
-mod init;
+mod generate;
 mod lint;
 mod list;
 mod manifest;
-mod module;
 mod run;
 mod testing;
 mod tools;
@@ -23,10 +22,10 @@ pub struct Cli {
 
 #[derive(clap::Subcommand)]
 pub enum Commands {
-    /// Initialize a new project in a non-existing folder
-    Init(init::InitArgs),
-    /// Add new modules to an existing project
-    Mod(module::ModArgs),
+    /// Generate workspace, module, and config scaffolding
+    Generate(generate::GenerateArgs),
+    /// Alias for `generate workspace`
+    New(generate::WorkspaceArgs),
     /// Utility to modify a provided configuration file
     Config(Box<config::ConfigArgs>),
     /// Utility to retrieve external dependency code in a token-friendly way
@@ -58,8 +57,14 @@ impl Cli {
 impl From<Cli> for cyberware_cli_core::CyberfabricCommand {
     fn from(cli: Cli) -> Self {
         match cli.command {
-            Commands::Init(init) => Self::Init(init.into()),
-            Commands::Mod(r#mod) => Self::Mod(r#mod.into()),
+            Commands::Generate(generate) => Self::Generate(generate.into()),
+            Commands::New(workspace) => {
+                Self::Generate(cyberware_cli_core::generate::GenerateArgs {
+                    command: cyberware_cli_core::generate::GenerateCommand::Workspace(
+                        workspace.into(),
+                    ),
+                })
+            }
             Commands::Config(config) => Self::Config((*config).into()),
             Commands::Docs(docs) => Self::Docs(docs.into()),
             Commands::Lint(lint) => Self::Lint(lint.into()),

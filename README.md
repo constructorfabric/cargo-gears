@@ -27,7 +27,7 @@ cargo cyberfabric --help
 First you can create a new workspace with a basic hello-world module with:
 
 ```bash
-cargo cyberfabric init /tmp/cf-demo
+cargo cyberfabric generate workspace /tmp/cf-demo
 ```
 
 You can run it straight away and you will see in the console a hello world message:
@@ -45,7 +45,7 @@ and `rest-gateway`. For this example we'll use background-worker:
 
 ```bash
 # bring the module to the workspace
-cargo cyberfabric mod add background-worker
+cargo cyberfabric generate module --template background-worker
 # add the module to the config
 cargo cyberfabric config mod add background-worker -c ./config/quickstart.yml
 ```
@@ -65,8 +65,9 @@ The current CLI surface is centered on CyberFabric workspace setup, configuratio
 
 ### Workspace scaffolding
 
-- `init` initializes a new CyberFabric workspace from a template
-- `mod add` adds module templates such as `background-worker`, `api-db-handler`, and `rest-gateway`
+- `generate workspace` initializes a new CyberFabric workspace from a template
+- `generate module --template <template>` adds module templates such as `background-worker`, `api-db-handler`, and `rest-gateway`
+- `generate config --template <template>` creates runtime config files such as `dev`, `prod`, or `db`
 
 ### Configuration management
 

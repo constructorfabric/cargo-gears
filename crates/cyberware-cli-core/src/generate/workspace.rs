@@ -2,35 +2,40 @@ use anyhow::{Context, bail};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use std::path::PathBuf;
 
-/// Content of SKILL.md embedded at compile time
+use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
+
+/// Content of SKILL.md embedded at compile time.
 const SKILL_MD_CONTENT: &str = include_str!("../../../../SKILL.md");
 
-/// Content of Dockerfile embedded at compile time
+/// Content of Dockerfile embedded at compile time.
 const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
 
-/// Content of .dockerignore embedded at compile time
+/// Content of .dockerignore embedded at compile time.
 const DOCKERIGNORE_CONTENT: &str = include_str!("../../shared/.dockerignore");
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct InitArgs {
-    /// Path to initialize the project
+pub struct WorkspaceArgs {
+    /// Path to initialize the project.
     pub path: PathBuf,
-    /// Name of the project, it's inferred from the path name if not specified
+    /// Template name (defaults to "default").
+    pub template: String,
+    /// Name of the project; inferred from the path if not specified.
     pub name: Option<String>,
-    /// Verbose output
+    /// Verbose output.
     pub verbose: bool,
-    /// Path to a local template (instead of git)
+    /// Path to a local template directory.
     pub local_path: Option<String>,
-    /// url to the git repo
+    /// URL to the git repo.
     pub git: Option<String>,
-    /// Subfolder relative to the git repo
+    /// Subfolder relative to the git repo.
     pub subfolder: Option<String>,
-    /// Branch of the git repo
+    /// Branch of the git repo.
     pub branch: Option<String>,
+    /// Overwrite existing files.
     pub r#override: bool,
 }
 
-impl InitArgs {
+impl WorkspaceArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         if self.path.exists() && !self.path.is_dir() {
             bail!("path is not a directory");
@@ -38,6 +43,7 @@ impl InitArgs {
         if !self.path.exists() {
             std::fs::create_dir_all(&self.path).context("path can't be created")?;
         }
+
         let name = match &self.name {
             Some(name) => name.as_str(),
             None => self
@@ -47,23 +53,11 @@ impl InitArgs {
                 .to_str()
                 .context("name is strange")?,
         };
-        let (git, branch) = if self.local_path.is_some() {
-            (None, None)
-        } else {
-            (self.git.clone(), self.branch.clone())
-        };
+
+        let resolved = self.resolve_template();
+
         generate(GenerateArgs {
-            template_path: TemplatePath {
-                auto_path: self.subfolder.clone(),
-                git,
-                path: self.local_path.clone(),
-                subfolder: None, // This is only used when git, path and favorite are not specified
-                branch,
-                tag: None,
-                test: false,
-                revision: None,
-                favorite: None,
-            },
+            template_path: resolved,
             destination: Some(self.path.clone()),
             overwrite: self.r#override,
             init: true,
@@ -101,5 +95,30 @@ impl InitArgs {
 
         println!("Project initialized at {}", self.path.display());
         Ok(())
+    }
+
+    fn resolve_template(&self) -> TemplatePath {
+        if let Some(local) = &self.local_path {
+            return TemplatePath {
+                path: Some(local.clone()),
+                auto_path: self.subfolder.clone(),
+                ..TemplatePath::default()
+            };
+        }
+
+        let subfolder = self
+            .subfolder
+            .clone()
+            .unwrap_or_else(|| match self.template.as_str() {
+                "default" => "Init".to_owned(),
+                other => format!("Workspace/{other}"),
+            });
+
+        TemplatePath {
+            git: Some(self.git.as_deref().unwrap_or(DEFAULT_GIT_URL).to_owned()),
+            branch: Some(self.branch.as_deref().unwrap_or(DEFAULT_BRANCH).to_owned()),
+            auto_path: Some(subfolder),
+            ..TemplatePath::default()
+        }
     }
 }

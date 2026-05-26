@@ -5,44 +5,26 @@ use semver::{Comparator, Op, Version, VersionReq};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
+
 #[derive(Debug, Eq, PartialEq)]
-pub struct AddArgs {
-    /// Module template and module name to generate
-    pub name: ModuleTemplateName,
-    /// Path to the workspace root (defaults to current directory)
+pub struct ModuleArgs {
+    /// Template name (e.g. "background-worker").
+    pub template: String,
+    /// Module name; defaults to the template name when absent.
+    pub name: Option<String>,
+    /// Path to the workspace root (defaults to current directory).
     pub path: PathBuf,
-    /// Verbose output
+    /// Verbose output.
     pub verbose: bool,
-    /// Path to a local template (instead of git)
+    /// Path to a local template directory.
     pub local_path: Option<String>,
-    /// URL to the git repo
+    /// URL to the git repo.
     pub git: Option<String>,
-    /// Subfolder relative to the git repo
-    pub subfolder: String,
-    /// Branch of the git repo
+    /// Subfolder relative to the git repo.
+    pub subfolder: Option<String>,
+    /// Branch of the git repo.
     pub branch: Option<String>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-pub enum ModuleTemplateName {
-    #[cfg_attr(feature = "clap", value(name = "background-worker"))]
-    BackgroundWorker,
-    #[cfg_attr(feature = "clap", value(name = "api-db-handler"))]
-    ApiDbHandler,
-    #[cfg_attr(feature = "clap", value(name = "rest-gateway"))]
-    RestGateway,
-}
-
-impl ModuleTemplateName {
-    #[must_use]
-    pub const fn as_str(&self) -> &'static str {
-        match self {
-            Self::BackgroundWorker => "background-worker",
-            Self::ApiDbHandler => "api-db-handler",
-            Self::RestGateway => "rest-gateway",
-        }
-    }
 }
 
 struct StagedModuleWrite {
@@ -50,7 +32,7 @@ struct StagedModuleWrite {
     doc: toml_edit::DocumentMut,
 }
 
-impl AddArgs {
+impl ModuleArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         ensure_modules_directory(&self.path)?;
 
@@ -68,30 +50,23 @@ impl AddArgs {
         Ok(())
     }
 
+    /// Effective module name: explicit `--name` or the template name.
+    fn module_name(&self) -> &str {
+        self.name.as_deref().unwrap_or(&self.template)
+    }
+
     fn generate_module(&self) -> anyhow::Result<Vec<String>> {
-        let module_name = self.name.as_str();
+        let module_name = self.module_name();
         let modules_path = self.path.join("modules");
         let module_path = modules_path.join(module_name);
         if module_path.exists() {
             bail!("module {module_name} already exists");
         }
 
-        let (git, branch) = if self.local_path.is_some() {
-            (None, None)
-        } else {
-            (self.git.clone(), self.branch.clone())
-        };
-
-        let auto_path = format!("{}/{}", self.subfolder, module_name);
+        let resolved = self.resolve_template();
 
         generate(GenerateArgs {
-            template_path: TemplatePath {
-                auto_path: Some(auto_path),
-                git,
-                path: self.local_path.clone(),
-                branch,
-                ..TemplatePath::default()
-            },
+            template_path: resolved,
             destination: Some(modules_path),
             name: Some(module_name.to_string()),
             quiet: !self.verbose,
@@ -110,6 +85,28 @@ impl AddArgs {
 
         Ok(generated)
     }
+
+    fn resolve_template(&self) -> TemplatePath {
+        if let Some(local) = &self.local_path {
+            return TemplatePath {
+                path: Some(local.clone()),
+                auto_path: self.subfolder.clone(),
+                ..TemplatePath::default()
+            };
+        }
+
+        let subfolder = self
+            .subfolder
+            .clone()
+            .unwrap_or_else(|| format!("Modules/{}", self.template));
+
+        TemplatePath {
+            git: Some(self.git.as_deref().unwrap_or(DEFAULT_GIT_URL).to_owned()),
+            branch: Some(self.branch.as_deref().unwrap_or(DEFAULT_BRANCH).to_owned()),
+            auto_path: Some(subfolder),
+            ..TemplatePath::default()
+        }
+    }
 }
 
 fn ensure_modules_directory(workspace_root: &Path) -> anyhow::Result<()> {
@@ -119,7 +116,7 @@ fn ensure_modules_directory(workspace_root: &Path) -> anyhow::Result<()> {
     }
 
     bail!(
-        "modules directory does not exist at {}. Make sure you are in a workspace initialized with 'init'.",
+        "modules directory does not exist at {}. Make sure you are in a workspace initialized with 'generate workspace' or 'new'.",
         modules_dir.display()
     );
 }
