@@ -1,5 +1,77 @@
 use anyhow::bail;
 use std::fmt;
+use std::fmt::Write;
+
+// ---------------------------------------------------------------------------
+// HelpSchema trait — implemented by the derive macro
+// ---------------------------------------------------------------------------
+
+/// Metadata for a single struct field or enum variant, produced by the derive
+/// macro from doc comments and serde attributes.
+#[derive(Debug, Clone)]
+pub struct FieldHelp {
+    pub name: &'static str,
+    pub field_type: &'static str,
+    pub doc: &'static str,
+    pub optional: bool,
+    pub has_default: bool,
+}
+
+/// Trait implemented by `#[derive(HelpSchema)]` on schema types.
+/// Provides structured documentation harvested from doc comments and serde
+/// attributes at compile time.
+pub trait HelpSchema {
+    /// The Rust type name (e.g. `"Manifest"`).
+    fn help_name() -> &'static str;
+    /// Concatenated struct/enum-level doc comments.
+    fn help_doc() -> &'static str;
+    /// Per-field (or per-variant) metadata.
+    fn help_fields() -> Vec<FieldHelp>;
+
+    /// Render a human-readable help text from the harvested metadata.
+    #[must_use]
+    fn help_text() -> String {
+        let mut out = String::new();
+        out.push_str(Self::help_name());
+        out.push('\n');
+        let doc = Self::help_doc();
+        if !doc.is_empty() {
+            out.push('\n');
+            out.push_str(doc);
+            out.push('\n');
+        }
+        let fields = Self::help_fields();
+        if !fields.is_empty() {
+            out.push_str("\nFields:\n");
+            for f in &fields {
+                let qualifier = if f.optional {
+                    "optional"
+                } else if f.has_default {
+                    "default"
+                } else {
+                    "required"
+                };
+                let _ = writeln!(
+                    out,
+                    "  {:<24} {:<28} {}{}",
+                    f.name,
+                    f.field_type,
+                    qualifier,
+                    if f.doc.is_empty() {
+                        String::new()
+                    } else {
+                        format!("  — {}", f.doc)
+                    },
+                );
+            }
+        }
+        out
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Command types
+// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HelpArgs {

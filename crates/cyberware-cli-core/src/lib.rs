@@ -1,3 +1,5 @@
+pub use cyberware_cli_derive::HelpSchema;
+
 pub mod app_config;
 pub mod build;
 pub mod common;
