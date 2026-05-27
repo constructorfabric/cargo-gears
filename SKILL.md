@@ -1,8 +1,8 @@
 ---
 name: cyberfabric
 description: cli reference to help with the development of cyberfabric framework. It helps with the development of
-  the framework from its initialization, adding/removing modules, modifying configuration files, build and/or run project
-  and deploy them.
+  the framework from its initialization, adding/removing modules, modifying configuration files,
+  build and/or run project, lint the project and managing applications through it's manifest.
 ---
 
 # CyberFabric CLI Skills Guide
@@ -38,6 +38,13 @@ This CLI is a tool for automating cyberfabric development, a Rust framework. You
 - More documentation of the project will be located in https://github.com/cyberfabric/cyberfabric-core/tree/main/docs
 
 Clone(shallow) the repo to .cyberfabric folder (create it if it doesn't exist), and use it as a reference.
+If so, prefer to use the ssh version instead of https to avoid authentication issues.
+
+## Guideliness to follow
+
+- When adding new dependencies use `cargo add`, do not edit Cargo.toml manually
+- When linting, use lint command of the cli to check if there are any lint errors. Do not try to run cargo check, clippy or fmt by your own.
+- Always verify that the application runs successfully after modifying the code.
 
 ## Command Tree
 
@@ -1222,3 +1229,4 @@ cargo cyberfabric tools --all
 cargo cyberfabric run [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>] [--watch]
 cargo cyberfabric build [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>]
 cargo cyberfabric deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
+```
