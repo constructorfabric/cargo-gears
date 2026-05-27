@@ -34,8 +34,8 @@ pub struct WorkspaceArgs {
     #[arg(short = 't', long, default_value = "default")]
     template: String,
     /// Name of the project, it's inferred from the path name if not specified
-    #[arg(short = 'n', long)]
-    name: Option<String>,
+    #[arg(short = 'p', long)]
+    project: Option<String>,
     /// Verbose output
     #[arg(short = 'v', long)]
     verbose: bool,

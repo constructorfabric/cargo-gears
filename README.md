@@ -27,7 +27,7 @@ cargo cyberfabric --help
 First you can create a new workspace with a basic hello-world module with:
 
 ```bash
-cargo cyberfabric generate workspace /tmp/cf-demo
+cargo cyberfabric {new|generate workspace} /tmp/cf-demo
 ```
 
 You can run it straight away and you will see in the console a hello world message:
@@ -65,7 +65,7 @@ The current CLI surface is centered on CyberFabric workspace setup, configuratio
 
 ### Workspace scaffolding
 
-- `generate workspace` initializes a new CyberFabric workspace from a template
+- `{new|generate workspace}` initializes a new CyberFabric workspace from a template
 - `generate module --template <template>` adds module templates such as `background-worker`, `api-db-handler`, and `rest-gateway`
 - `generate config --template <template>` creates runtime config files such as `dev`, `prod`, or `db`
 

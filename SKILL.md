@@ -1060,7 +1060,7 @@ Current status:
 ### Create a workspace and run it
 
 ```bash
-cargo cyberfabric generate workspace /tmp/cf-demo
+cargo cyberfabric {new|generate workspace} /tmp/cf-demo
 cargo cyberfabric generate module --template background-worker -p /tmp/cf-demo
 cargo cyberfabric generate config --template dev --app app1 --env dev -p /tmp/cf-demo
 cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/app1-dev.yml
@@ -1101,8 +1101,7 @@ cargo cyberfabric docs --verbose tokio::sync
 ## Quick Reference
 
 ```bash
-cargo cyberfabric generate workspace <path> [--template <template>] [--name <name>]
-cargo cyberfabric new <path> [--template <template>] [--name <name>]
+cargo cyberfabric {new|generate workspace} <path> [--template <template>] [--name <name>]
 cargo cyberfabric generate module --template <background-worker|api-db-handler|rest-gateway> [--name <name>] [-p <workspace>]
 cargo cyberfabric generate config --template <dev|prod|db> [--app <app>] [--env <env>] [--name <name>] [-p <workspace>]
 
