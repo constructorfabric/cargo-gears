@@ -4,6 +4,7 @@ mod config;
 mod deploy;
 mod docs;
 mod generate;
+mod help;
 mod lint;
 mod list;
 mod manifest;
@@ -21,6 +22,7 @@ pub struct Cli {
 }
 
 #[derive(clap::Subcommand)]
+#[command(disable_help_subcommand = true)]
 pub enum Commands {
     /// Generate workspace, module, and config scaffolding
     Generate(generate::GenerateArgs),
@@ -30,6 +32,8 @@ pub enum Commands {
     Config(Box<config::ConfigArgs>),
     /// Utility to retrieve external dependency code in a token-friendly way
     Docs(docs::DocsArgs),
+    /// Schema, topic, and source-code help for developers and LLMs
+    Help(help::HelpArgs),
     /// Orchestrate the linting process of the project
     Lint(lint::LintArgs),
     /// Inspect workspace modules, system modules, and project state
@@ -67,6 +71,7 @@ impl From<Cli> for cyberware_cli_core::CyberfabricCommand {
             }
             Commands::Config(config) => Self::Config((*config).into()),
             Commands::Docs(docs) => Self::Docs(docs.into()),
+            Commands::Help(help) => help.into(),
             Commands::Lint(lint) => Self::Lint(lint.into()),
             Commands::List(list) => Self::List(list.into()),
             Commands::Manifest(manifest) => Self::Manifest(manifest.into()),
