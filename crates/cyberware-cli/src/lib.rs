@@ -5,7 +5,6 @@ mod deploy;
 mod docs;
 mod generate;
 mod help;
-mod init;
 mod lint;
 mod list;
 mod manifest;

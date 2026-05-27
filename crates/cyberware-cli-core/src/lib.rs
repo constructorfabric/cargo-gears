@@ -8,7 +8,6 @@ pub mod deploy;
 pub mod docs;
 pub mod generate;
 pub mod help;
-pub mod init;
 pub mod lint;
 pub mod list;
 pub mod manifest;
