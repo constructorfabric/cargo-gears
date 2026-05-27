@@ -41,7 +41,8 @@ The generated server reads its config path from the `CF_CLI_CONFIG` environment 
 `cargo cyberfabric run` set this automatically for the generated project.
 
 Second, add a module to the workspace. You can choose among a set of templates: `background-worker`, `api-db-handler`,
-and `rest-gateway`. For this example we'll use background-worker:
+and `api-gateway`. Prefer passing `--name` when you want the generated module to use your chosen name instead of the
+template name. For this example we'll use background-worker:
 
 ```bash
 # bring the module to the workspace
@@ -66,7 +67,7 @@ The current CLI surface is centered on CyberFabric workspace setup, configuratio
 ### Workspace scaffolding
 
 - `{new|generate workspace}` initializes a new CyberFabric workspace from a template
-- `generate module --template <template>` adds module templates such as `background-worker`, `api-db-handler`, and `rest-gateway`
+- `generate module --template <template>` adds module templates such as `background-worker`, `api-db-handler`, and `api-gateway`
 - `generate config --template <template>` creates runtime config files such as `dev`, `prod`, or `db`
 
 ### Configuration management

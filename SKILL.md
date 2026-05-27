@@ -178,12 +178,13 @@ Available built-in templates:
 
 - **[`background-worker`]** Background worker module template
 - **[`api-db-handler`]** API/database handler module template
-- **[`rest-gateway`]** REST gateway module template
+- **[`api-gateway`]** API gateway module template
 
 Arguments:
 
 - **[`-t, --template <TEMPLATE>`]** Module template name
-- **[`-n, --name <NAME>`]** Generated module folder/crate name; defaults to the template name
+- **[`-n, --name <NAME>`]** Generated module folder/crate name; defaults to the template name. Prefer passing this when
+  the generated module should use the user's chosen name.
 - **[`-p, --path <PATH>`]** Workspace root, defaults to `.`
 - **[`-v, --verbose`]** Verbose template generation output
 - **[`--local-path <PATH>`]** Use a local template directory instead of the default Git template
@@ -382,7 +383,7 @@ cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-de
 ```
 
 ```bash
-cargo cyberfabric config mod add rest-gateway -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml -F json,metrics -F tracing --dep authn-resolver --dep tenant-resolver
+cargo cyberfabric config mod add api-gateway -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml -F json,metrics -F tracing --dep authn-resolver --dep tenant-resolver
 ```
 
 ```bash
@@ -1193,7 +1194,7 @@ cargo cyberfabric src --verbose tokio::sync
 
 ```bash
 cargo cyberfabric {new|generate workspace} <path> [--template <template>] [--name <name>]
-cargo cyberfabric generate module --template <background-worker|api-db-handler|rest-gateway> [--name <name>] [-p <workspace>]
+cargo cyberfabric generate module --template <background-worker|api-db-handler|api-gateway> [--name <name>] [-p <workspace>]
 cargo cyberfabric generate config --template <dev|prod|db> [--app <app>] [--env <env>] [--name <name>] [-p <workspace>]
 
 cargo cyberfabric config mod list [-p <workspace>] -c <config>

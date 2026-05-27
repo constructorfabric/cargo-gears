@@ -83,7 +83,7 @@ impl From<WorkspaceArgs> for cyberware_cli_core::generate::workspace::WorkspaceA
 
 #[derive(Args)]
 pub struct ModuleArgs {
-    /// Template name (e.g. background-worker, api-db-handler, rest-gateway)
+    /// Template name (e.g. background-worker, api-db-handler, api-gateway)
     #[arg(short = 't', long)]
     template: String,
     /// Module name; defaults to the template name when absent
