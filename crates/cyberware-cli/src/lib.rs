@@ -2,13 +2,13 @@ mod build;
 mod common;
 mod config;
 mod deploy;
-mod docs;
 mod generate;
 mod help;
 mod lint;
 mod list;
 mod manifest;
 mod run;
+mod source;
 mod testing;
 mod tools;
 
@@ -30,8 +30,8 @@ pub enum Commands {
     New(generate::WorkspaceArgs),
     /// Utility to modify a provided configuration file
     Config(Box<config::ConfigArgs>),
-    /// Utility to retrieve external dependency code in a token-friendly way
-    Docs(docs::DocsArgs),
+    /// Resolve Rust source code from a crate or module path
+    Src(source::SourceArgs),
     /// Schema, topic, and source-code help for developers and LLMs
     Help(help::HelpArgs),
     /// Orchestrate the linting process of the project
@@ -70,7 +70,7 @@ impl From<Cli> for cyberware_cli_core::CyberfabricCommand {
                 })
             }
             Commands::Config(config) => Self::Config((*config).into()),
-            Commands::Docs(docs) => Self::Docs(docs.into()),
+            Commands::Src(src) => Self::Src(src.into()),
             Commands::Help(help) => help.into(),
             Commands::Lint(lint) => Self::Lint(lint.into()),
             Commands::List(list) => Self::List(list.into()),

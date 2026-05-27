@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[derive(Args)]
 #[command(disable_version_flag = true)]
 /// Resolve Rust source code from a crate
-pub struct DocsArgs {
+pub struct SourceArgs {
     /// Path to the Cargo workspace or crate to inspect
     #[arg(short = 'p', long, default_value = ".")]
     path: PathBuf,
@@ -22,7 +22,7 @@ pub struct DocsArgs {
     /// Resolve a specific crate version after metadata/cache lookup misses
     #[arg(long)]
     version: Option<Version>,
-    /// Remove the docs cache for the selected registry before resolving
+    /// Remove the source cache for the selected registry before resolving
     #[arg(long)]
     clean: bool,
     /// Rust path to resolve(start always by `package_name`), for example `cf-modkit` it will resolve the lib.rs
@@ -32,14 +32,14 @@ pub struct DocsArgs {
     query: Option<String>,
 }
 
-impl DocsArgs {
+impl SourceArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cyberware_cli_core::docs::DocsArgs::from(self).run()
+        cyberware_cli_core::source::SourceArgs::from(self).run()
     }
 }
 
-impl From<DocsArgs> for cyberware_cli_core::docs::DocsArgs {
-    fn from(args: DocsArgs) -> Self {
+impl From<SourceArgs> for cyberware_cli_core::source::SourceArgs {
+    fn from(args: SourceArgs) -> Self {
         Self {
             path: args.path,
             registry: args.registry,
