@@ -259,7 +259,8 @@ Alias for `generate workspace`.
 
 Synopsis:
 
-`cargo cyberfabric new <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]`
+```bash
+cargo cyberfabric new <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
 ```
 
 ### `config`

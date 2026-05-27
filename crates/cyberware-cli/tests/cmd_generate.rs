@@ -12,7 +12,7 @@ fn parses_generate_workspace_into_core_command() {
         "generate",
         "workspace",
         "/tmp/cf-demo",
-        "--name",
+        "--project",
         "cf-demo",
     ]);
 

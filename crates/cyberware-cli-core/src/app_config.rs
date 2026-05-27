@@ -101,10 +101,10 @@ impl Default for ServerConfig {
     }
 }
 
-/// Logging configuration - maps subsystem names to their logging settings.
+/// Logging configuration - maps subsystem names to their logging settings
 pub type LoggingConfig = BTreeMap<String, Value>;
 
-/// Create a default logging configuration.
+/// Create a default logging configuration
 #[must_use]
 pub fn default_logging_config() -> LoggingConfig {
     let mut logging = BTreeMap::new();
@@ -122,7 +122,7 @@ pub fn default_logging_config() -> LoggingConfig {
     logging
 }
 
-/// Small typed view to parse each module entry.
+/// Small typed view to parse each module entry
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ModuleConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -146,7 +146,7 @@ impl Default for ModuleConfig {
     }
 }
 
-/// Runtime configuration for a module (local vs out-of-process).
+/// Runtime configuration for a module (local vs out-of-process)
 #[derive(Clone, Deserialize, Serialize, Default)]
 pub struct ModuleRuntime {
     #[serde(default, rename = "type")]
@@ -156,7 +156,7 @@ pub struct ModuleRuntime {
     pub execution: Option<ExecutionConfig>,
 }
 
-/// Execution configuration for out-of-process modules.
+/// Execution configuration for out-of-process modules
 #[derive(Clone, Deserialize, Serialize, Default)]
 pub struct ExecutionConfig {
     /// Path to the executable. Supports absolute paths or `~` expansion.
@@ -172,7 +172,7 @@ pub struct ExecutionConfig {
     pub environment: BTreeMap<String, String>,
 }
 
-/// Module runtime kind.
+/// Module runtime kind
 #[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RuntimeKind {
@@ -189,7 +189,7 @@ fn default_module_config() -> Value {
     Value::Object(Map::default())
 }
 
-/// Global database configuration with server-based DBs.
+/// Global database configuration with server-based DBs
 #[derive(Clone, Deserialize, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct GlobalDatabaseConfig {
@@ -201,7 +201,7 @@ pub struct GlobalDatabaseConfig {
     pub auto_provision: Option<bool>,
 }
 
-/// Reusable DB connection config for both global servers and modules.
+/// Reusable DB connection config for both global servers and modules
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct DbConnConfig {
@@ -238,7 +238,7 @@ pub struct DbConnConfig {
     pub server: Option<String>,
 }
 
-/// Serializable engine selector for configuration.
+/// Serializable engine selector for configuration
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "lowercase")]
@@ -248,7 +248,7 @@ pub enum DbEngineCfg {
     Sqlite,
 }
 
-/// Connection pool configuration.
+/// Connection pool configuration
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct PoolCfg {
@@ -384,7 +384,7 @@ pub struct OpenTelemetryConfig {
     pub metrics: MetricsConfig,
 }
 
-/// OpenTelemetry resource identity — attached to all traces and metrics.
+/// OpenTelemetry resource identity — attached to all traces and metrics
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct OpenTelemetryResource {
@@ -396,7 +396,7 @@ pub struct OpenTelemetryResource {
     pub attributes: BTreeMap<String, String>,
 }
 
-/// Return the default OpenTelemetry service name used when none is configured.
+/// Return the default OpenTelemetry service name used when none is configured
 fn default_service_name() -> String {
     "cyberfabric".to_owned()
 }
@@ -410,7 +410,7 @@ impl Default for OpenTelemetryResource {
     }
 }
 
-/// Tracing configuration for OpenTelemetry distributed tracing.
+/// Tracing configuration for OpenTelemetry distributed tracing
 #[derive(Clone, Deserialize, Serialize, Default)]
 pub struct TracingConfig {
     #[serde(default)]
@@ -427,7 +427,7 @@ pub struct TracingConfig {
     pub logs_correlation: Option<LogsCorrelation>,
 }
 
-/// Metrics configuration for OpenTelemetry metrics collection.
+/// Metrics configuration for OpenTelemetry metrics collection
 #[derive(Clone, Deserialize, Serialize, Default)]
 pub struct MetricsConfig {
     #[serde(default)]

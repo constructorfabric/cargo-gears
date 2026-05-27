@@ -4,13 +4,13 @@ use std::path::PathBuf;
 
 use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
 
-/// Content of SKILL.md embedded at compile time.
+/// Content of SKILL.md embedded at compile time
 const SKILL_MD_CONTENT: &str = include_str!("../../../../SKILL.md");
 
-/// Content of Dockerfile embedded at compile time.
+/// Content of Dockerfile embedded at compile time
 const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
 
-/// Content of .dockerignore embedded at compile time.
+/// Content of .dockerignore embedded at compile time
 const DOCKERIGNORE_CONTENT: &str = include_str!("../../shared/.dockerignore");
 
 #[derive(Debug, Eq, PartialEq)]

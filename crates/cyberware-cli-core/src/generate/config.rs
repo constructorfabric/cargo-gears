@@ -2,7 +2,7 @@ use anyhow::{Context, bail};
 use std::fs;
 use std::path::PathBuf;
 
-/// Built-in config template names.
+/// Built-in config template names
 const BUILTIN_DEV: &str = "dev";
 const BUILTIN_PROD: &str = "prod";
 const BUILTIN_DB: &str = "db";
@@ -150,8 +150,10 @@ fn ensure_yml_extension(name: &str) -> String {
         .is_some_and(|ext| ext.eq_ignore_ascii_case("yml") || ext.eq_ignore_ascii_case("yaml"))
     {
         name.to_owned()
+    } else if let Some(file_name) = path.file_name() {
+        format!("{}.yml", file_name.display())
     } else {
-        format!("{name}.yml")
+        name.split('.').next().unwrap_or(name).to_owned() + ".yml"
     }
 }
 

@@ -66,7 +66,7 @@ impl From<WorkspaceArgs> for cyberware_cli_core::generate::workspace::WorkspaceA
         Self {
             path: args.path,
             template: args.template,
-            name: args.name,
+            name: args.project,
             verbose: args.verbose,
             local_path: args.local_path,
             git: args.git,
