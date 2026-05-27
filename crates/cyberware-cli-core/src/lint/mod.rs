@@ -172,21 +172,21 @@ fn run_dylint(workspace_path: &Path) -> Result<()> {
         .collect::<Result<_>>()?;
 
     let opts = dylint::opts::Dylint {
-        // Check all packages in the workspace rooted at `workspace_path`.
-        // `manifest_path` points dylint at the workspace so it does not
-        // depend on the process CWD.
-        manifest_path: Some(
-            workspace_path
-                .join("Cargo.toml")
-                .to_string_lossy()
-                .into_owned(),
-        ),
         operation: dylint::opts::Operation::Check(dylint::opts::Check {
             lib_sel: dylint::opts::LibrarySelection {
                 // Point directly at the extracted, versioned dylib files.
                 // dylint parses the toolchain from each filename so no further
                 // discovery or building is necessary.
                 lib_paths,
+                // Check all packages in the workspace rooted at `workspace_path`.
+                // Pointing Dylint at the workspace manifest avoids depending on
+                // the process CWD.
+                manifest_path: Some(
+                    workspace_path
+                        .join("Cargo.toml")
+                        .to_string_lossy()
+                        .into_owned(),
+                ),
                 ..Default::default()
             },
             // Lint the whole workspace, not just the root crate.
