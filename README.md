@@ -106,9 +106,8 @@ CF_CLI_CONFIG=/tmp/cf-demo/config/quickstart.yml cargo run --manifest-path /tmp/
 
 ### Linting
 
-`cargo cyberfabric lint` defaults to running all available lint suites for the current or selected workspace. It
-orchestrates
-`cargo fmt` `cargo clippy` and `dylint` custom rules. It respects your custom settings from `Cargo.toml`.
+`cargo cyberfabric lint --app <APP> --env <ENV>` reads the selected manifest lint policy and orchestrates `cargo fmt`,
+`cargo clippy`, and `dylint` custom rules for that workspace. It respects your custom settings from `Cargo.toml`.
 
 If the CLI is built without the `dylint-rules` feature, `lint --dylint` returns an error.
 

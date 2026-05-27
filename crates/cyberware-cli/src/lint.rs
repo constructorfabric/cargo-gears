@@ -1,3 +1,4 @@
+use crate::common::ManifestTargetArgs;
 use clap::Args;
 use std::path::PathBuf;
 
@@ -9,6 +10,8 @@ pub struct LintArgs {
     /// Path to the module workspace root
     #[arg(short = 'p', long, value_parser = cyberware_cli_core::common::parse_path)]
     pub path: Option<PathBuf>,
+    #[command(flatten)]
+    pub manifest: ManifestTargetArgs,
     /// Check whether the workspace is formatted with `cargo fmt`.
     #[arg(long)]
     fmt: bool,
@@ -34,6 +37,7 @@ impl From<LintArgs> for cyberware_cli_core::lint::LintArgs {
         Self {
             all: args.all,
             path: args.path,
+            manifest: args.manifest.into_selection(),
             fmt: args.fmt,
             clippy: args.clippy,
             strict: args.strict,
@@ -55,7 +59,8 @@ mod tests {
 
     #[test]
     fn parses_default_lint_args() {
-        let cli = TestCli::try_parse_from(["cyberfabric"]).expect("lint args should parse");
+        let cli = TestCli::try_parse_from(["cyberfabric", "--app", "app1", "--env", "dev"])
+            .expect("lint args should parse");
 
         assert!(!cli.lint.all);
         assert!(!cli.lint.fmt);

@@ -8,10 +8,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[cfg(feature = "dylint-rules")]
-const LINTS_REPO_URL: &str = "https://github.com/cyberfabric/cyberfabric-core.git";
+const LINTS_REPO_URL: &str = "git@github.com:cyberfabric/cyberware-rust.git";
 
 #[cfg(feature = "dylint-rules")]
-const LINTS_REPO_REVISION: &str = "0a514ffc4b6a1eb32c3cf0920387d5bc42c852a3";
+const LINTS_REPO_REVISION: &str = "543a190d1ad2301798df46a599d1eb33a591d642";
 
 #[cfg(feature = "dylint-rules")]
 mod ensure_toolchain_installed_shared {
@@ -221,7 +221,7 @@ fn clone_lints_repo(repo_dir: &Path) -> anyhow::Result<()> {
 #[cfg(feature = "dylint-rules")]
 fn ensure_lints_dir(out_dir: &Path) -> anyhow::Result<PathBuf> {
     let repo_dir = out_dir.join("cyberfabric-core");
-    let lints_dir = repo_dir.join("dylint_lints");
+    let lints_dir = repo_dir.join("tools").join("dylint_lints");
 
     if !repo_dir.exists() {
         clone_lints_repo(&repo_dir)?;

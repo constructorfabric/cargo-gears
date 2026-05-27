@@ -1,4 +1,5 @@
 use crate::common::cargo_cmd;
+use crate::manifest::{LintPolicy, ManifestSelection};
 use anyhow::{Context, Result};
 
 #[cfg(feature = "dylint-rules")]
@@ -24,6 +25,7 @@ pub struct LintArgs {
     pub all: bool,
     /// Path to the module workspace root
     pub path: Option<PathBuf>,
+    pub manifest: ManifestSelection,
     /// Check whether the workspace is formatted with `cargo fmt`.
     pub fmt: bool,
     /// Run recommended clippy rules. Follows Cargo.toml exceptions if present.
@@ -46,18 +48,31 @@ struct EffectiveLintSelection {
 }
 
 impl LintArgs {
-    const fn selection(&self) -> EffectiveLintSelection {
-        let all = self.all || (!self.fmt && !self.clippy && !self.dylint);
+    const fn has_explicit_selection(&self) -> bool {
+        self.all || self.fmt || self.clippy || self.dylint
+    }
+
+    fn selection(&self, policy: &LintPolicy) -> EffectiveLintSelection {
+        if !self.has_explicit_selection() {
+            return EffectiveLintSelection {
+                all: false,
+                fmt: policy.fmt,
+                clippy: policy.clippy,
+                dylint: policy.dylint.as_ref().is_some_and(|dylint| dylint.enabled),
+            };
+        }
+
+        let all = self.all;
         EffectiveLintSelection {
             all,
-            fmt: self.fmt,
+            fmt: self.fmt || all,
             clippy: self.clippy || all,
             dylint: self.dylint || (all && cfg!(feature = "dylint-rules")),
         }
     }
 
-    fn validate(&self) -> Result<EffectiveLintSelection> {
-        let selection = self.selection();
+    fn validate(&self, policy: &LintPolicy) -> Result<EffectiveLintSelection> {
+        let selection = self.selection(policy);
         if self.strict && !selection.clippy {
             anyhow::bail!("`--strict` requires `--clippy` or `--all`");
         }
@@ -66,18 +81,19 @@ impl LintArgs {
 
     pub fn run(&self) -> Result<()> {
         let workspace_path = crate::common::resolve_workspace_path(self.path.as_deref())?;
-        let selection = self.validate()?;
+        let resolved = self.manifest.resolve(&workspace_path)?;
+        let selection = self.validate(&resolved.lint)?;
 
         if selection.fmt {
-            run_fmt(&workspace_path)?;
+            run_fmt(&resolved.workspace_root)?;
         }
 
         if selection.clippy {
-            run_clippy(&workspace_path, self.strict)?;
+            run_clippy(&resolved.workspace_root, self.strict)?;
         }
 
         if selection.dylint {
-            run_dylint(&workspace_path)?;
+            run_dylint(&resolved.workspace_root)?;
         }
 
         Ok(())
@@ -99,10 +115,10 @@ fn run_fmt(workspace_path: &Path) -> Result<()> {
 
 fn run_clippy(workspace_path: &Path, strict: bool) -> Result<()> {
     let mut cmd = cargo_cmd()?;
-    cmd.args(["clippy", "--workspace", "--all-targets", "--all-features"]);
+    cmd.args(["clippy", "--workspace", "--all-targets"]);
     cmd.current_dir(workspace_path);
 
-    // TODO Analyse the features that each crate has and try to test them against the feature set.
+    // TODO Analyse the manifest feature-set policy and lint those combinations.
 
     if strict {
         cmd.arg("--").arg("-D").arg("warnings");
@@ -191,12 +207,19 @@ fn run_dylint(_workspace_path: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::LintArgs;
+    use crate::manifest::{Dylint, LintPolicy, ManifestSelection};
+    use std::path::PathBuf;
 
     #[allow(clippy::fn_params_excessive_bools)]
     fn lint_args(all: bool, fmt: bool, clippy: bool, strict: bool, dylint: bool) -> LintArgs {
         LintArgs {
             all,
             path: None,
+            manifest: ManifestSelection {
+                manifest: PathBuf::from("Cyberware.toml"),
+                app: "app".to_owned(),
+                env: "dev".to_owned(),
+            },
             fmt,
             clippy,
             strict,
@@ -204,26 +227,37 @@ mod tests {
         }
     }
 
+    fn lint_policy(fmt: bool, clippy: bool, dylint: bool) -> LintPolicy {
+        LintPolicy {
+            fmt,
+            clippy,
+            dylint: dylint.then_some(Dylint {
+                enabled: true,
+                skip: Vec::new(),
+            }),
+            ..Default::default()
+        }
+    }
+
     #[test]
-    fn defaults_to_all_lints() {
+    fn defaults_to_manifest_lint_policy() {
         let args = lint_args(false, false, false, false, false);
+        let policy = lint_policy(false, true, true);
 
-        let selection = args.selection();
+        let selection = args.selection(&policy);
 
-        assert!(selection.all);
+        assert!(!selection.all);
         assert!(!selection.fmt);
         assert!(selection.clippy);
-        #[cfg(feature = "dylint-rules")]
         assert!(selection.dylint);
-        #[cfg(not(feature = "dylint-rules"))]
-        assert!(!selection.dylint);
     }
 
     #[test]
     fn explicit_lint_selection_disables_default_all() {
         let args = lint_args(false, false, false, false, true);
+        let policy = lint_policy(true, true, false);
 
-        let selection = args.selection();
+        let selection = args.selection(&policy);
 
         assert!(!selection.all);
         assert!(!selection.fmt);
@@ -234,8 +268,9 @@ mod tests {
     #[test]
     fn fmt_selection_is_explicit() {
         let args = lint_args(false, true, false, false, false);
+        let policy = lint_policy(false, true, true);
 
-        let selection = args.selection();
+        let selection = args.selection(&policy);
 
         assert!(!selection.all);
         assert!(selection.fmt);
@@ -247,7 +282,7 @@ mod tests {
     fn strict_with_clippy_is_accepted() {
         let args = lint_args(false, false, true, true, false);
 
-        args.validate()
+        args.validate(&LintPolicy::default())
             .expect("strict with clippy should be accepted");
     }
 
@@ -255,14 +290,17 @@ mod tests {
     fn strict_with_all_is_accepted() {
         let args = lint_args(true, false, false, true, false);
 
-        args.validate().expect("strict with all should be accepted");
+        args.validate(&LintPolicy::default())
+            .expect("strict with all should be accepted");
     }
 
     #[test]
     fn strict_requires_clippy_or_all() {
         let args = lint_args(false, false, false, true, true);
 
-        let error = args.validate().expect_err("strict should be rejected");
+        let error = args
+            .validate(&LintPolicy::default())
+            .expect_err("strict should be rejected");
 
         assert_eq!(
             error.to_string(),
