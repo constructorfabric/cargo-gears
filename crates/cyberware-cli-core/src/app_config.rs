@@ -8,7 +8,7 @@ use std::time::Duration;
 
 /// Main application configuration with strongly-typed global sections
 /// and a flexible per-module configuration bag.
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
 pub struct AppConfig {
     /// Core server configuration.
     pub server: ServerConfig,
@@ -87,8 +87,10 @@ impl Default for AppConfig {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+/// Core server configuration.
+#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
 pub struct ServerConfig {
+    /// Server home directory.
     #[serde(default = "default_home_dir")]
     pub home_dir: PathBuf,
 }
@@ -122,8 +124,8 @@ pub fn default_logging_config() -> LoggingConfig {
     logging
 }
 
-/// Small typed view to parse each module entry
-#[derive(Clone, Deserialize, Serialize)]
+/// Per-module configuration: database, config bag, runtime, and Cargo metadata
+#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
 pub struct ModuleConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub database: Option<DbConnConfig>,
@@ -147,7 +149,7 @@ impl Default for ModuleConfig {
 }
 
 /// Runtime configuration for a module (local vs out-of-process)
-#[derive(Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
 pub struct ModuleRuntime {
     #[serde(default, rename = "type")]
     pub mod_type: RuntimeKind,
@@ -157,7 +159,7 @@ pub struct ModuleRuntime {
 }
 
 /// Execution configuration for out-of-process modules
-#[derive(Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
 pub struct ExecutionConfig {
     /// Path to the executable. Supports absolute paths or `~` expansion.
     pub executable_path: String,
@@ -190,7 +192,7 @@ fn default_module_config() -> Value {
 }
 
 /// Global database configuration with server-based DBs
-#[derive(Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GlobalDatabaseConfig {
     /// Server-based DBs (postgres/mysql/sqlite/etc.), keyed by server name.
@@ -202,7 +204,7 @@ pub struct GlobalDatabaseConfig {
 }
 
 /// Reusable DB connection config for both global servers and modules
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DbConnConfig {
     /// Explicit database engine for this connection.
@@ -249,7 +251,7 @@ pub enum DbEngineCfg {
 }
 
 /// Connection pool configuration
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PoolCfg {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -368,9 +370,9 @@ impl PoolCfg {
 /// [`AppConfig::vendor_config`] or [`AppConfig::vendor_config_or_default`].
 pub type VendorConfig = HashMap<String, serde_json::Value>;
 
-/// Top-level OpenTelemetry configuration grouping resource identity,
+/// Top-level `OpenTelemetry` configuration grouping resource identity,
 /// a shared default exporter, tracing settings and metrics settings.
-#[derive(Clone, Deserialize, Serialize, Default)]
+#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct OpenTelemetryConfig {
     #[serde(default)]
@@ -384,8 +386,8 @@ pub struct OpenTelemetryConfig {
     pub metrics: MetricsConfig,
 }
 
-/// OpenTelemetry resource identity — attached to all traces and metrics
-#[derive(Clone, Deserialize, Serialize)]
+/// `OpenTelemetry` resource identity — attached to all traces and metrics
+#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct OpenTelemetryResource {
     /// Logical service name.
@@ -410,8 +412,8 @@ impl Default for OpenTelemetryResource {
     }
 }
 
-/// Tracing configuration for OpenTelemetry distributed tracing
-#[derive(Clone, Deserialize, Serialize, Default)]
+/// Tracing configuration for `OpenTelemetry` distributed tracing
+#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
 pub struct TracingConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -427,8 +429,8 @@ pub struct TracingConfig {
     pub logs_correlation: Option<LogsCorrelation>,
 }
 
-/// Metrics configuration for OpenTelemetry metrics collection
-#[derive(Clone, Deserialize, Serialize, Default)]
+/// Metrics configuration for `OpenTelemetry` metrics collection
+#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
 pub struct MetricsConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -446,7 +448,8 @@ pub enum ExporterKind {
     OtlpHttp,
 }
 
-#[derive(Clone, Default, Deserialize, Serialize)]
+/// Telemetry exporter (OTLP gRPC or HTTP).
+#[derive(Clone, Default, Deserialize, Serialize, crate::HelpSchema)]
 pub struct Exporter {
     #[serde(default)]
     pub kind: ExporterKind,

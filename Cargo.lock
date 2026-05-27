@@ -566,6 +566,7 @@ dependencies = [
  "cargo-generate",
  "cargo_metadata",
  "clap",
+ "cyberware-cli-derive",
  "dylint",
  "flate2",
  "notify",
@@ -582,6 +583,15 @@ dependencies = [
  "tokio",
  "toml 1.1.2+spec-1.1.0",
  "toml_edit",
+]
+
+[[package]]
+name = "cyberware-cli-derive"
+version = "0.0.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

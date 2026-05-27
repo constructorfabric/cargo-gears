@@ -65,7 +65,11 @@ fn print_value<T: Serialize>(format: common::OutputFormat, value: &T) -> anyhow:
     Ok(())
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+/// Top-level `CyberFabric` manifest (`Cyberware.toml`).
+///
+/// Drives build, run, lint, and test workflows. Declares workspace-level
+/// defaults and per-app/environment overrides.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     #[serde(default)]
@@ -289,17 +293,23 @@ pub struct ManifestEntry {
     pub env: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+/// Workspace-level defaults for paths and schema version.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Workspace {
+    /// Schema version (currently always 1).
     #[serde(default = "default_version")]
     pub version: u32,
+    /// Workspace root override (relative to manifest directory).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub root: Option<PathBuf>,
+    /// Directory containing config YAML files.
     #[serde(default = "default_config_dir", rename = "config-dir")]
     pub config_dir: PathBuf,
+    /// Directory for generated server projects.
     #[serde(default = "default_generated_dir", rename = "generated-dir")]
     pub generated_dir: PathBuf,
+    /// Global environment inherited by all apps (optional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub global_env: Option<Environment>,
 }
@@ -316,18 +326,25 @@ impl Default for Workspace {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+/// Per-app/environment configuration.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Environment {
+    /// Config YAML path relative to config-dir.
     pub config: PathBuf,
+    /// Test policy overrides.
     #[serde(default)]
     pub test: TestPolicy,
+    /// Lint policy overrides.
     #[serde(default)]
     pub lint: LintPolicy,
+    /// Modules to include in the generated server.
     #[serde(default)]
     pub modules: Vec<ModuleRef>,
+    /// Runtime policy overrides.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run: Option<RunPolicy>,
+    /// Build policy overrides.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub build: Option<BuildPolicy>,
 }
@@ -359,7 +376,8 @@ pub struct RemoteModuleRef {
     pub registry: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+/// Runtime policy for watch, FIPS, and OpenTelemetry.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RunPolicy {
     #[serde(default)]
@@ -370,13 +388,17 @@ pub struct RunPolicy {
     pub otel: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+/// Watch-mode settings.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct WatchPolicy {
+    /// Enable file watching in run mode.
     #[serde(default = "default_true")]
     pub enabled: bool,
+    /// Extra paths to watch.
     #[serde(default)]
     pub paths: Vec<PathBuf>,
+    /// Paths to ignore.
     #[serde(default)]
     pub ignore: Vec<PathBuf>,
 }
@@ -391,13 +413,17 @@ impl Default for WatchPolicy {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+/// Build policy controlling profile, name, and clean behavior.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct BuildPolicy {
+    /// Override generated project name (default: <app>-<env>).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Build profile (debug, release, or custom).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<BuildProfile>,
+    /// Remove Cargo.lock before building.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub clean: Option<bool>,
 }
@@ -430,7 +456,8 @@ impl From<BuildProfile> for String {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+/// Lint policy controlling clippy, fmt, dylint, and feature-set testing.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LintPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -465,7 +492,8 @@ pub struct Dylint {
     pub skip: Vec<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+/// Test policy controlling runner, coverage, and feature-set testing.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TestPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -488,7 +516,8 @@ pub struct TestPolicy {
     pub custom_command: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+/// Optional registry of template sources for generate commands.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields, default)]
 pub struct TemplateRegistry {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
