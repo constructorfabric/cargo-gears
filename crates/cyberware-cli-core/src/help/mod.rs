@@ -81,7 +81,7 @@ pub struct HelpArgs {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HelpCommand {
     Schema(SchemaArgs),
-    Docs(crate::docs::DocsArgs),
+    Src(crate::source::SourceArgs),
     Topic(TopicArgs),
 }
 
@@ -138,7 +138,7 @@ impl HelpArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             HelpCommand::Schema(args) => args.run(),
-            HelpCommand::Docs(args) => args.run(),
+            HelpCommand::Src(args) => args.run(),
             HelpCommand::Topic(args) => args.run(),
         }
     }

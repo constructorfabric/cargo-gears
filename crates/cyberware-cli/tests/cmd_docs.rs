@@ -7,10 +7,10 @@ use std::path::PathBuf;
 use common::parse_command;
 
 #[test]
-fn parses_docs_into_core_command() {
+fn parses_src_into_core_command() {
     let command = parse_command(&[
         "cyberfabric",
-        "docs",
+        "src",
         "-p",
         "workspace",
         "--registry",
@@ -25,7 +25,7 @@ fn parses_docs_into_core_command() {
 
     assert_eq!(
         command,
-        CyberfabricCommand::Docs(cyberware_cli_core::docs::DocsArgs {
+        CyberfabricCommand::Src(cyberware_cli_core::source::SourceArgs {
             path: PathBuf::from("workspace"),
             registry: Registry::CratesIo,
             verbose: true,

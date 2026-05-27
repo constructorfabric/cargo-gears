@@ -27,8 +27,8 @@ impl From<HelpArgs> for cyberware_cli_core::CyberfabricCommand {
 pub enum HelpCommand {
     /// Print the schema for manifest, config, or module formats
     Schema(SchemaArgs),
-    /// Resolve Rust source code from a crate (alias for top-level `docs`)
-    Docs(DocsArgs),
+    /// Resolve Rust source code from a crate (alias for top-level `src`)
+    Src(SrcArgs),
     /// Print operational documentation for a topic
     Topic(TopicArgs),
 }
@@ -37,7 +37,7 @@ impl From<HelpCommand> for cyberware_cli_core::help::HelpCommand {
     fn from(command: HelpCommand) -> Self {
         match command {
             HelpCommand::Schema(args) => Self::Schema(args.into()),
-            HelpCommand::Docs(args) => Self::Docs(args.into()),
+            HelpCommand::Src(args) => Self::Src(args.into()),
             HelpCommand::Topic(args) => Self::Topic(args.into()),
         }
     }
@@ -83,12 +83,12 @@ impl From<SchemaTarget> for cyberware_cli_core::help::SchemaTarget {
 }
 
 // ---------------------------------------------------------------------------
-// Docs (alias for top-level docs command)
+// Src (alias for top-level src command)
 // ---------------------------------------------------------------------------
 
 #[derive(Args)]
 #[command(disable_version_flag = true)]
-pub struct DocsArgs {
+pub struct SrcArgs {
     /// Path to the Cargo workspace or crate to inspect
     #[arg(short = 'p', long, default_value = ".")]
     path: PathBuf,
@@ -104,15 +104,15 @@ pub struct DocsArgs {
     /// Resolve a specific crate version after metadata/cache lookup misses
     #[arg(long)]
     version: Option<Version>,
-    /// Remove the docs cache for the selected registry before resolving
+    /// Remove the source cache for the selected registry before resolving
     #[arg(long)]
     clean: bool,
     /// Rust path to resolve (start with the package name)
     query: Option<String>,
 }
 
-impl From<DocsArgs> for cyberware_cli_core::docs::DocsArgs {
-    fn from(args: DocsArgs) -> Self {
+impl From<SrcArgs> for cyberware_cli_core::source::SourceArgs {
+    fn from(args: SrcArgs) -> Self {
         Self {
             path: args.path,
             registry: args.registry,

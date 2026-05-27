@@ -61,10 +61,10 @@ cargo cyberfabric
 │       ├── add
 │       ├── edit
 │       └── rm
-├── docs
+├── src
 ├── help
 │   ├── schema
-│   ├── docs
+│   ├── src
 │   └── topic
 ├── lint
 ├── list
@@ -518,14 +518,14 @@ cargo cyberfabric config db add local-sqlite -p /tmp/cf-demo -c /tmp/cf-demo/con
 cargo cyberfabric config db rm primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 ```
 
-### `docs`
+### `src`
 
-Resolve Rust source for a crate/module/item query from local workspace metadata, the local docs cache, or crates.io.
+Resolve Rust source for a crate/module/item query from local workspace metadata, the local source cache, or crates.io.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric docs [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
+cargo cyberfabric src [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
 ```
 
 Arguments:
@@ -535,7 +535,7 @@ Arguments:
 - **[`-v, --verbose`]** Print resolution metadata before the source
 - **[`-l, --libs`]** Print `library_name -> package_name` mappings for a package query instead of source
 - **[`--version <VERSION>`]** Resolve a specific crate version after metadata/cache lookup misses
-- **[`--clean`]** Remove the docs cache for the selected registry before resolving
+- **[`--clean`]** Remove the source cache for the selected registry before resolving
 - **[`[<query>]`]** Rust path to resolve, starting with the package name; omitted only when `--clean` is used by itself
 
 Supported query examples:
@@ -557,7 +557,7 @@ Behavior:
   until it reaches the final source
 - **[library mapping output]** `--libs` prints the Rust source-code library name on the left and the Cargo package
   name on the right, including renamed dependencies like `modkit_macros -> cf-modkit-macros`
-- **[cache location]** Registry sources are cached under the OS temp directory in `cyberfabric-docs-cache/<registry>/`
+- **[cache location]** Registry sources are cached under the OS temp directory in `cyberfabric-docs-cache/<registry>/` (legacy name)
 - **[cache cleaning]** `--clean` removes the selected registry cache before resolution
 - **[source output]** Prints the resolved Rust source to stdout
 - **[verbose metadata]** Also prints query, package, library, version, manifest path, and source path
@@ -566,31 +566,31 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric docs -p /tmp/cf-demo cf-modkit
+cargo cyberfabric src -p /tmp/cf-demo cf-modkit
 ```
 
 ```bash
-cargo cyberfabric docs cf-modkit::module
+cargo cyberfabric src cf-modkit::module
 ```
 
 ```bash
-cargo cyberfabric docs --verbose tokio::sync
+cargo cyberfabric src --verbose tokio::sync
 ```
 
 ```bash
-cargo cyberfabric docs --libs cf-modkit
+cargo cyberfabric src --libs cf-modkit
 ```
 
 ```bash
-cargo cyberfabric docs --version 1.0.217 serde::de::Deserialize
+cargo cyberfabric src --version 1.0.217 serde::de::Deserialize
 ```
 
 ```bash
-cargo cyberfabric docs --clean
+cargo cyberfabric src --clean
 ```
 
 ```bash
-cargo cyberfabric docs --clean -p /tmp/cf-demo tokio::sync
+cargo cyberfabric src --clean -p /tmp/cf-demo tokio::sync
 ```
 
 ### `help`
@@ -635,17 +635,17 @@ cargo cyberfabric help schema config --section database
 cargo cyberfabric help schema module
 ```
 
-#### `help docs`
+#### `help src`
 
-Alias for the top-level `docs` command. Resolves Rust source code from a crate.
+Alias for the top-level `src` command. Resolves Rust source code from a crate.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric help docs [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
+cargo cyberfabric help src [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
 ```
 
-Behavior identical to `docs`; see the `docs` section above.
+Behavior identical to `src`; see the `src` section above.
 
 #### `help topic`
 
@@ -1171,7 +1171,7 @@ cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --watch
 ### Inspect source for a dependency
 
 ```bash
-cargo cyberfabric docs --verbose tokio::sync
+cargo cyberfabric src --verbose tokio::sync
 ```
 
 ## Important Caveats
@@ -1184,8 +1184,8 @@ cargo cyberfabric docs --verbose tokio::sync
 - **[`lint --strict` depends on Clippy]** Use it together with `--clippy` or `--all`
 - **[`test` is not ready]** It is part of the CLI surface but currently panics at runtime
 - **[`tools` can mutate your system]** It may install `rustup` or rustup components
-- **[`docs --registry`]** Only `crates.io` is supported
-- **[`docs`]** Accepts a single query, and that query is only optional when `--clean` is used by itself
+- **[`src --registry`]** Only `crates.io` is supported
+- **[`src`]** Accepts a single query, and that query is only optional when `--clean` is used by itself
 - **[`config mod add`]** Remote modules require both `--package` and `--module-version`
 - **[`config mod db add`]** The module must already exist in config
 
@@ -1213,7 +1213,7 @@ cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [-f tab
 cargo cyberfabric list configs [-f table|json|yaml|toml]           # unimplemented
 cargo cyberfabric list apps [-f table|json|yaml|toml]              # unimplemented
 
-cargo cyberfabric docs [-p <path>] [--version <version>] [--clean] [<query>]
+cargo cyberfabric src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo cyberfabric lint [-p <workspace>] [--all] [--clippy] [--strict] [--dylint]
 cargo cyberfabric tools --all
 cargo cyberfabric run [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>] [--watch]

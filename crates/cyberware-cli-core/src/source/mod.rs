@@ -17,7 +17,7 @@ use std::time::Duration;
 
 /// Resolve Rust source code from a crate
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DocsArgs {
+pub struct SourceArgs {
     /// Path to the Cargo workspace or crate to inspect
     pub path: PathBuf,
     /// Registry to query when the crate is not present in local metadata
@@ -28,7 +28,7 @@ pub struct DocsArgs {
     pub libs: bool,
     /// Resolve a specific crate version after metadata/cache lookup misses
     pub version: Option<Version>,
-    /// Remove the docs cache for the selected registry before resolving
+    /// Remove the source cache for the selected registry before resolving
     pub clean: bool,
     /// Rust path to resolve(start always by `package_name`), for example `cf-modkit` it will resolve the lib.rs
     /// You can resolve modules `tokio::sync` to resolve the source code from the sync module from tokio crate
@@ -37,7 +37,7 @@ pub struct DocsArgs {
     pub query: Option<String>,
 }
 
-impl DocsArgs {
+impl SourceArgs {
     pub fn run(&self) -> anyhow::Result<()> {
         if self.clean {
             clean_registry_cache(self.registry)?;
@@ -47,7 +47,7 @@ impl DocsArgs {
             return if self.clean {
                 Ok(())
             } else {
-                bail!("docs query is required unless --clean is used by itself")
+                bail!("source query is required unless --clean is used by itself")
             };
         };
 
@@ -58,7 +58,7 @@ impl DocsArgs {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .context("failed to build tokio runtime for docs queries")?;
+            .context("failed to build tokio runtime for source queries")?;
         let client = build_registry_client()?;
         let resolution_ctx = Resolver {
             workspace_path: &workspace_path,
@@ -829,7 +829,7 @@ fn resolve_from_cache(
     }
 
     // NOTE: the symlink update below is not protected against concurrent processes.
-    // If multiple `cyberfabric docs` invocations race here, the symlink may be
+    // If multiple `cyberfabric src` invocations race here, the symlink may be
     // updated more than once, but the result is still correct (points to the
     // highest cached version). Add file-based locking on `package_root` if this
     // ever becomes a problem in practice.

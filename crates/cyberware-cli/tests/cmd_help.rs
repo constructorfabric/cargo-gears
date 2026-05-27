@@ -58,13 +58,13 @@ fn parses_help_schema_module() {
 }
 
 #[test]
-fn parses_help_docs_with_query() {
-    let command = parse_command(&["cyberfabric", "help", "docs", "tokio::sync"]);
+fn parses_help_src_with_query() {
+    let command = parse_command(&["cyberfabric", "help", "src", "tokio::sync"]);
 
     assert_eq!(
         command,
         CyberfabricCommand::Help(HelpArgs {
-            command: HelpCommand::Docs(cyberware_cli_core::docs::DocsArgs {
+            command: HelpCommand::Src(cyberware_cli_core::source::SourceArgs {
                 path: PathBuf::from("."),
                 registry: cyberware_cli_core::common::Registry::CratesIo,
                 verbose: false,
@@ -78,11 +78,11 @@ fn parses_help_docs_with_query() {
 }
 
 #[test]
-fn parses_help_docs_with_all_flags() {
+fn parses_help_src_with_all_flags() {
     let command = parse_command(&[
         "cyberfabric",
         "help",
-        "docs",
+        "src",
         "-p",
         "/tmp/ws",
         "-v",
@@ -96,7 +96,7 @@ fn parses_help_docs_with_all_flags() {
     assert_eq!(
         command,
         CyberfabricCommand::Help(HelpArgs {
-            command: HelpCommand::Docs(cyberware_cli_core::docs::DocsArgs {
+            command: HelpCommand::Src(cyberware_cli_core::source::SourceArgs {
                 path: PathBuf::from("/tmp/ws"),
                 registry: cyberware_cli_core::common::Registry::CratesIo,
                 verbose: true,
