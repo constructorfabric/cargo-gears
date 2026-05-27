@@ -5,6 +5,8 @@ pub mod config;
 pub mod deploy;
 pub mod docs;
 pub mod generate;
+pub mod help;
+pub mod init;
 pub mod lint;
 pub mod list;
 pub mod manifest;
@@ -18,6 +20,7 @@ pub enum CyberfabricCommand {
     Generate(generate::GenerateArgs),
     Config(config::ConfigArgs),
     Docs(docs::DocsArgs),
+    Help(help::HelpArgs),
     Lint(lint::LintArgs),
     List(list::ListArgs),
     Manifest(manifest::ManifestArgs),
@@ -34,6 +37,7 @@ impl CyberfabricCommand {
             Self::Generate(args) => args.run(),
             Self::Config(args) => args.run(),
             Self::Docs(args) => args.run(),
+            Self::Help(args) => args.run(),
             Self::Lint(args) => args.run(),
             Self::List(args) => args.run(),
             Self::Manifest(args) => args.run(),

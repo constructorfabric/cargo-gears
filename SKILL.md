@@ -62,6 +62,10 @@ cargo cyberfabric
 │       ├── edit
 │       └── rm
 ├── docs
+├── help
+│   ├── schema
+│   ├── docs
+│   └── topic
 ├── lint
 ├── list
 │   ├── modules
@@ -587,6 +591,92 @@ cargo cyberfabric docs --clean
 
 ```bash
 cargo cyberfabric docs --clean -p /tmp/cf-demo tokio::sync
+```
+
+### `help`
+
+Schema, topic, and source-code help for developers and LLMs. Groups three subcommands under a
+single discoverable entry point.
+
+#### `help schema`
+
+Print the schema for manifest, config, or module formats.
+
+Synopsis:
+
+```bash
+cargo cyberfabric help schema <manifest|config|module> [--section <SECTION>]
+```
+
+Arguments:
+
+- **[`<target>`]** Schema target: `manifest`, `config`, or `module`
+- **[`--section <SECTION>`]** Drill into a specific section of the schema
+
+Behavior:
+
+- **[overview mode]** Without `--section`, prints a top-level overview of the schema
+- **[section mode]** With `--section`, prints detailed field documentation for that section
+- **[manifest sections]** `workspace`, `apps`, `templates`
+- **[config sections]** `server`, `database`, `logging`, `opentelemetry`, `modules`
+- **[module sections]** None (only the overview is available)
+
+Examples:
+
+```bash
+cargo cyberfabric help schema manifest
+```
+
+```bash
+cargo cyberfabric help schema config --section database
+```
+
+```bash
+cargo cyberfabric help schema module
+```
+
+#### `help docs`
+
+Alias for the top-level `docs` command. Resolves Rust source code from a crate.
+
+Synopsis:
+
+```bash
+cargo cyberfabric help docs [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
+```
+
+Behavior identical to `docs`; see the `docs` section above.
+
+#### `help topic`
+
+Print operational documentation for a named topic.
+
+Synopsis:
+
+```bash
+cargo cyberfabric help topic <TOPIC>
+```
+
+Available topics:
+
+- **[`manifest`]** Overview of `Cyberware.toml` and manifest-driven workflows
+- **[`module-refs`]** How local and remote modules are referenced
+- **[`generated-server`]** How the ephemeral generated server project works
+- **[`fips`]** FIPS mode activation and usage
+- **[`otel`]** OpenTelemetry activation and runtime configuration
+
+Examples:
+
+```bash
+cargo cyberfabric help topic manifest
+```
+
+```bash
+cargo cyberfabric help topic generated-server
+```
+
+```bash
+cargo cyberfabric help topic otel
 ```
 
 ### `tools`
