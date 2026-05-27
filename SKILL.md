@@ -25,7 +25,7 @@ The crate exposes a single entrypoint:
 Example:
 
 ```bash
-cargo cyberfabric init /tmp/my-app
+cargo cyberfabric generate workspace /tmp/my-app
 ```
 
 ## Objective
@@ -43,9 +43,11 @@ Clone(shallow) the repo to .cyberfabric folder (create it if it doesn't exist), 
 
 ```text
 cargo cyberfabric
-├── init
-├── mod
-│   └── add
+├── generate
+│   ├── workspace
+│   ├── module
+│   └── config
+├── new
 ├── config
 │   ├── mod
 │   │   ├── list
@@ -111,25 +113,29 @@ From the current implementation, the CLI is mainly for:
 
 ## Top-Level Commands
 
-### `init`
+### `generate`
 
-Initialize a new project from the default CyberFabric template repo or a local template.
+Generate workspace, module, and config scaffolding from built-in templates or explicit local/Git template sources.
+
+#### `generate workspace`
 
 Synopsis:
 
 ```bash
-cargo cyberfabric init <path> [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>]
+cargo cyberfabric generate workspace <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
 ```
 
 Arguments:
 
 - **[`<path>`]** Target directory to initialize
+- **[`-t, --template <TEMPLATE>`]** Workspace template name, defaults to `default`
 - **[`-v, --verbose`]** Verbose output from `cargo-generate`
 - **[`-n, --name <NAME>`]** Override the generated project name; inferred from the final path segment by default
-- **[`--local-path <PATH>`]** Use a local template directory instead of Git
-- **[`--git <URL>`]** Template Git URL, defaults to `https://github.com/cyberfabric/cf-template-rust`
-- **[`--subfolder <NAME>`]** Template subfolder, defaults to `Init`
-- **[`--branch <NAME>`]** Git branch, defaults to `main`
+- **[`--local-path <PATH>`]** Use a local template directory instead of the default Git template
+- **[`--git <URL>`]** Override the Git URL for the template
+- **[`--subfolder <NAME>`]** Override the template subfolder
+- **[`--branch <NAME>`]** Override the template branch
+- **[`--override`]** Allow generated files to overwrite existing files
 
 Behavior:
 
@@ -137,37 +143,34 @@ Behavior:
 - **[fails on file path]** Errors if `<path>` already exists and is not a directory
 - **[uses directory name as project name]** The final path segment becomes the generated project name unless `--name` is
   provided
+- **[uses template registry]** `--template default` resolves to the built-in workspace template
 - **[forces git init]** Template generation runs with Git initialization enabled
 
 Examples:
 
 ```bash
-cargo cyberfabric init /tmp/cf-demo
+cargo cyberfabric generate workspace /tmp/cf-demo
 ```
 
 ```bash
-cargo cyberfabric init /tmp/cf-demo --git https://github.com/cyberfabric/cf-template-rust --branch main --subfolder Init
+cargo cyberfabric generate workspace /tmp/cf-demo --git https://github.com/cyberfabric/cf-template-rust --branch main --subfolder Init
 ```
 
 ```bash
-cargo cyberfabric init /tmp/cf-demo --local-path ~/dev/cf-template-rust
+cargo cyberfabric generate workspace /tmp/cf-demo --local-path ~/dev/cf-template-rust
 ```
 
-### `mod`
-
-Scaffolds workspace content from templates.
-
-#### `mod add`
+#### `generate module`
 
 Generate a module template inside an existing workspace's `modules/` directory and wire Cargo workspace dependencies.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric mod add [--path <PATH>] [--verbose] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] <template>
+cargo cyberfabric generate module --template <TEMPLATE> [--name <NAME>] [--path <PATH>] [--verbose] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>]
 ```
 
-Available templates:
+Available built-in templates:
 
 - **[`background-worker`]** Background worker module template
 - **[`api-db-handler`]** API/database handler module template
@@ -175,18 +178,19 @@ Available templates:
 
 Arguments:
 
-- **[`<template>`]** One of the three value-enum names above
+- **[`-t, --template <TEMPLATE>`]** Module template name
+- **[`-n, --name <NAME>`]** Generated module folder/crate name; defaults to the template name
 - **[`-p, --path <PATH>`]** Workspace root, defaults to `.`
 - **[`-v, --verbose`]** Verbose template generation output
-- **[`--local-path <PATH>`]** Local template root instead of Git
-- **[`--git <URL>`]** Template repo URL, defaults to `https://github.com/cyberfabric/cf-template-rust`
-- **[`--subfolder <NAME>`]** Template subfolder root, defaults to `Modules`
-- **[`--branch <NAME>`]** Template branch, defaults to `main`
+- **[`--local-path <PATH>`]** Use a local template directory instead of the default Git template
+- **[`--git <URL>`]** Override the Git URL for the template
+- **[`--subfolder <NAME>`]** Override the template subfolder
+- **[`--branch <NAME>`]** Override the template branch
 
 Behavior:
 
 - **[requires `modules/`]** Fails unless `<workspace>/modules` already exists
-- **[creates `modules/<template>`]** The generated module name matches the template name
+- **[creates `modules/<name>`]** Uses `--name` when provided, otherwise the template name
 - **[prevents duplicates]** Fails if that module directory already exists
 - **[updates workspace members]** Adds generated modules to `workspace.members`
 - **[promotes dependencies]** Moves new module dependency source/version metadata into `workspace.dependencies`
@@ -197,15 +201,66 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric mod add background-worker -p /tmp/cf-demo
+cargo cyberfabric generate module --template background-worker -p /tmp/cf-demo
 ```
 
 ```bash
-cargo cyberfabric mod add rest-gateway -p /tmp/cf-demo --verbose
+cargo cyberfabric generate module --template background-worker --name jobs -p /tmp/cf-demo
 ```
 
 ```bash
-cargo cyberfabric mod add api-db-handler -p /tmp/cf-demo --local-path ~/dev/cf-template-rust --subfolder Modules
+cargo cyberfabric generate module --template api-db-handler -p /tmp/cf-demo --local-path ~/dev/cf-template-rust --subfolder Modules/api-db-handler
+```
+
+#### `generate config`
+
+Generate a runtime YAML config file from a built-in template.
+
+Synopsis:
+
+```bash
+cargo cyberfabric generate config --template <dev|prod|db> [--app <APP>] [--env <ENV>] [--name <NAME>] [--path <PATH>]
+```
+
+Built-in templates:
+
+- **[`dev`]** Development-friendly runtime config
+- **[`prod`]** Production-oriented runtime config
+- **[`db`]** Development config with a `database.servers.main` section
+
+Arguments:
+
+- **[`-t, --template <TEMPLATE>`]** Config template name
+- **[`--app <APP>`]** Application name used for output filename
+- **[`--env <ENV>`]** Environment name used for output filename
+- **[`--name <NAME>`]** Custom output filename; `.yml` is appended when no YAML extension is provided
+- **[`-p, --path <PATH>`]** Workspace root, defaults to `.`
+
+Behavior:
+
+- **[writes under `config/`]** Output path is `<workspace>/config/<filename>`
+- **[filename resolution]** `--name` wins; otherwise `<app>-<env>.yml`, `<app>.yml`, `<env>.yml`, or `<template>.yml`
+- **[prevents overwrites]** Fails if the target config file already exists
+- **[runtime values only]** Generated config contains runtime settings, not dependency metadata
+
+Examples:
+
+```bash
+cargo cyberfabric generate config --template dev --app app1 --env dev -p /tmp/cf-demo
+```
+
+```bash
+cargo cyberfabric generate config --template db --name local-db -p /tmp/cf-demo
+```
+
+### `new`
+
+Alias for `generate workspace`.
+
+Synopsis:
+
+```bash
+cargo cyberfabric new <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
 ```
 
 ### `config`
@@ -1006,16 +1061,17 @@ Current status:
 ### Create a workspace and run it
 
 ```bash
-cargo cyberfabric init /tmp/cf-demo
-cargo cyberfabric mod add background-worker -p /tmp/cf-demo
-cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo cyberfabric {new|generate workspace} /tmp/cf-demo
+cargo cyberfabric generate module --template background-worker -p /tmp/cf-demo
+cargo cyberfabric generate config --template dev --app app1 --env dev -p /tmp/cf-demo
+cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/app1-dev.yml
 cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev
 ```
 
 ### Add a module and wire a shared DB server
 
 ```bash
-cargo cyberfabric mod add api-db-handler -p /tmp/cf-demo
+cargo cyberfabric generate module --template api-db-handler -p /tmp/cf-demo
 cargo cyberfabric config db add primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb
 cargo cyberfabric config mod add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 cargo cyberfabric config mod db add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --server primary
@@ -1046,8 +1102,9 @@ cargo cyberfabric docs --verbose tokio::sync
 ## Quick Reference
 
 ```bash
-cargo cyberfabric init <path> [--name <name>]
-cargo cyberfabric mod add <background-worker|api-db-handler|rest-gateway> [-p <workspace>]
+cargo cyberfabric {new|generate workspace} <path> [--template <template>] [--name <name>]
+cargo cyberfabric generate module --template <background-worker|api-db-handler|rest-gateway> [--name <name>] [-p <workspace>]
+cargo cyberfabric generate config --template <dev|prod|db> [--app <app>] [--env <env>] [--name <name>] [-p <workspace>]
 
 cargo cyberfabric config mod list [-p <workspace>] -c <config>
 cargo cyberfabric config mod add <module> [-p <workspace>] -c <config>

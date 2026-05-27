@@ -86,6 +86,7 @@ impl Manifest {
             .with_context(|| format!("manifest not valid at {}", path.display()))
     }
 
+    #[must_use]
     pub fn validate(&self, workspace_root: &Path, manifest_path: &Path) -> Vec<ValidationReport> {
         let mut entries = Vec::new();
         for (app, envs) in &self.apps {
@@ -382,7 +383,7 @@ pub struct WatchPolicy {
 
 impl Default for WatchPolicy {
     fn default() -> Self {
-        WatchPolicy {
+        Self {
             enabled: default_true(),
             paths: vec![],
             ignore: vec![],

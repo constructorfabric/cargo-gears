@@ -80,7 +80,7 @@ impl From<BuildRunArgs> for cyberware_cli_core::common::BuildRunArgs {
     }
 }
 
-pub(crate) const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
+pub const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
     match (positive, negative) {
         (true, false) => Some(true),
         (false, true) => Some(false),
