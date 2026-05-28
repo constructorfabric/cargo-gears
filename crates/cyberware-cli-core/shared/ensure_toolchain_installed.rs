@@ -54,7 +54,14 @@ pub fn ensure_toolchain_components_installed(
     }
 
     let installed = Command::new("rustup")
-        .args(["component", "list", "--toolchain", toolchain])
+        .args([
+            "component",
+            "list",
+            "--toolchain",
+            toolchain,
+            "--installed",
+            "--quiet",
+        ])
         .output()
         .with_context(|| format!("failed to list rustup components for `{toolchain}`"))?;
 
@@ -69,13 +76,9 @@ pub fn ensure_toolchain_components_installed(
         .context("rustup component list returned non-UTF-8 output")?;
     for component in components {
         let installed_marker = format!("{component}-");
-        let is_installed = installed.lines().any(|line| {
-            line.contains("(installed)")
-                && line
-                    .split_whitespace()
-                    .next()
-                    .is_some_and(|name| name == component || name.starts_with(&installed_marker))
-        });
+        let is_installed = installed
+            .lines()
+            .any(|name| name == component || name.starts_with(&installed_marker));
 
         if is_installed {
             continue;

@@ -2,7 +2,7 @@
 name: cyberfabric
 description: cli reference to help with the development of cyberfabric framework. It helps with the development of
   the framework from its initialization, adding/removing modules, modifying configuration files,
-  build and/or run project, lint the project and managing applications through it's manifest.
+  build and/or run project, lint the project and managing applications through its manifest.
 ---
 
 # CyberFabric CLI Skills Guide
