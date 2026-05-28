@@ -2,7 +2,7 @@ pub mod config;
 pub mod module;
 pub mod workspace;
 
-pub const DEFAULT_GIT_URL: &str = "git@github.com:constructorfabric/cf-template-rust.git";
+pub const DEFAULT_GIT_URL: &str = "git@github.com:Bechma/cf-template-rust.git";
 pub const DEFAULT_BRANCH: &str = "main";
 
 #[derive(Debug, Eq, PartialEq)]
