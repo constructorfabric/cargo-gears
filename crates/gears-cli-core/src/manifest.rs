@@ -12,16 +12,83 @@ pub const DEFAULT_MANIFEST_FILE: &str = "Gears.toml";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ManifestSelection {
     pub manifest: PathBuf,
-    pub app: String,
-    pub env: String,
+    pub app: Option<String>,
+    pub env: Option<String>,
 }
 
 impl ManifestSelection {
     pub fn resolve(&self, workspace_root: &Path) -> anyhow::Result<ResolvedManifest> {
         let manifest_path = resolve_manifest_path(workspace_root, &self.manifest)?;
         let manifest = Manifest::load(&manifest_path)?;
-        manifest.resolve(workspace_root, &manifest_path, &self.app, &self.env, None)
+        let (app, env) = resolve_app_env(&manifest, self.app.as_deref(), self.env.as_deref())?;
+        manifest.resolve(workspace_root, &manifest_path, &app, &env, None)
     }
+}
+
+/// Resolve app and env from the manifest when not explicitly provided.
+///
+/// - If `app` is `None` and there is exactly one app, use it.
+///   If there are multiple apps, bail with the available app names.
+/// - If `env` is `None` and there is exactly one env, use it.
+///   If there are multiple envs and one is called "dev", default to "dev".
+///   Otherwise, bail with the available env names.
+fn resolve_app_env(
+    manifest: &Manifest,
+    app: Option<&str>,
+    env: Option<&str>,
+) -> anyhow::Result<(String, String)> {
+    let resolved_app = match app {
+        Some(a) => a.to_owned(),
+        None => match manifest.apps.len() {
+            0 => bail!("no apps defined in manifest"),
+            1 => manifest
+                .apps
+                .keys()
+                .next()
+                .context("single app should exist")
+                .inspect(|x| {
+                    println!("no app specified, defaulting to the only app in manifest: '{x}'");
+                })?
+                .clone(),
+            _ => {
+                let names: Vec<_> = manifest.apps.keys().collect();
+                bail!(
+                    "multiple apps in manifest, use --app to select one: {}",
+                    names
+                        .iter()
+                        .map(|n| n.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+            }
+        },
+    };
+
+    let envs = manifest
+        .apps
+        .get(&resolved_app)
+        .with_context(|| format!("app '{resolved_app}' not found in manifest"))?;
+
+    let resolved_env = match env {
+        Some(e) => e.to_owned(),
+        None if envs.contains_key("dev") => {
+            println!("no env specified, defaulting to 'dev'");
+            "dev".to_owned()
+        }
+        None => {
+            let names: Vec<_> = envs.keys().collect();
+            bail!(
+                "no 'dev' environment for app '{resolved_app}', use --env to select one: {}",
+                names
+                    .iter()
+                    .map(|n| n.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+        }
+    };
+
+    Ok((resolved_app, resolved_env))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -720,5 +787,94 @@ modules = []
         };
 
         assert!(args.run().is_ok());
+    }
+
+    #[test]
+    fn resolve_app_env_infers_single_app_and_env() {
+        let manifest: Manifest = toml::from_str(
+            r#"
+[apps.myapp.dev]
+config = "app-dev.yml"
+"#,
+        )
+        .unwrap();
+        let (app, env) = resolve_app_env(&manifest, None, None).unwrap();
+        assert_eq!(app, "myapp");
+        assert_eq!(env, "dev");
+    }
+
+    #[test]
+    fn resolve_app_env_defaults_to_dev_with_multiple_envs() {
+        let manifest: Manifest = toml::from_str(
+            r#"
+[apps.myapp.dev]
+config = "dev.yml"
+[apps.myapp.prod]
+config = "prod.yml"
+"#,
+        )
+        .unwrap();
+        let (app, env) = resolve_app_env(&manifest, None, None).unwrap();
+        assert_eq!(app, "myapp");
+        assert_eq!(env, "dev");
+    }
+
+    #[test]
+    fn resolve_app_env_fails_with_multiple_apps() {
+        let manifest: Manifest = toml::from_str(
+            r#"
+[apps.app1.dev]
+config = "a.yml"
+[apps.app2.dev]
+config = "b.yml"
+"#,
+        )
+        .unwrap();
+        let err = resolve_app_env(&manifest, None, None).unwrap_err();
+        assert!(err.to_string().contains("multiple apps"));
+    }
+
+    #[test]
+    fn resolve_app_env_fails_with_single_non_dev_env() {
+        let manifest: Manifest = toml::from_str(
+            r#"
+[apps.myapp.prod]
+config = "prod.yml"
+"#,
+        )
+        .unwrap();
+        let err = resolve_app_env(&manifest, None, None).unwrap_err();
+        assert!(err.to_string().contains("no 'dev' environment"));
+    }
+
+    #[test]
+    fn resolve_app_env_fails_with_multiple_non_dev_envs() {
+        let manifest: Manifest = toml::from_str(
+            r#"
+[apps.myapp.staging]
+config = "staging.yml"
+[apps.myapp.prod]
+config = "prod.yml"
+"#,
+        )
+        .unwrap();
+        let err = resolve_app_env(&manifest, None, None).unwrap_err();
+        assert!(err.to_string().contains("no 'dev' environment"));
+    }
+
+    #[test]
+    fn resolve_app_env_uses_explicit_values() {
+        let manifest: Manifest = toml::from_str(
+            r#"
+[apps.app1.dev]
+config = "a.yml"
+[apps.app2.prod]
+config = "b.yml"
+"#,
+        )
+        .unwrap();
+        let (app, env) = resolve_app_env(&manifest, Some("app2"), Some("prod")).unwrap();
+        assert_eq!(app, "app2");
+        assert_eq!(env, "prod");
     }
 }

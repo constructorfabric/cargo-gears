@@ -22,8 +22,8 @@ fn parses_lint_into_core_command() {
             path: None,
             manifest: ManifestSelection {
                 manifest: PathBuf::from("Gears.toml"),
-                app: "app1".to_owned(),
-                env: "dev".to_owned(),
+                app: Some("app1".to_owned()),
+                env: Some("dev".to_owned()),
             },
             fmt: true,
             clippy: true,

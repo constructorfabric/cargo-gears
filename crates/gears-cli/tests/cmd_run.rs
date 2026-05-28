@@ -30,8 +30,8 @@ fn parses_run_into_core_command() {
                 path: None,
                 manifest: ManifestSelection {
                     manifest: PathBuf::from("Gears.toml"),
-                    app: "app1".to_owned(),
-                    env: "dev".to_owned(),
+                    app: Some("app1".to_owned()),
+                    env: Some("dev".to_owned()),
                 },
                 otel: None,
                 fips: None,
@@ -87,4 +87,16 @@ fn parses_run_negative_boolean_overrides() {
     assert_eq!(args.br_args.fips, Some(false));
     assert_eq!(args.br_args.release, Some(false));
     assert_eq!(args.br_args.clean, Some(false));
+}
+
+#[test]
+fn parses_run_without_app_and_env() {
+    let command = parse_command(&["gears", "run"]);
+
+    let GearsCommand::Run(args) = command else {
+        panic!("expected run command")
+    };
+
+    assert_eq!(args.br_args.manifest.app, None);
+    assert_eq!(args.br_args.manifest.env, None);
 }
