@@ -103,8 +103,8 @@ cargo gears
   For `manifest`, you can combine this with `-p/--path` to resolve relative manifest paths from a selected workspace.
 - **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build`, `run`, and `lint`.
   When omitted, inferred from the manifest: a single app is used automatically; with multiple apps the command
-  fails listing available names. For environments, a single env is used automatically; when multiple exist and
-  one is called `dev`, it is selected by default; otherwise the command fails listing available names.
+  fails listing available names. For environments, `dev` is selected by default if it exists; otherwise the
+  command fails listing available names.
 - **[`--name <NAME>`]** For `build` and `run`, overrides the generated server project and binary name that would
   otherwise default to the config filename stem.
 - **[`-v, --verbose`]** Usually enables more logging or richer output.
