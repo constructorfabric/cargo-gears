@@ -52,8 +52,8 @@ Dylint runs embedded custom rules when the binary is built with `dylint-rules`.
 Add lint targets from the manifest:
 
 ```text
-cargo cyberware lint
-cargo cyberware lint --app app1
+cargo gears lint
+cargo gears lint --app app1
 ```
 
 ### Manifest Integration
@@ -105,7 +105,7 @@ command and fail unless `--install-missing-tools` is passed.
 
 ### Testing matrix
 
-Testing matrix is a list of test sets that can be run with `cargo cyberware test --app app1 --env dev --matrix default`.
+Testing matrix is a list of test sets that can be run with `cargo gears test --app app1 --env dev --matrix default`.
 Test execution uses the runtime config declared by the selected environment, for example `apps.app1.dev.config`.
 
 ```toml
@@ -142,9 +142,9 @@ cargo llvm-cov
 Suggested commands:
 
 ```text
-cargo cyberware test --coverage
-cargo cyberware test --coverage --coverage-format lcov
-cargo cyberware test --coverage --coverage-format html
+cargo gears test --coverage
+cargo gears test --coverage --coverage-format lcov
+cargo gears test --coverage --coverage-format html
 ```
 
 Coverage format enum:

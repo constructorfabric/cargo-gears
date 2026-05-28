@@ -1,6 +1,6 @@
-# CyberFabric CLI
+# Gears CLI
 
-Command-line interface for the whole development cycle of CyberFabric projects.
+Command-line interface for the whole development cycle of Gears projects.
 
 ## Quickstart
 
@@ -13,13 +13,13 @@ Command-line interface for the whole development cycle of CyberFabric projects.
 Install it from the repository root:
 
 ```bash
-cargo install --git https://github.com/cyberfabric/cf-cli
+cargo install --git https://github.com/gears/cf-cli
 ```
 
 After installation, you can check for:
 
 ```bash
-cargo cyberfabric --help
+cargo gears --help
 ```
 
 ## Typical usage flow
@@ -27,18 +27,18 @@ cargo cyberfabric --help
 First you can create a new workspace with a basic hello-world module with:
 
 ```bash
-cargo cyberfabric {new|generate workspace} /tmp/cf-demo
+cargo gears {new|generate workspace} /tmp/cf-demo
 ```
 
 You can run it straight away and you will see in the console a hello world message:
 
 ```bash
 cd /tmp/cf-demo
-cargo cyberfabric run -c ./config/quickstart.yml
+cargo gears run -c ./config/quickstart.yml
 ```
 
-The generated server reads its config path from the `CF_CLI_CONFIG` environment variable. `cargo cyberfabric build` and
-`cargo cyberfabric run` set this automatically for the generated project.
+The generated server reads its config path from the `GEARS_CONFIG` environment variable. `cargo gears build` and
+`cargo gears run` set this automatically for the generated project.
 
 Second, add a module to the workspace. You can choose among a set of templates: `background-worker`, `api-db-handler`,
 and `api-gateway`. Prefer passing `--name` when you want the generated module to use your chosen name instead of the
@@ -46,27 +46,27 @@ template name. For this example we'll use background-worker:
 
 ```bash
 # bring the module to the workspace
-cargo cyberfabric generate module --template background-worker
+cargo gears generate module --template background-worker
 # add the module to the config
-cargo cyberfabric config mod add background-worker -c ./config/quickstart.yml
+cargo gears config mod add background-worker -c ./config/quickstart.yml
 ```
 
 Now, we run it again. We'll see every couple of seconds, the background worker printing a random Pokémon:
 
 ```bash
-cargo cyberfabric run -c ./config/quickstart.yml
+cargo gears run -c ./config/quickstart.yml
 ```
 
 You can run the tool from any directory by specifying the path to the workspace with the `-p` flag. The default will be
-the current directory. `cargo cyberfabric run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml`
+the current directory. `cargo gears run -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml`
 
 ## What the CLI can do
 
-The current CLI surface is centered on CyberFabric workspace setup, configuration, code generation, and execution.
+The current CLI surface is centered on Gears workspace setup, configuration, code generation, and execution.
 
 ### Workspace scaffolding
 
-- `{new|generate workspace}` initializes a new CyberFabric workspace from a template
+- `{new|generate workspace}` initializes a new Gears workspace from a template
 - `generate module --template <template>` adds module templates such as `background-worker`, `api-db-handler`, and `api-gateway`
 - `generate config --template <template>` creates runtime config files such as `dev`, `prod`, or `db`
 
@@ -81,7 +81,7 @@ You need to provide the path to the configuration file with the `-c` flag. `-c c
 
 ### Build and run generated servers
 
-- `build` generates a runnable Cargo project under `.cyberfabric/<CONFIG_NAME>` and builds it based on the `-c`
+- `build` generates a runnable Cargo project under `.gears/<CONFIG_NAME>` and builds it based on the `-c`
   configuration
   provided.
 - `run` generates the same project and runs it. You can provide `-w` to enable watch mode, `--otel` to enable
@@ -91,13 +91,13 @@ You need to provide the path to the configuration file with the `-c` flag. `-c c
 - `build` and `run` both pass `--otel` and `--fips` through as Cargo features on the generated project manifest.
 
 The generated `src/main.rs` does not embed the config path. Instead, the generated server reads it from
-`CF_CLI_CONFIG` at runtime. The CLI sets that variable for `build` and `run`, but if you execute `.cyberfabric/<name>/`
-or the compiled binary yourself, you need to set `CF_CLI_CONFIG` manually.
+`GEARS_CONFIG` at runtime. The CLI sets that variable for `build` and `run`, but if you execute `.gears/<name>/`
+or the compiled binary yourself, you need to set `GEARS_CONFIG` manually.
 
 Example manual run of the generated project:
 
 ```bash
-CF_CLI_CONFIG=/tmp/cf-demo/config/quickstart.yml cargo run --manifest-path /tmp/cf-demo/.cyberfabric/quickstart/Cargo.toml
+GEARS_CONFIG=/tmp/cf-demo/config/quickstart.yml cargo run --manifest-path /tmp/cf-demo/.gears/quickstart/Cargo.toml
 ```
 
 ### Source inspection
@@ -106,7 +106,7 @@ CF_CLI_CONFIG=/tmp/cf-demo/config/quickstart.yml cargo run --manifest-path /tmp/
 
 ### Linting
 
-`cargo cyberfabric lint --app <APP> --env <ENV>` reads the selected manifest lint policy and orchestrates `cargo fmt`,
+`cargo gears lint --app <APP> --env <ENV>` reads the selected manifest lint policy and orchestrates `cargo fmt`,
 `cargo clippy`, and `dylint` custom rules for that workspace. It respects your custom settings from `Cargo.toml`.
 
 If the CLI is built without the `dylint-rules` feature, `lint --dylint` returns an error.

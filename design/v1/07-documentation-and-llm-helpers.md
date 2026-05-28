@@ -32,10 +32,10 @@ cache.
 Proposed commands:
 
 ```text
-cargo cyberware help schema <manifest|config|module>
-cargo cyberware help docs <rust-path>
-cargo cyberware help topic <topic>
-cargo cyberware docs <rust-path>
+cargo gears help schema <manifest|config|module>
+cargo gears help docs <rust-path>
+cargo gears help topic <topic>
+cargo gears docs <rust-path>
 ```
 
 Keep `docs` for compatibility and add `help docs` as an alias for discoverable
@@ -46,8 +46,8 @@ help grouping.
 Command:
 
 ```text
-cargo cyberware help schema manifest
-cargo cyberware help schema config [-m <module>]
+cargo gears help schema manifest
+cargo gears help schema config [-m <module>]
 ```
 
 Should print:
@@ -62,8 +62,8 @@ Should print:
 Examples:
 
 ```text
-cargo cyberware help schema manifest --section apps.app.dev.test
-cargo cyberware help schema config
+cargo gears help schema manifest --section apps.app.dev.test
+cargo gears help schema config
 ```
 
 Schema help should be generated from the same Rust types used by parsing where
@@ -74,7 +74,7 @@ possible, so documentation does not drift.
 Command:
 
 ```text
-cargo cyberware help docs cf-modkit::bootstrap::run_server
+cargo gears help docs cf-modkit::bootstrap::run_server
 ```
 
 ## Other Information
@@ -82,11 +82,11 @@ cargo cyberware help docs cf-modkit::bootstrap::run_server
 `help topic` should expose short operational docs:
 
 ```text
-cargo cyberware help topic manifest
-cargo cyberware help topic module-refs
-cargo cyberware help topic generated-server
-cargo cyberware help topic fips
-cargo cyberware help topic otel
+cargo gears help topic manifest
+cargo gears help topic module-refs
+cargo gears help topic generated-server
+cargo gears help topic fips
+cargo gears help topic otel
 ```
 
 The list is not exhaustive and can be expanded as needed.

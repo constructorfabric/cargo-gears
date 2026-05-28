@@ -1,0 +1,38 @@
+[package]
+name = "gears-cli"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+description.workspace = true
+readme.workspace = true
+publish = false
+autobins = false
+
+[[bin]]
+name = "cargo-gears"
+path = "src/main.rs"
+
+[[test]]
+name = "manifest_schema"
+path = "../../design/v1/manifest_schema.rs"
+
+[features]
+default = []
+dylint-rules = ["gears-cli-core/dylint-rules"]
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+gears-cli-core = { workspace = true, features = ["clap"] }
+semver = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+gears-cli-core = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tempfile.workspace = true
+toml.workspace = true
