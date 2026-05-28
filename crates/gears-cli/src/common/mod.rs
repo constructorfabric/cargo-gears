@@ -93,12 +93,12 @@ pub struct ManifestTargetArgs {
     /// Path to the Gears manifest file
     #[arg(long, default_value = gears_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
     pub manifest: PathBuf,
-    /// Manifest app to select
+    /// Manifest app to select (inferred from manifest if omitted)
     #[arg(long)]
-    pub app: String,
-    /// Manifest environment to select
+    pub app: Option<String>,
+    /// Manifest environment to select (inferred from manifest if omitted)
     #[arg(long)]
-    pub env: String,
+    pub env: Option<String>,
 }
 
 impl ManifestTargetArgs {

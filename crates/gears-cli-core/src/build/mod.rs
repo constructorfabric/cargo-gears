@@ -82,8 +82,8 @@ name = "demo-server"
                 path: Some(temp.path().to_path_buf()),
                 manifest: ManifestSelection {
                     manifest: PathBuf::from("Gears.toml"),
-                    app: "app".to_owned(),
-                    env: "dev".to_owned(),
+                    app: Some("app".to_owned()),
+                    env: Some("dev".to_owned()),
                 },
                 otel: None,
                 fips: None,
