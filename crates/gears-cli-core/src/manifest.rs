@@ -45,7 +45,10 @@ fn resolve_app_env(
                 .apps
                 .keys()
                 .next()
-                .context("single app should exist")?
+                .context("single app should exist")
+                .inspect(|x| {
+                    println!("no app specified, defaulting to the only app in manifest: '{x}'");
+                })?
                 .clone(),
             _ => {
                 let names: Vec<_> = manifest.apps.keys().collect();
@@ -68,7 +71,10 @@ fn resolve_app_env(
 
     let resolved_env = match env {
         Some(e) => e.to_owned(),
-        None if envs.contains_key("dev") => "dev".to_owned(),
+        None if envs.contains_key("dev") => {
+            println!("no env specified, defaulting to 'dev'");
+            "dev".to_owned()
+        }
         None => {
             let names: Vec<_> = envs.keys().collect();
             bail!(
