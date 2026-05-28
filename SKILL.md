@@ -32,10 +32,10 @@ cargo gears generate workspace /tmp/my-app
 
 This CLI is a tool for automating gears development, a Rust framework. You can get more information about it in:
 
-- Gears repository main: https://github.com/constructorfabric/gears-core
+- Gears repository main: https://github.com/constructorfabric/cyberware-rust
 - Modkit libraries(the ones that leverage this CLI tool) are located
-  in https://github.com/constructorfabric/gears-core/tree/main/libs
-- More documentation of the project will be located in https://github.com/constructorfabric/gears-core/tree/main/docs
+  in https://github.com/constructorfabric/cyberware-rust/tree/main/libs
+- More documentation of the project will be located in https://github.com/constructorfabric/cyberware-rust/tree/main/docs
 
 Clone(shallow) the repo to .gears folder (create it if it doesn't exist), and use it as a reference.
 If so, prefer to use the ssh version instead of https to avoid authentication issues.
@@ -45,6 +45,7 @@ If so, prefer to use the ssh version instead of https to avoid authentication is
 - When adding new dependencies use `cargo add`, do not edit Cargo.toml manually
 - When linting, use lint command of the cli to check if there are any lint errors. Do not try to run cargo check, clippy or fmt by your own.
 - Always verify that the application runs successfully after modifying the code.
+- Unless specified, prefer to use system modules instead of implementing your own ones.
 
 ## Command Tree
 
@@ -188,7 +189,7 @@ Available built-in templates:
 
 - **[`background-worker`]** Background worker module template
 - **[`api-db-handler`]** API/database handler module template
-- **[`api-gateway`]** API gateway module template
+- **[`api-gateway`]** API gateway module template. Unless the user instruct to implement its own api-gateway, prefer the system module cf-api-gateway
 
 Arguments:
 
@@ -206,7 +207,7 @@ Behavior:
 
 - **[requires `modules/`]** Fails unless `<workspace>/modules` already exists
 - **[creates `modules/<name>`]** Uses `--name` when provided, otherwise the template name
-- **[prevents duplicates]** Fails if that module directory already exists
+- **[prevents duplicate]** Fails if that module directory already exists
 - **[updates workspace members]** Adds generated modules to `workspace.members`
 - **[promotes dependencies]** Moves new module dependency source/version metadata into `workspace.dependencies`
 - **[rewrites module Cargo files]** Rewrites module dependencies to `workspace = true`
