@@ -68,26 +68,18 @@ fn resolve_app_env(
 
     let resolved_env = match env {
         Some(e) => e.to_owned(),
-        None => match envs.len() {
-            0 => bail!("no environments defined for app '{resolved_app}'"),
-            1 => envs
-                .keys()
-                .next()
-                .context("single env should exist")?
-                .clone(),
-            _ if envs.contains_key("dev") => "dev".to_owned(),
-            _ => {
-                let names: Vec<_> = envs.keys().collect();
-                bail!(
-                    "multiple environments for app '{resolved_app}', use --env to select one: {}",
-                    names
-                        .iter()
-                        .map(|n| n.as_str())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                );
-            }
-        },
+        None if envs.contains_key("dev") => "dev".to_owned(),
+        None => {
+            let names: Vec<_> = envs.keys().collect();
+            bail!(
+                "no 'dev' environment for app '{resolved_app}', use --env to select one: {}",
+                names
+                    .iter()
+                    .map(|n| n.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+        }
     };
 
     Ok((resolved_app, resolved_env))
@@ -837,6 +829,19 @@ config = "b.yml"
     }
 
     #[test]
+    fn resolve_app_env_fails_with_single_non_dev_env() {
+        let manifest: Manifest = toml::from_str(
+            r#"
+[apps.myapp.prod]
+config = "prod.yml"
+"#,
+        )
+        .unwrap();
+        let err = resolve_app_env(&manifest, None, None).unwrap_err();
+        assert!(err.to_string().contains("no 'dev' environment"));
+    }
+
+    #[test]
     fn resolve_app_env_fails_with_multiple_non_dev_envs() {
         let manifest: Manifest = toml::from_str(
             r#"
@@ -848,7 +853,7 @@ config = "prod.yml"
         )
         .unwrap();
         let err = resolve_app_env(&manifest, None, None).unwrap_err();
-        assert!(err.to_string().contains("multiple environments"));
+        assert!(err.to_string().contains("no 'dev' environment"));
     }
 
     #[test]
