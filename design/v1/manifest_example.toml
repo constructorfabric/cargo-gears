@@ -98,6 +98,6 @@ path = "templates/grpc-service"
 
 [templates.agents.custom-agent]
 source = "git"
-url = "ssh://github.com/gears/cf-template-rust.git"
+url = "ssh://github.com/constructorfabric/cf-template-rust.git"
 tag = "0.2"
 subfolder = "Agents/custom-agent"

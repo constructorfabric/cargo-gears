@@ -39,7 +39,7 @@ configuration is the single source of truth for runtime values. This separation 
 config-centric model where dependency metadata and runtime values coexist.
 
 - Manifest answers: **what** to build (apps, environments, modules, features, policies). You can find the schema in [manifest_schema.rs](manifest_schema.rs). And an example in [manifest_example.toml](manifest_example.toml).
-- Runtime config answers: **how** to behave at runtime (endpoints, credentials, tuning). You can find examples of the config files in gears-rust repository [quickstart](https://github.com/gears/gears-rust/blob/main/config/quickstart.yaml). More available in config directory [gears-rust](https://github.com/gears/gears-rust/blob/main/config/).
+- Runtime config answers: **how** to behave at runtime (endpoints, credentials, tuning). You can find examples of the config files in gears-rust repository [quickstart](https://github.com/constructorfabric/gears-rust/blob/main/config/quickstart.yaml). More available in config directory [gears-rust](https://github.com/constructorfabric/gears-rust/blob/main/config/).
 
 ### 3. Deterministic Outputs
 

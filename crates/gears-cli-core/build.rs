@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[cfg(feature = "dylint-rules")]
-const LINTS_REPO_URL: &str = "git@github.com:gears/gears-rust.git";
+const LINTS_REPO_URL: &str = "git@github.com:constructorfabric/gears-rust.git";
 
 #[cfg(feature = "dylint-rules")]
 const LINTS_REPO_REVISION: &str = "543a190d1ad2301798df46a599d1eb33a591d642";

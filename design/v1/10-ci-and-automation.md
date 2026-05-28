@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Gears CLI
-        run: cargo install --git https://github.com/gears/cf-cli
+        run: cargo install --git https://github.com/constructorfabric/cf-cli
       - name: Validate manifest
         run: cargo gears manifest validate --format json
       - name: Lint
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - name: Install Gears CLI
-        run: cargo install --git https://github.com/gears/cf-cli
+        run: cargo install --git https://github.com/constructorfabric/cf-cli
       - name: Validate manifest
         run: cargo gears ci --app app1 --env prod
 ```

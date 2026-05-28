@@ -68,7 +68,7 @@ path = "templates/grpc-service"
 
 [templates.agents.custom-agent]
 source = "git"
-url = "ssh://github.com/gears/cf-template-rust.git"
+url = "ssh://github.com/constructorfabric/cf-template-rust.git"
 tag = "0.2"
 subfolder = "Agents/custom-agent"
 ```
@@ -104,7 +104,7 @@ Family directories such as `Modules/` may also define `sub_templates` so the CLI
 can discover the built-in names without hardcoding them.
 
 Module templates should preserve the ModKit module layout described in
-[02_module_layout_and_sdk_pattern.md](https://github.com/gears/gears-rust/blob/main/docs/modkit_unified_system/02_module_layout_and_sdk_pattern.md).
+[02_module_layout_and_sdk_pattern.md](https://github.com/constructorfabric/gears-rust/blob/main/docs/modkit_unified_system/02_module_layout_and_sdk_pattern.md).
 The generated module lives under `modules/<name>/` and may contain both an
 implementation crate and an SDK crate:
 

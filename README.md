@@ -13,7 +13,7 @@ Command-line interface for the whole development cycle of Gears projects.
 Install it from the repository root:
 
 ```bash
-cargo install --git https://github.com/gears/cf-cli
+cargo install --git https://github.com/constructorfabric/cf-cli
 ```
 
 After installation, you can check for:

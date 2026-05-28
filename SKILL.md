@@ -1,6 +1,6 @@
 ---
 name: gears
-description: cli reference to help with the development of gears framework. It helps with the development of
+description: cli reference to help with the development of constructor fabric gears framework. It helps with the development of
   the framework from its initialization, adding/removing modules, modifying configuration files,
   build and/or run project, lint the project and managing applications through its manifest.
 ---
@@ -32,10 +32,10 @@ cargo gears generate workspace /tmp/my-app
 
 This CLI is a tool for automating gears development, a Rust framework. You can get more information about it in:
 
-- Gears repository main: https://github.com/gears/gears-core
+- Gears repository main: https://github.com/constructorfabric/gears-core
 - Modkit libraries(the ones that leverage this CLI tool) are located
-  in https://github.com/gears/gears-core/tree/main/libs
-- More documentation of the project will be located in https://github.com/gears/gears-core/tree/main/docs
+  in https://github.com/constructorfabric/gears-core/tree/main/libs
+- More documentation of the project will be located in https://github.com/constructorfabric/gears-core/tree/main/docs
 
 Clone(shallow) the repo to .gears folder (create it if it doesn't exist), and use it as a reference.
 If so, prefer to use the ssh version instead of https to avoid authentication issues.
@@ -164,7 +164,7 @@ cargo gears generate workspace /tmp/cf-demo
 ```
 
 ```bash
-cargo gears generate workspace /tmp/cf-demo --git https://github.com/gears/cf-template-rust --branch main --subfolder Init
+cargo gears generate workspace /tmp/cf-demo --git https://github.com/constructorfabric/cf-template-rust --branch main --subfolder Init
 ```
 
 ```bash
