@@ -120,7 +120,7 @@ If the CLI is built without the `dylint-rules` feature, `lint --dylint` returns 
 
 ## Command overview
 
-For the full command surface, arguments, and examples, check [SKILLS.md](SKILLS.md).
+For the full command surface, arguments, and examples, check [SKILL.md](SKILL.md).
 
 ## Local development
 
