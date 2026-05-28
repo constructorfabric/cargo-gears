@@ -1,22 +1,22 @@
 [workspace]
 members = [
-    "crates/cyberware-cli",
-    "crates/cyberware-cli-core",
-    "crates/cyberware-cli-derive",
+    "crates/gears-cli",
+    "crates/gears-cli-core",
+    "crates/gears-cli-derive",
 ]
 resolver = "3"
 
 [workspace.package]
 version = "0.0.1"
 license-file = "LICENSE"
-authors = ["CyberFabric"]
-repository = "https://github.com/cyberfabric/cf-cli"
-description = "Command-line interface for CyberFabric"
+authors = ["Gears"]
+repository = "https://github.com/gears/cf-cli"
+description = "Command-line interface for Gears"
 edition = "2024"
 readme = "README.md"
 
 [workspace.dependencies]
-cyberware-cli-core = { path = "crates/cyberware-cli-core" }
+gears-cli-core = { path = "crates/gears-cli-core" }
 
 anyhow = { version = "1.0" }
 clap = { version = "4.5", features = ["derive"] }

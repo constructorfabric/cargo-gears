@@ -546,55 +546,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cyberware-cli"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "clap",
- "cyberware-cli-core",
- "semver",
- "serde",
- "tempfile",
- "toml 1.1.2+spec-1.1.0",
-]
-
-[[package]]
-name = "cyberware-cli-core"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "cargo-generate",
- "cargo_metadata",
- "clap",
- "cyberware-cli-derive",
- "dylint",
- "flate2",
- "notify",
- "prettyplease",
- "proc-macro2",
- "reqwest",
- "semver",
- "serde",
- "serde-saphyr",
- "serde_json",
- "syn",
- "tar",
- "tempfile",
- "tokio",
- "toml 1.1.2+spec-1.1.0",
- "toml_edit",
-]
-
-[[package]]
-name = "cyberware-cli-derive"
-version = "0.0.1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "deranged"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -922,6 +873,55 @@ dependencies = [
  "futures-task",
  "pin-project-lite",
  "slab",
+]
+
+[[package]]
+name = "gears-cli"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "clap",
+ "gears-cli-core",
+ "semver",
+ "serde",
+ "tempfile",
+ "toml 1.1.2+spec-1.1.0",
+]
+
+[[package]]
+name = "gears-cli-core"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "cargo-generate",
+ "cargo_metadata",
+ "clap",
+ "dylint",
+ "flate2",
+ "gears-cli-derive",
+ "notify",
+ "prettyplease",
+ "proc-macro2",
+ "reqwest",
+ "semver",
+ "serde",
+ "serde-saphyr",
+ "serde_json",
+ "syn",
+ "tar",
+ "tempfile",
+ "tokio",
+ "toml 1.1.2+spec-1.1.0",
+ "toml_edit",
+]
+
+[[package]]
+name = "gears-cli-derive"
+version = "0.0.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

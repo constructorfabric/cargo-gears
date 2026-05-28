@@ -249,7 +249,7 @@ fn default_config_dir() -> PathBuf {
 }
 
 fn default_generated_dir() -> PathBuf {
-    PathBuf::from(".cyberware")
+    PathBuf::from(".gears")
 }
 
 const fn default_true() -> bool {

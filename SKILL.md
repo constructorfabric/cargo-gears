@@ -1,14 +1,14 @@
 ---
-name: cyberfabric
-description: cli reference to help with the development of cyberfabric framework. It helps with the development of
+name: gears
+description: cli reference to help with the development of gears framework. It helps with the development of
   the framework from its initialization, adding/removing modules, modifying configuration files,
   build and/or run project, lint the project and managing applications through its manifest.
 ---
 
-# CyberFabric CLI Skills Guide
+# Gears CLI Skills Guide
 
-This document summarizes the CLI parser implemented under `crates/cyberware-cli/src`
-and the orchestration logic implemented under `crates/cyberware-cli-core/src`.
+This document summarizes the CLI parser implemented under `crates/gears-cli/src`
+and the orchestration logic implemented under `crates/gears-cli-core/src`.
 It focuses on:
 
 - **[command surface]** Every top-level command and nested subcommand
@@ -20,24 +20,24 @@ It focuses on:
 
 The crate exposes a single entrypoint:
 
-- **[`cargo cyberfabric`]** Cargo subcommand form via the `cargo-cyberfabric` binary
+- **[`cargo gears`]** Cargo subcommand form via the `cargo-gears` binary
 
 Example:
 
 ```bash
-cargo cyberfabric generate workspace /tmp/my-app
+cargo gears generate workspace /tmp/my-app
 ```
 
 ## Objective
 
-This CLI is a tool for automating cyberfabric development, a Rust framework. You can get more information about it in:
+This CLI is a tool for automating gears development, a Rust framework. You can get more information about it in:
 
-- CyberFabric repository main: https://github.com/cyberfabric/cyberfabric-core
+- Gears repository main: https://github.com/gears/gears-core
 - Modkit libraries(the ones that leverage this CLI tool) are located
-  in https://github.com/cyberfabric/cyberfabric-core/tree/main/libs
-- More documentation of the project will be located in https://github.com/cyberfabric/cyberfabric-core/tree/main/docs
+  in https://github.com/gears/gears-core/tree/main/libs
+- More documentation of the project will be located in https://github.com/gears/gears-core/tree/main/docs
 
-Clone(shallow) the repo to .cyberfabric folder (create it if it doesn't exist), and use it as a reference.
+Clone(shallow) the repo to .gears folder (create it if it doesn't exist), and use it as a reference.
 If so, prefer to use the ssh version instead of https to avoid authentication issues.
 
 ## Guideliness to follow
@@ -49,7 +49,7 @@ If so, prefer to use the ssh version instead of https to avoid authentication is
 ## Command Tree
 
 ```text
-cargo cyberfabric
+cargo gears
 ├── generate
 │   ├── workspace
 │   ├── module
@@ -96,9 +96,9 @@ cargo cyberfabric
   `lint`, relative config paths, manifest paths, generated project locations, and workspace-scoped lint resolution use
   that directory as the workspace root. When omitted, the current working directory is used as the workspace root.
 - **[`-c, --config <PATH>`]** Config file path. This is required for `config ...` and `deploy` commands because there is
-  no default. `build` and `run` no longer accept `--config`; they compose their generation inputs from `Cyberware.toml`
-  and forward the manifest-declared runtime config path through the `CF_CLI_CONFIG` environment variable.
-- **[`--manifest <PATH>`]** Cyberware manifest path, defaulting to `Cyberware.toml`, for `manifest`, `build`, `run`,
+  no default. `build` and `run` no longer accept `--config`; they compose their generation inputs from `Gears.toml`
+  and forward the manifest-declared runtime config path through the `GEARS_CONFIG` environment variable.
+- **[`--manifest <PATH>`]** Gears manifest path, defaulting to `Gears.toml`, for `manifest`, `build`, `run`,
   and `lint`.
   For `manifest`, you can combine this with `-p/--path` to resolve relative manifest paths from a selected workspace.
 - **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build`, `run`, and `lint`.
@@ -112,11 +112,11 @@ cargo cyberfabric
 
 From the current implementation, the CLI is mainly for:
 
-- **[workspace scaffolding]** Initialize a CyberFabric workspace and add module templates
+- **[workspace scaffolding]** Initialize a Gears workspace and add module templates
 - **[config management]** Enable modules and patch YAML config sections
 - **[server generation]** Generate a runnable Cargo project under the manifest `workspace.generated-dir` directory
-  (default `.cyberware/<name>/`)
-- **[manifest orchestration]** Read `Cyberware.toml` to separate generation metadata from runtime YAML config
+  (default `.gears/<name>/`)
+- **[manifest orchestration]** Read `Gears.toml` to separate generation metadata from runtime YAML config
 - **[build/run/deploy]** Build, run, or package that generated server as a Docker image
 - **[source inspection]** Resolve Rust source for crates/items through workspace metadata or crates.io
 - **[module inspection]** List workspace-discovered and system-registry modules
@@ -133,7 +133,7 @@ Generate workspace, module, and config scaffolding from built-in templates or ex
 Synopsis:
 
 ```bash
-cargo cyberfabric generate workspace <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
+cargo gears generate workspace <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
 ```
 
 Arguments:
@@ -160,15 +160,15 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric generate workspace /tmp/cf-demo
+cargo gears generate workspace /tmp/cf-demo
 ```
 
 ```bash
-cargo cyberfabric generate workspace /tmp/cf-demo --git https://github.com/cyberfabric/cf-template-rust --branch main --subfolder Init
+cargo gears generate workspace /tmp/cf-demo --git https://github.com/gears/cf-template-rust --branch main --subfolder Init
 ```
 
 ```bash
-cargo cyberfabric generate workspace /tmp/cf-demo --local-path ~/dev/cf-template-rust
+cargo gears generate workspace /tmp/cf-demo --local-path ~/dev/cf-template-rust
 ```
 
 #### `generate module`
@@ -178,7 +178,7 @@ Generate a module template inside an existing workspace's `modules/` directory a
 Synopsis:
 
 ```bash
-cargo cyberfabric generate module --template <TEMPLATE> [--name <NAME>] [--path <PATH>] [--verbose] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>]
+cargo gears generate module --template <TEMPLATE> [--name <NAME>] [--path <PATH>] [--verbose] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>]
 ```
 
 Available built-in templates:
@@ -213,15 +213,15 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric generate module --template background-worker -p /tmp/cf-demo
+cargo gears generate module --template background-worker -p /tmp/cf-demo
 ```
 
 ```bash
-cargo cyberfabric generate module --template background-worker --name jobs -p /tmp/cf-demo
+cargo gears generate module --template background-worker --name jobs -p /tmp/cf-demo
 ```
 
 ```bash
-cargo cyberfabric generate module --template api-db-handler -p /tmp/cf-demo --local-path ~/dev/cf-template-rust --subfolder Modules/api-db-handler
+cargo gears generate module --template api-db-handler -p /tmp/cf-demo --local-path ~/dev/cf-template-rust --subfolder Modules/api-db-handler
 ```
 
 #### `generate config`
@@ -231,7 +231,7 @@ Generate a runtime YAML config file from a built-in template.
 Synopsis:
 
 ```bash
-cargo cyberfabric generate config --template <dev|prod|db> [--app <APP>] [--env <ENV>] [--name <NAME>] [--path <PATH>]
+cargo gears generate config --template <dev|prod|db> [--app <APP>] [--env <ENV>] [--name <NAME>] [--path <PATH>]
 ```
 
 Built-in templates:
@@ -258,11 +258,11 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric generate config --template dev --app app1 --env dev -p /tmp/cf-demo
+cargo gears generate config --template dev --app app1 --env dev -p /tmp/cf-demo
 ```
 
 ```bash
-cargo cyberfabric generate config --template db --name local-db -p /tmp/cf-demo
+cargo gears generate config --template db --name local-db -p /tmp/cf-demo
 ```
 
 ### `new`
@@ -272,7 +272,7 @@ Alias for `generate workspace`.
 Synopsis:
 
 ```bash
-cargo cyberfabric new <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
+cargo gears new <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
 ```
 
 ### `config`
@@ -295,7 +295,7 @@ List workspace modules, configured modules, and optionally known system crates.
 Synopsis:
 
 ```bash
-cargo cyberfabric config mod list -c <CONFIG> [-p <PATH>] [--system] [--verbose] [--registry <REGISTRY>]
+cargo gears config mod list -c <CONFIG> [-p <PATH>] [--system] [--verbose] [--registry <REGISTRY>]
 ```
 
 Arguments:
@@ -339,15 +339,15 @@ Built-in system module names:
 Examples:
 
 ```bash
-cargo cyberfabric config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo gears config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 ```
 
 ```bash
-cargo cyberfabric config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --system
+cargo gears config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --system
 ```
 
 ```bash
-cargo cyberfabric config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --system --verbose
+cargo gears config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --system --verbose
 ```
 
 #### `config mod add`
@@ -357,7 +357,7 @@ Add or update a module entry in the config file's `modules` section.
 Synopsis:
 
 ```bash
-cargo cyberfabric config mod add -c <CONFIG> [-p <PATH>] [--package <NAME>] [--module-version <VER>] [--default-features <BOOL>] [-F, --feature <FEATURES>]... [--dep <NAME>]... <module>
+cargo gears config mod add -c <CONFIG> [-p <PATH>] [--package <NAME>] [--module-version <VER>] [--default-features <BOOL>] [-F, --feature <FEATURES>]... [--dep <NAME>]... <module>
 ```
 
 Arguments:
@@ -386,19 +386,19 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo gears config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 ```
 
 ```bash
-cargo cyberfabric config mod add api-gateway -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml -F json,metrics -F tracing --dep authn-resolver --dep tenant-resolver
+cargo gears config mod add api-gateway -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml -F json,metrics -F tracing --dep authn-resolver --dep tenant-resolver
 ```
 
 ```bash
-cargo cyberfabric config mod add credstore -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --package cf-credstore --module-version 0.4.2
+cargo gears config mod add credstore -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --package cf-credstore --module-version 0.4.2
 ```
 
 ```bash
-cargo cyberfabric config mod add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --default-features false
+cargo gears config mod add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --default-features false
 ```
 
 #### `config mod rm`
@@ -408,7 +408,7 @@ Remove a module from the config file's `modules` section.
 Synopsis:
 
 ```bash
-cargo cyberfabric config mod rm -c <CONFIG> [-p <PATH>] <module>
+cargo gears config mod rm -c <CONFIG> [-p <PATH>] <module>
 ```
 
 Behavior:
@@ -420,7 +420,7 @@ Behavior:
 Example:
 
 ```bash
-cargo cyberfabric config mod rm background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo gears config mod rm background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 ```
 
 #### `config mod db`
@@ -465,19 +465,19 @@ Rules:
 Examples:
 
 ```bash
-cargo cyberfabric config mod db add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --server primary
+cargo gears config mod db add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --server primary
 ```
 
 ```bash
-cargo cyberfabric config mod db add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb --pool-max-conns 20
+cargo gears config mod db add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb --pool-max-conns 20
 ```
 
 ```bash
-cargo cyberfabric config mod db edit api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --pool-acquire-timeout-secs 30 --pool-test-before-acquire true
+cargo gears config mod db edit api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --pool-acquire-timeout-secs 30 --pool-test-before-acquire true
 ```
 
 ```bash
-cargo cyberfabric config mod db rm api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo gears config mod db rm api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 ```
 
 ### `config db`
@@ -493,9 +493,9 @@ Subcommands:
 Synopsis:
 
 ```bash
-cargo cyberfabric config db add  -c <CONFIG> [-p <PATH>] <name> <db-flags...>
-cargo cyberfabric config db edit -c <CONFIG> [-p <PATH>] <name> <db-flags...>
-cargo cyberfabric config db rm   -c <CONFIG> [-p <PATH>] <name>
+cargo gears config db add  -c <CONFIG> [-p <PATH>] <name> <db-flags...>
+cargo gears config db edit -c <CONFIG> [-p <PATH>] <name> <db-flags...>
+cargo gears config db rm   -c <CONFIG> [-p <PATH>] <name>
 ```
 
 Behavior:
@@ -511,19 +511,19 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric config db add primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb
+cargo gears config db add primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb
 ```
 
 ```bash
-cargo cyberfabric config db edit primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --pool-max-conns 30 --pool-idle-timeout-secs 120
+cargo gears config db edit primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --pool-max-conns 30 --pool-idle-timeout-secs 120
 ```
 
 ```bash
-cargo cyberfabric config db add local-sqlite -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine sqlite --sqlite-path /tmp/cf-demo/dev.db
+cargo gears config db add local-sqlite -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine sqlite --sqlite-path /tmp/cf-demo/dev.db
 ```
 
 ```bash
-cargo cyberfabric config db rm primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo gears config db rm primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 ```
 
 ### `src`
@@ -533,7 +533,7 @@ Resolve Rust source for a crate/module/item query from local workspace metadata,
 Synopsis:
 
 ```bash
-cargo cyberfabric src [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
+cargo gears src [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
 ```
 
 Arguments:
@@ -565,7 +565,7 @@ Behavior:
   until it reaches the final source
 - **[library mapping output]** `--libs` prints the Rust source-code library name on the left and the Cargo package
   name on the right, including renamed dependencies like `modkit_macros -> cf-modkit-macros`
-- **[cache location]** Registry sources are cached under the OS temp directory in `cyberfabric-docs-cache/<registry>/` (legacy name)
+- **[cache location]** Registry sources are cached under the OS temp directory in `gears-docs-cache/<registry>/` (legacy name)
 - **[cache cleaning]** `--clean` removes the selected registry cache before resolution
 - **[source output]** Prints the resolved Rust source to stdout
 - **[verbose metadata]** Also prints query, package, library, version, manifest path, and source path
@@ -574,31 +574,31 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric src -p /tmp/cf-demo cf-modkit
+cargo gears src -p /tmp/cf-demo cf-modkit
 ```
 
 ```bash
-cargo cyberfabric src cf-modkit::module
+cargo gears src cf-modkit::module
 ```
 
 ```bash
-cargo cyberfabric src --verbose tokio::sync
+cargo gears src --verbose tokio::sync
 ```
 
 ```bash
-cargo cyberfabric src --libs cf-modkit
+cargo gears src --libs cf-modkit
 ```
 
 ```bash
-cargo cyberfabric src --version 1.0.217 serde::de::Deserialize
+cargo gears src --version 1.0.217 serde::de::Deserialize
 ```
 
 ```bash
-cargo cyberfabric src --clean
+cargo gears src --clean
 ```
 
 ```bash
-cargo cyberfabric src --clean -p /tmp/cf-demo tokio::sync
+cargo gears src --clean -p /tmp/cf-demo tokio::sync
 ```
 
 ### `help`
@@ -613,7 +613,7 @@ Print the schema for manifest, config, or module formats.
 Synopsis:
 
 ```bash
-cargo cyberfabric help schema <manifest|config|module> [--section <SECTION>]
+cargo gears help schema <manifest|config|module> [--section <SECTION>]
 ```
 
 Arguments:
@@ -632,15 +632,15 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric help schema manifest
+cargo gears help schema manifest
 ```
 
 ```bash
-cargo cyberfabric help schema config --section database
+cargo gears help schema config --section database
 ```
 
 ```bash
-cargo cyberfabric help schema module
+cargo gears help schema module
 ```
 
 #### `help src`
@@ -650,7 +650,7 @@ Alias for the top-level `src` command. Resolves Rust source code from a crate.
 Synopsis:
 
 ```bash
-cargo cyberfabric help src [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
+cargo gears help src [--path <PATH>] [--registry <REGISTRY>] [--verbose] [--libs] [--version <VERSION>] [--clean] [<query>]
 ```
 
 Behavior identical to `src`; see the `src` section above.
@@ -662,12 +662,12 @@ Print operational documentation for a named topic.
 Synopsis:
 
 ```bash
-cargo cyberfabric help topic <TOPIC>
+cargo gears help topic <TOPIC>
 ```
 
 Available topics:
 
-- **[`manifest`]** Overview of `Cyberware.toml` and manifest-driven workflows
+- **[`manifest`]** Overview of `Gears.toml` and manifest-driven workflows
 - **[`module-refs`]** How local and remote modules are referenced
 - **[`generated-server`]** How the ephemeral generated server project works
 - **[`fips`]** FIPS mode activation and usage
@@ -676,15 +676,15 @@ Available topics:
 Examples:
 
 ```bash
-cargo cyberfabric help topic manifest
+cargo gears help topic manifest
 ```
 
 ```bash
-cargo cyberfabric help topic generated-server
+cargo gears help topic generated-server
 ```
 
 ```bash
-cargo cyberfabric help topic otel
+cargo gears help topic otel
 ```
 
 ### `tools`
@@ -700,7 +700,7 @@ Known tool names:
 Synopsis:
 
 ```bash
-cargo cyberfabric tools (--all | --install <tool,...>) [--upgrade] [--yolo] [--verbose]
+cargo gears tools (--all | --install <tool,...>) [--upgrade] [--yolo] [--verbose]
 ```
 
 Arguments:
@@ -723,15 +723,15 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric tools --all
+cargo gears tools --all
 ```
 
 ```bash
-cargo cyberfabric tools --install clippy,cargofmt --yolo
+cargo gears tools --install clippy,cargofmt --yolo
 ```
 
 ```bash
-cargo cyberfabric tools --install rustup,clippy --upgrade --verbose
+cargo gears tools --install rustup,clippy --upgrade --verbose
 ```
 
 ### `run`
@@ -741,12 +741,12 @@ Generate a server project under the manifest `<workspace.generated-dir>/<name>` 
 Synopsis:
 
 ```bash
-cargo cyberfabric run --app <APP> --env <ENV> [--manifest <Cyberware.toml>] [-p <PATH>] [--name <NAME>] [--watch|--no-watch] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
+cargo gears run --app <APP> --env <ENV> [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--watch|--no-watch] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
 
-- **[`--manifest <PATH>`]** Manifest file, defaults to `Cyberware.toml`
+- **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
 - **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
 - **[`-p, --path <PATH>`]** Optional workspace directory
 - **[`--name <NAME>`]** Override the generated server project and binary name; defaults to the config filename stem
@@ -761,15 +761,15 @@ Behavior:
 
 - **[name resolution]** Uses the manifest build policy name when present, otherwise `<app>-<env>`
 - **[path activation]** If `-p/--path` is provided, Clap changes the current working directory while parsing that value,
-  before `Cyberware.toml` is resolved and the generated project directory is created
+  before `Gears.toml` is resolved and the generated project directory is created
 - **[generates server structure]** Writes `<generated-dir>/<name>/Cargo.toml`,
   `<generated-dir>/<name>/.cargo/config.toml`, and `<generated-dir>/<name>/src/main.rs`; `generated-dir` comes from
-  manifest `workspace.generated-dir` and defaults to `.cyberware`
-- **[runtime config handoff]** The generated `src/main.rs` reads the config path from `CF_CLI_CONFIG`, and
-  `cargo cyberfabric run` sets that environment variable automatically before invoking `cargo run`
+  manifest `workspace.generated-dir` and defaults to `.gears`
+- **[runtime config handoff]** The generated `src/main.rs` reads the config path from `GEARS_CONFIG`, and
+  `cargo gears run` sets that environment variable automatically before invoking `cargo run`
 - **[dry run]** `--dry-run` writes the generated project structure under `<generated-dir>/<name>/` and prints JSON with the
   generated project directory plus each generated file path and contents; it does not invoke Cargo build/run
-- **[manifest mode]** Reads generation dependencies, runtime config path, and policies from `Cyberware.toml`; runtime YAML
+- **[manifest mode]** Reads generation dependencies, runtime config path, and policies from `Gears.toml`; runtime YAML
   stays focused on server configuration
 - **[exclusive boolean overrides]** Boolean flag pairs are mutually exclusive. Use either the positive or negative form,
   not both; for example, `--otel --no-otel` is rejected. When neither side is present, the manifest policy is used.
@@ -777,43 +777,43 @@ Behavior:
 - **[watch mode]** Restarts on config changes, workspace `Cargo.toml` changes, and changes in path-based dependencies
 - **[dependency watch management]** Reconciles watched dependency paths when config dependencies change
 - **[manual generated-project execution]** If you invoke the generated project or compiled binary yourself instead of
-  using `cargo cyberfabric run`, you must set `CF_CLI_CONFIG` manually
+  using `cargo gears run`, you must set `GEARS_CONFIG` manually
 
 Examples:
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev
+cargo gears run -p /tmp/cf-demo --app app1 --env dev
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --watch
+cargo gears run -p /tmp/cf-demo --app app1 --env dev --watch
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --otel --fips --release --clean
+cargo gears run -p /tmp/cf-demo --app app1 --env dev --otel --fips --release --clean
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --name demo-server
+cargo gears run -p /tmp/cf-demo --app app1 --env dev --name demo-server
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --dry-run
+cargo gears run -p /tmp/cf-demo --app app1 --env dev --dry-run
 ```
 
 ```bash
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --manifest /tmp/cf-demo/Cyberware.toml
+cargo gears run -p /tmp/cf-demo --app app1 --env dev --manifest /tmp/cf-demo/Gears.toml
 ```
 
 ### `manifest`
 
-Inspect and validate Cyberware manifest files.
+Inspect and validate Gears manifest files.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric manifest [-p <PATH>] [--manifest <Cyberware.toml>] validate [--format table|json]
-cargo cyberfabric manifest [-p <PATH>] [--manifest <Cyberware.toml>] ls [--format table|json]
+cargo gears manifest [-p <PATH>] [--manifest <Gears.toml>] validate [--format table|json]
+cargo gears manifest [-p <PATH>] [--manifest <Gears.toml>] ls [--format table|json]
 ```
 
 Behavior:
@@ -830,12 +830,12 @@ Generate a server project under the manifest `<workspace.generated-dir>/<name>` 
 Synopsis:
 
 ```bash
-cargo cyberfabric build --app <APP> --env <ENV> [--manifest <Cyberware.toml>] [-p <PATH>] [--name <NAME>] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
+cargo gears build --app <APP> --env <ENV> [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
 
-- **[`--manifest <PATH>`]** Manifest file, defaults to `Cyberware.toml`
+- **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
 - **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
 - **[`-p, --path <PATH>`]** Optional workspace directory
 - **[`--name <NAME>`]** Override the generated server project and binary name; defaults to the config filename stem
@@ -850,43 +850,43 @@ Behavior:
 - **[generates before build]** Recreates the generated server project before invoking Cargo
 - **[name resolution]** Uses the manifest build policy name when present, otherwise `<app>-<env>`
 - **[path activation]** If `-p/--path` is provided, Clap changes the current working directory while parsing that value,
-  before `Cyberware.toml` is resolved and the generated project directory is created
+  before `Gears.toml` is resolved and the generated project directory is created
 - **[exclusive boolean overrides]** Boolean flag pairs are mutually exclusive. Use either the positive or negative form,
   not both; for example, `--clean --no-clean` is rejected. When neither side is present, the manifest policy is used.
-- **[manifest mode]** Reads module dependency metadata, runtime config path, and build/run policy from `Cyberware.toml`
+- **[manifest mode]** Reads module dependency metadata, runtime config path, and build/run policy from `Gears.toml`
   instead of runtime YAML module metadata
 - **[builds inside generated project]** Executes `cargo build` in `<generated-dir>/<name>/`
 - **[runtime config source]** The generated server no longer embeds the config path; the resulting binary reads it from
-  `CF_CLI_CONFIG` when you execute it
+  `GEARS_CONFIG` when you execute it
 - **[dry run]** `--dry-run` writes the generated project structure under `<generated-dir>/<name>/` and prints JSON with the
   generated project directory plus each generated file path and contents; it does not invoke Cargo build
 - **[manual generated-project execution]** If you later run the generated project or binary outside the CLI, you must
-  set `CF_CLI_CONFIG` yourself
+  set `GEARS_CONFIG` yourself
 
 Examples:
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev
+cargo gears build -p /tmp/cf-demo --app app1 --env dev
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev --release
+cargo gears build -p /tmp/cf-demo --app app1 --env dev --release
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev --otel --fips --clean
+cargo gears build -p /tmp/cf-demo --app app1 --env dev --otel --fips --clean
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo --app app1 --env dev --name demo-server
+cargo gears build -p /tmp/cf-demo --app app1 --env dev --name demo-server
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo --app app1 --env prod
+cargo gears build -p /tmp/cf-demo --app app1 --env prod
 ```
 
 ```bash
-cargo cyberfabric build -p /tmp/cf-demo --app app1 --env prod --dry-run
+cargo gears build -p /tmp/cf-demo --app app1 --env prod --dry-run
 ```
 
 ### `deploy`
@@ -896,13 +896,13 @@ Generate a server project under the default generated directory and build a Dock
 Synopsis:
 
 ```bash
-cargo cyberfabric deploy -c <CONFIG> [-p <PATH>] [--manifest <Cargo.toml>] [--debug] [--dockerfile] [--args <KEY=VALUE>]...
+cargo gears deploy -c <CONFIG> [-p <PATH>] [--manifest <Cargo.toml>] [--debug] [--dockerfile] [--args <KEY=VALUE>]...
 ```
 
 Arguments:
 
 - **[`-c, --config <CONFIG>`]** Required config file path; copied into the image and used as the runtime
-  `CF_CLI_CONFIG` target
+  `GEARS_CONFIG` target
 - **[`-p, --path <PATH>`]** Optional workspace directory
 - **[`-m, --manifest <Cargo.toml>`]** Optional Cargo manifest to build instead of generating the server project;
   the path must point to a file named `Cargo.toml`
@@ -927,19 +927,19 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
 ```
 
 ```bash
-cargo cyberfabric deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --debug
+cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --debug
 ```
 
 ```bash
-cargo cyberfabric deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --manifest /tmp/cf-demo/Cargo.toml
+cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --manifest /tmp/cf-demo/Cargo.toml
 ```
 
 ```bash
-cargo cyberfabric deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --args BUILDER_FLAGS="--features metrics"
+cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --args BUILDER_FLAGS="--features metrics"
 ```
 
 ### `lint`
@@ -949,13 +949,13 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo cyberfabric lint --app <APP> --env <ENV> [--manifest <Cyberware.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint]
+cargo gears lint --app <APP> --env <ENV> [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint]
 ```
 
 Arguments:
 
 - **[`-p, --path <PATH>`]** Optional workspace directory used to resolve relative manifest paths
-- **[`--manifest <PATH>`]** Manifest file, defaults to `Cyberware.toml`
+- **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
 - **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
 - **[`--all`]** Runs all available lint suites instead of the selected manifest lint policy
 - **[`--fmt`]** Runs `cargo fmt --check --all`; if passed by itself, it runs only formatting checks
@@ -966,7 +966,7 @@ Arguments:
 Behavior:
 
 - **[path activation]** If `-p/--path` is provided, relative manifest paths are resolved from that workspace directory
-- **[manifest mode]** Reads lint policy from the selected `Cyberware.toml` app/environment and runs from the resolved
+- **[manifest mode]** Reads lint policy from the selected `Gears.toml` app/environment and runs from the resolved
   manifest workspace root
 - **[default lint selection]** With no explicit lint-selection flags, `lint` runs the selected manifest lint policy
 - **[explicit selection disables default all]** Passing `--fmt`, `--clippy`, and/or `--dylint` opts into just those
@@ -983,23 +983,23 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric lint --app app1 --env dev
+cargo gears lint --app app1 --env dev
 ```
 
 ```bash
-cargo cyberfabric lint --app app1 --env dev --clippy --strict
+cargo gears lint --app app1 --env dev --clippy --strict
 ```
 
 ```bash
-cargo cyberfabric lint --app app1 --env dev --fmt
+cargo gears lint --app app1 --env dev --fmt
 ```
 
 ```bash
-cargo cyberfabric lint --app app1 --env dev --dylint
+cargo gears lint --app app1 --env dev --dylint
 ```
 
 ```bash
-cargo cyberfabric lint -p /tmp/cf-demo --app app1 --env dev --dylint
+cargo gears lint -p /tmp/cf-demo --app app1 --env dev --dylint
 ```
 
 ### `list`
@@ -1013,7 +1013,7 @@ List all modules — both system-registry and workspace-discovered — in a sing
 Synopsis:
 
 ```bash
-cargo cyberfabric list modules [-p <PATH>] [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+cargo gears list modules [-p <PATH>] [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
 ```
 
 Arguments:
@@ -1032,11 +1032,11 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric list modules
+cargo gears list modules
 ```
 
 ```bash
-cargo cyberfabric list modules -p /tmp/cf-demo --verbose
+cargo gears list modules -p /tmp/cf-demo --verbose
 ```
 
 #### `list local-modules`
@@ -1046,7 +1046,7 @@ List workspace-discovered modules by scanning Cargo metadata for crates that con
 Synopsis:
 
 ```bash
-cargo cyberfabric list local-modules [-p <PATH>] [--verbose] [--format table|json|yaml|toml]
+cargo gears list local-modules [-p <PATH>] [--verbose] [--format table|json|yaml|toml]
 ```
 
 Arguments:
@@ -1067,21 +1067,21 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric list local-modules
+cargo gears list local-modules
 ```
 
 ```bash
-cargo cyberfabric list local-modules -p /tmp/cf-demo --verbose
+cargo gears list local-modules -p /tmp/cf-demo --verbose
 ```
 
 #### `list system-modules`
 
-List built-in system modules from the CyberFabric registry.
+List built-in system modules from the Gears registry.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+cargo gears list system-modules [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
 ```
 
 Arguments:
@@ -1103,37 +1103,37 @@ Behavior:
 Examples:
 
 ```bash
-cargo cyberfabric list system-modules
+cargo gears list system-modules
 ```
 
 ```bash
-cargo cyberfabric list system-modules --verbose
+cargo gears list system-modules --verbose
 ```
 
 #### `list configs`
 
 List configuration files, their inferred app/environment links, and runtime sections.
 
-**Currently unimplemented** — blocked on the manifest-first design (`Cyberware.toml`). Requires manifest
+**Currently unimplemented** — blocked on the manifest-first design (`Gears.toml`). Requires manifest
 parsing to resolve app/environment links and runtime sections.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric list configs [--format table|json|yaml|toml]
+cargo gears list configs [--format table|json|yaml|toml]
 ```
 
 #### `list apps`
 
 List apps, environments, and build outputs.
 
-**Currently unimplemented** — blocked on the manifest-first design (`Cyberware.toml`). Requires manifest
+**Currently unimplemented** — blocked on the manifest-first design (`Gears.toml`). Requires manifest
 parsing to enumerate apps, environments, and build outputs.
 
 Synopsis:
 
 ```bash
-cargo cyberfabric list apps [--format table|json|yaml|toml]
+cargo gears list apps [--format table|json|yaml|toml]
 ```
 
 ### `test`
@@ -1143,7 +1143,7 @@ Declared in the CLI but **currently unimplemented**.
 Synopsis:
 
 ```bash
-cargo cyberfabric test [--e2e] [--module <NAME>] [--coverage]
+cargo gears test [--e2e] [--module <NAME>] [--coverage]
 ```
 
 Arguments:
@@ -1161,33 +1161,33 @@ Current status:
 ### Create a workspace and run it
 
 ```bash
-cargo cyberfabric {new|generate workspace} /tmp/cf-demo
-cargo cyberfabric generate module --template background-worker -p /tmp/cf-demo
-cargo cyberfabric generate config --template dev --app app1 --env dev -p /tmp/cf-demo
-cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/app1-dev.yml
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev
+cargo gears {new|generate workspace} /tmp/cf-demo
+cargo gears generate module --template background-worker -p /tmp/cf-demo
+cargo gears generate config --template dev --app app1 --env dev -p /tmp/cf-demo
+cargo gears config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-demo/config/app1-dev.yml
+cargo gears run -p /tmp/cf-demo --app app1 --env dev
 ```
 
 ### Add a module and wire a shared DB server
 
 ```bash
-cargo cyberfabric generate module --template api-db-handler -p /tmp/cf-demo
-cargo cyberfabric config db add primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb
-cargo cyberfabric config mod add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
-cargo cyberfabric config mod db add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --server primary
-cargo cyberfabric run -p /tmp/cf-demo --app app1 --env dev --watch
+cargo gears generate module --template api-db-handler -p /tmp/cf-demo
+cargo gears config db add primary -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --engine postgres --host localhost --port 5432 --user app --password '${DB_PASSWORD}' --dbname appdb
+cargo gears config mod add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+cargo gears config mod db add api-db-handler -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --server primary
+cargo gears run -p /tmp/cf-demo --app app1 --env dev --watch
 ```
 
 ### Inspect source for a dependency
 
 ```bash
-cargo cyberfabric src --verbose tokio::sync
+cargo gears src --verbose tokio::sync
 ```
 
 ## Important Caveats
 
-- **[`-c/--config` is mandatory]** For `config ...` and `deploy`; `build` and `run` use `Cyberware.toml` instead
-- **[generated servers expect `CF_CLI_CONFIG`]** `cargo cyberfabric run` sets it for you, but manual execution of
+- **[`-c/--config` is mandatory]** For `config ...` and `deploy`; `build` and `run` use `Gears.toml` instead
+- **[generated servers expect `GEARS_CONFIG`]** `cargo gears run` sets it for you, but manual execution of
   generated project directory or its compiled binary must provide it explicitly
 - **[`lint --dylint` needs the feature build]** Without the `dylint-rules` feature enabled, it currently reaches
   an error
@@ -1202,31 +1202,31 @@ cargo cyberfabric src --verbose tokio::sync
 ## Quick Reference
 
 ```bash
-cargo cyberfabric {new|generate workspace} <path> [--template <template>] [--name <name>]
-cargo cyberfabric generate module --template <background-worker|api-db-handler|api-gateway> [--name <name>] [-p <workspace>]
-cargo cyberfabric generate config --template <dev|prod|db> [--app <app>] [--env <env>] [--name <name>] [-p <workspace>]
+cargo gears {new|generate workspace} <path> [--template <template>] [--name <name>]
+cargo gears generate module --template <background-worker|api-db-handler|api-gateway> [--name <name>] [-p <workspace>]
+cargo gears generate config --template <dev|prod|db> [--app <app>] [--env <env>] [--name <name>] [-p <workspace>]
 
-cargo cyberfabric config mod list [-p <workspace>] -c <config>
-cargo cyberfabric config mod add <module> [-p <workspace>] -c <config>
-cargo cyberfabric config mod rm <module> [-p <workspace>] -c <config>
-cargo cyberfabric config mod db add <module> [-p <workspace>] -c <config> ...
-cargo cyberfabric config mod db edit <module> [-p <workspace>] -c <config> ...
-cargo cyberfabric config mod db rm <module> [-p <workspace>] -c <config>
+cargo gears config mod list [-p <workspace>] -c <config>
+cargo gears config mod add <module> [-p <workspace>] -c <config>
+cargo gears config mod rm <module> [-p <workspace>] -c <config>
+cargo gears config mod db add <module> [-p <workspace>] -c <config> ...
+cargo gears config mod db edit <module> [-p <workspace>] -c <config> ...
+cargo gears config mod db rm <module> [-p <workspace>] -c <config>
 
-cargo cyberfabric config db add <name> [-p <workspace>] -c <config> ...
-cargo cyberfabric config db edit <name> [-p <workspace>] -c <config> ...
-cargo cyberfabric config db rm <name> [-p <workspace>] -c <config>
+cargo gears config db add <name> [-p <workspace>] -c <config> ...
+cargo gears config db edit <name> [-p <workspace>] -c <config> ...
+cargo gears config db rm <name> [-p <workspace>] -c <config>
 
-cargo cyberfabric list modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
-cargo cyberfabric list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
-cargo cyberfabric list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
-cargo cyberfabric list configs [-f table|json|yaml|toml]           # unimplemented
-cargo cyberfabric list apps [-f table|json|yaml|toml]              # unimplemented
+cargo gears list modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo gears list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
+cargo gears list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo gears list configs [-f table|json|yaml|toml]           # unimplemented
+cargo gears list apps [-f table|json|yaml|toml]              # unimplemented
 
-cargo cyberfabric src [-p <path>] [--version <version>] [--clean] [<query>]
-cargo cyberfabric lint [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--all] [--clippy] [--strict] [--dylint]
-cargo cyberfabric tools --all
-cargo cyberfabric run [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>] [--watch]
-cargo cyberfabric build [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>]
-cargo cyberfabric deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
+cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
+cargo gears lint [-p <workspace>] --app <app> --env <env> [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]
+cargo gears tools --all
+cargo gears run [-p <workspace>] --app <app> --env <env> [--manifest <Gears.toml>] [--name <name>] [--watch]
+cargo gears build [-p <workspace>] --app <app> --env <env> [--manifest <Gears.toml>] [--name <name>]
+cargo gears deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
 ```
