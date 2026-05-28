@@ -102,6 +102,9 @@ cargo gears
   and `lint`.
   For `manifest`, you can combine this with `-p/--path` to resolve relative manifest paths from a selected workspace.
 - **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build`, `run`, and `lint`.
+  When omitted, inferred from the manifest: a single app is used automatically; with multiple apps the command
+  fails listing available names. For environments, a single env is used automatically; when multiple exist and
+  one is called `dev`, it is selected by default; otherwise the command fails listing available names.
 - **[`--name <NAME>`]** For `build` and `run`, overrides the generated server project and binary name that would
   otherwise default to the config filename stem.
 - **[`-v, --verbose`]** Usually enables more logging or richer output.
@@ -741,13 +744,13 @@ Generate a server project under the manifest `<workspace.generated-dir>/<name>` 
 Synopsis:
 
 ```bash
-cargo gears run --app <APP> --env <ENV> [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--watch|--no-watch] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
+cargo gears run [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--watch|--no-watch] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
 
 - **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
-- **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
+- **[`--app <APP> --env <ENV>`]** Manifest app/environment selection (inferred from manifest if omitted)
 - **[`-p, --path <PATH>`]** Optional workspace directory
 - **[`--name <NAME>`]** Override the generated server project and binary name; defaults to the config filename stem
 - **[`-w, --watch` / `--no-watch`]** Override manifest watch policy on or off
@@ -830,13 +833,13 @@ Generate a server project under the manifest `<workspace.generated-dir>/<name>` 
 Synopsis:
 
 ```bash
-cargo gears build --app <APP> --env <ENV> [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
+cargo gears build [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
 
 - **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
-- **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
+- **[`--app <APP> --env <ENV>`]** Manifest app/environment selection (inferred from manifest if omitted)
 - **[`-p, --path <PATH>`]** Optional workspace directory
 - **[`--name <NAME>`]** Override the generated server project and binary name; defaults to the config filename stem
 - **[`--otel` / `--no-otel`]** Override manifest OpenTelemetry policy on or off
@@ -949,14 +952,14 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo gears lint --app <APP> --env <ENV> [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint]
+cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint]
 ```
 
 Arguments:
 
 - **[`-p, --path <PATH>`]** Optional workspace directory used to resolve relative manifest paths
 - **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
-- **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
+- **[`--app <APP> --env <ENV>`]** Manifest app/environment selection (inferred from manifest if omitted)
 - **[`--all`]** Runs all available lint suites instead of the selected manifest lint policy
 - **[`--fmt`]** Runs `cargo fmt --check --all`; if passed by itself, it runs only formatting checks
 - **[`--clippy`]** Runs workspace Clippy checks; if passed by itself, it runs only Clippy
@@ -1224,9 +1227,9 @@ cargo gears list configs [-f table|json|yaml|toml]           # unimplemented
 cargo gears list apps [-f table|json|yaml|toml]              # unimplemented
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
-cargo gears lint [-p <workspace>] --app <app> --env <env> [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]
+cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]
 cargo gears tools --all
-cargo gears run [-p <workspace>] --app <app> --env <env> [--manifest <Gears.toml>] [--name <name>] [--watch]
-cargo gears build [-p <workspace>] --app <app> --env <env> [--manifest <Gears.toml>] [--name <name>]
+cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch]
+cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>]
 cargo gears deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
 ```
