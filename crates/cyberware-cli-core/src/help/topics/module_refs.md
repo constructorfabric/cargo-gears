@@ -7,7 +7,7 @@ Local modules:
   packages whose manifest path is under the workspace root.
 
   Manifest syntax:
-    { source = "local", name = "rest-gateway" }
+    { source = "local", name = "api-gateway" }
 
   The name must match a Cargo package name discoverable in the workspace.
   Optional overrides: version, package.
@@ -24,9 +24,9 @@ Remote modules:
 Config module metadata:
   When using config-driven builds (deploy), modules need metadata in the YAML:
     modules:
-      rest-gateway:
+      api-gateway:
         metadata:
-          package: cf-rest-gateway
+          package: cf-api-gateway
           version: "0.4.0"
 
   With manifest-driven builds (build/run), metadata is resolved automatically

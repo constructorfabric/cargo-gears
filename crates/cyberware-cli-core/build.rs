@@ -8,10 +8,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[cfg(feature = "dylint-rules")]
-const LINTS_REPO_URL: &str = "https://github.com/cyberfabric/cyberfabric-core.git";
+const LINTS_REPO_URL: &str = "git@github.com:cyberfabric/cyberware-rust.git";
 
 #[cfg(feature = "dylint-rules")]
-const LINTS_REPO_REVISION: &str = "0a514ffc4b6a1eb32c3cf0920387d5bc42c852a3";
+const LINTS_REPO_REVISION: &str = "543a190d1ad2301798df46a599d1eb33a591d642";
 
 #[cfg(feature = "dylint-rules")]
 mod ensure_toolchain_installed_shared {
@@ -22,7 +22,9 @@ mod ensure_toolchain_installed_shared {
 }
 
 #[cfg(feature = "dylint-rules")]
-use ensure_toolchain_installed_shared::ensure_toolchain_installed;
+use ensure_toolchain_installed_shared::{
+    ensure_toolchain_components_installed, ensure_toolchain_installed,
+};
 
 #[cfg(feature = "dylint-rules")]
 fn build_dylint_rules() -> anyhow::Result<()> {
@@ -39,6 +41,8 @@ fn build_dylint_rules() -> anyhow::Result<()> {
     let channel = read_toolchain_channel(&lints_dir)?;
 
     ensure_toolchain_installed(&channel)?;
+    let components = read_toolchain_components(&lints_dir)?;
+    ensure_toolchain_components_installed(&channel, &components)?;
 
     // Get the host triple for the installed nightly toolchain.
     let rustc_vv = Command::new("rustup")
@@ -221,7 +225,7 @@ fn clone_lints_repo(repo_dir: &Path) -> anyhow::Result<()> {
 #[cfg(feature = "dylint-rules")]
 fn ensure_lints_dir(out_dir: &Path) -> anyhow::Result<PathBuf> {
     let repo_dir = out_dir.join("cyberfabric-core");
-    let lints_dir = repo_dir.join("dylint_lints");
+    let lints_dir = repo_dir.join("tools").join("dylint_lints");
 
     if !repo_dir.exists() {
         clone_lints_repo(&repo_dir)?;
@@ -254,20 +258,48 @@ fn ensure_lints_dir(out_dir: &Path) -> anyhow::Result<PathBuf> {
 
 #[cfg(feature = "dylint-rules")]
 fn read_toolchain_channel(lints_dir: &Path) -> anyhow::Result<String> {
-    let toolchain_file = lints_dir.join("rust-toolchain.toml");
-    let toolchain_content = fs::read_to_string(&toolchain_file)
-        .context("could not read rust-toolchain.toml from lint workspace")?;
-
-    let toolchain: toml::Value = toml::from_str(&toolchain_content)
-        .context("could not parse rust-toolchain.toml from lint workspace")?;
-
-    toolchain
+    read_toolchain(lints_dir)?
         .get("toolchain")
         .and_then(toml::Value::as_table)
         .and_then(|toolchain| toolchain.get("channel"))
         .and_then(toml::Value::as_str)
         .map(str::to_owned)
         .context("no `toolchain.channel` field found in rust-toolchain.toml")
+}
+
+#[cfg(feature = "dylint-rules")]
+fn read_toolchain_components(lints_dir: &Path) -> anyhow::Result<Vec<String>> {
+    let mut components: Vec<String> = read_toolchain(lints_dir)?
+        .get("toolchain")
+        .and_then(toml::Value::as_table)
+        .and_then(|toolchain| toolchain.get("components"))
+        .and_then(toml::Value::as_array)
+        .map(|components| {
+            components
+                .iter()
+                .filter_map(toml::Value::as_str)
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default();
+
+    if !components.iter().any(|component| component == "rust-src") {
+        components.push("rust-src".to_owned());
+    }
+
+    components.sort();
+    components.dedup();
+    Ok(components)
+}
+
+#[cfg(feature = "dylint-rules")]
+fn read_toolchain(lints_dir: &Path) -> anyhow::Result<toml::Value> {
+    let toolchain_file = lints_dir.join("rust-toolchain.toml");
+    let toolchain_content = fs::read_to_string(&toolchain_file)
+        .context("could not read rust-toolchain.toml from lint workspace")?;
+
+    toml::from_str(&toolchain_content)
+        .context("could not parse rust-toolchain.toml from lint workspace")
 }
 
 #[cfg(feature = "dylint-rules")]

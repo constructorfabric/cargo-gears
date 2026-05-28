@@ -1,8 +1,8 @@
 ---
 name: cyberfabric
 description: cli reference to help with the development of cyberfabric framework. It helps with the development of
-  the framework from its initialization, adding/removing modules, modifying configuration files, build and/or run project
-  and deploy them.
+  the framework from its initialization, adding/removing modules, modifying configuration files,
+  build and/or run project, lint the project and managing applications through its manifest.
 ---
 
 # CyberFabric CLI Skills Guide
@@ -38,6 +38,13 @@ This CLI is a tool for automating cyberfabric development, a Rust framework. You
 - More documentation of the project will be located in https://github.com/cyberfabric/cyberfabric-core/tree/main/docs
 
 Clone(shallow) the repo to .cyberfabric folder (create it if it doesn't exist), and use it as a reference.
+If so, prefer to use the ssh version instead of https to avoid authentication issues.
+
+## Guideliness to follow
+
+- When adding new dependencies use `cargo add`, do not edit Cargo.toml manually
+- When linting, use lint command of the cli to check if there are any lint errors. Do not try to run cargo check, clippy or fmt by your own.
+- Always verify that the application runs successfully after modifying the code.
 
 ## Command Tree
 
@@ -86,15 +93,15 @@ cargo cyberfabric
 ## Shared Argument Patterns
 
 - **[`-p, --path <PATH>`]** Optional workspace path. When provided to `config ...`, `build`, `run`, `deploy`, and
-  `lint`, the CLI immediately changes the current working directory to this directory. Relative config paths, generated
-  project locations, and workspace-scoped lint resolution then resolve from that directory. When omitted, the current
-  working directory is left unchanged.
+  `lint`, relative config paths, manifest paths, generated project locations, and workspace-scoped lint resolution use
+  that directory as the workspace root. When omitted, the current working directory is used as the workspace root.
 - **[`-c, --config <PATH>`]** Config file path. This is required for `config ...` and `deploy` commands because there is
   no default. `build` and `run` no longer accept `--config`; they compose their generation inputs from `Cyberware.toml`
   and forward the manifest-declared runtime config path through the `CF_CLI_CONFIG` environment variable.
-- **[`--manifest <PATH>`]** Cyberware manifest path, defaulting to `Cyberware.toml`, for `manifest`, `build`, and `run`.
+- **[`--manifest <PATH>`]** Cyberware manifest path, defaulting to `Cyberware.toml`, for `manifest`, `build`, `run`,
+  and `lint`.
   For `manifest`, you can combine this with `-p/--path` to resolve relative manifest paths from a selected workspace.
-- **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build` and `run`.
+- **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build`, `run`, and `lint`.
 - **[`--name <NAME>`]** For `build` and `run`, overrides the generated server project and binary name that would
   otherwise default to the config filename stem.
 - **[`-v, --verbose`]** Usually enables more logging or richer output.
@@ -178,12 +185,13 @@ Available built-in templates:
 
 - **[`background-worker`]** Background worker module template
 - **[`api-db-handler`]** API/database handler module template
-- **[`rest-gateway`]** REST gateway module template
+- **[`api-gateway`]** API gateway module template
 
 Arguments:
 
 - **[`-t, --template <TEMPLATE>`]** Module template name
-- **[`-n, --name <NAME>`]** Generated module folder/crate name; defaults to the template name
+- **[`-n, --name <NAME>`]** Generated module folder/crate name; defaults to the template name. Prefer passing this when
+  the generated module should use the user's chosen name.
 - **[`-p, --path <PATH>`]** Workspace root, defaults to `.`
 - **[`-v, --verbose`]** Verbose template generation output
 - **[`--local-path <PATH>`]** Use a local template directory instead of the default Git template
@@ -382,7 +390,7 @@ cargo cyberfabric config mod add background-worker -p /tmp/cf-demo -c /tmp/cf-de
 ```
 
 ```bash
-cargo cyberfabric config mod add rest-gateway -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml -F json,metrics -F tracing --dep authn-resolver --dep tenant-resolver
+cargo cyberfabric config mod add api-gateway -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml -F json,metrics -F tracing --dep authn-resolver --dep tenant-resolver
 ```
 
 ```bash
@@ -941,55 +949,57 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo cyberfabric lint [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint]
+cargo cyberfabric lint --app <APP> --env <ENV> [--manifest <Cyberware.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint]
 ```
 
 Arguments:
 
-- **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
-- **[`--all`]** Runs the default lint suites; this is also the default when neither `--fmt`, `--clippy`, nor `--dylint`
-  is passed
-- **[`--fmt`]** Runs `cargo fmt --check --all`; if passed by itself, it disables the default implicit `--all`
-- **[`--clippy`]** Runs workspace Clippy checks; if passed by itself, it disables the default implicit `--all`
+- **[`-p, --path <PATH>`]** Optional workspace directory used to resolve relative manifest paths
+- **[`--manifest <PATH>`]** Manifest file, defaults to `Cyberware.toml`
+- **[`--app <APP> --env <ENV>`]** Required manifest app/environment selection
+- **[`--all`]** Runs all available lint suites instead of the selected manifest lint policy
+- **[`--fmt`]** Runs `cargo fmt --check --all`; if passed by itself, it runs only formatting checks
+- **[`--clippy`]** Runs workspace Clippy checks; if passed by itself, it runs only Clippy
 - **[`--strict`]** Turns Clippy warnings into errors; valid only when Clippy is selected explicitly or through `--all`
 - **[`--dylint`]** Runs embedded Dylint rules against the workspace rooted at the current or selected directory
 
 Behavior:
 
-- **[path activation]** If `-p/--path` is provided, it changes the current working directory
-- **[default lint selection]** With no explicit lint-selection flags, `lint` behaves as if `--all` was enabled
+- **[path activation]** If `-p/--path` is provided, relative manifest paths are resolved from that workspace directory
+- **[manifest mode]** Reads lint policy from the selected `Cyberware.toml` app/environment and runs from the resolved
+  manifest workspace root
+- **[default lint selection]** With no explicit lint-selection flags, `lint` runs the selected manifest lint policy
 - **[explicit selection disables default all]** Passing `--fmt`, `--clippy`, and/or `--dylint` opts into just those
   requested lint suites unless `--all` is also provided
 - **[workspace formatting check]** `--fmt` runs `cargo fmt --check --all`
-- **[workspace Clippy]** Clippy runs as `cargo clippy --workspace --all-targets --all-features`. The `--all-features`
-  flag ensures every feature-gated code path is checked. The workspace currently has no mutually exclusive features, so
-  enabling all features simultaneously is safe.
+- **[workspace Clippy]** Clippy runs as `cargo clippy --workspace --all-targets`. Manifest `feature-set-test` policy is
+  reserved for feature-matrix linting and is not expanded into `--all-features`.
 - **[strict scope]** `--strict` is rejected unless Clippy is active through `--clippy` or `--all`
-- **[workspace-scoped dylint]** Dylint resolves the workspace from the current working directory, so `-p/--path` is the
-  way to lint another workspace without manually changing directories
+- **[workspace-scoped dylint]** Dylint receives the resolved workspace manifest path, so `-p/--path` is the way to lint
+  another workspace without manually changing directories
 - **[toolchain bootstrap]** Before running Dylint, the CLI ensures the toolchains required by the embedded lint dylibs
   are installed
 
 Examples:
 
 ```bash
-cargo cyberfabric lint
+cargo cyberfabric lint --app app1 --env dev
 ```
 
 ```bash
-cargo cyberfabric lint --clippy --strict
+cargo cyberfabric lint --app app1 --env dev --clippy --strict
 ```
 
 ```bash
-cargo cyberfabric lint --fmt
+cargo cyberfabric lint --app app1 --env dev --fmt
 ```
 
 ```bash
-cargo cyberfabric lint --dylint
+cargo cyberfabric lint --app app1 --env dev --dylint
 ```
 
 ```bash
-cargo cyberfabric lint -p /tmp/cf-demo --dylint
+cargo cyberfabric lint -p /tmp/cf-demo --app app1 --env dev --dylint
 ```
 
 ### `list`
@@ -1193,7 +1203,7 @@ cargo cyberfabric src --verbose tokio::sync
 
 ```bash
 cargo cyberfabric {new|generate workspace} <path> [--template <template>] [--name <name>]
-cargo cyberfabric generate module --template <background-worker|api-db-handler|rest-gateway> [--name <name>] [-p <workspace>]
+cargo cyberfabric generate module --template <background-worker|api-db-handler|api-gateway> [--name <name>] [-p <workspace>]
 cargo cyberfabric generate config --template <dev|prod|db> [--app <app>] [--env <env>] [--name <name>] [-p <workspace>]
 
 cargo cyberfabric config mod list [-p <workspace>] -c <config>
@@ -1214,8 +1224,9 @@ cargo cyberfabric list configs [-f table|json|yaml|toml]           # unimplement
 cargo cyberfabric list apps [-f table|json|yaml|toml]              # unimplemented
 
 cargo cyberfabric src [-p <path>] [--version <version>] [--clean] [<query>]
-cargo cyberfabric lint [-p <workspace>] [--all] [--clippy] [--strict] [--dylint]
+cargo cyberfabric lint [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--all] [--clippy] [--strict] [--dylint]
 cargo cyberfabric tools --all
 cargo cyberfabric run [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>] [--watch]
 cargo cyberfabric build [-p <workspace>] --app <app> --env <env> [--manifest <Cyberware.toml>] [--name <name>]
 cargo cyberfabric deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
+```

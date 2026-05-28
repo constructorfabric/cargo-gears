@@ -24,7 +24,7 @@ Discovery:
 
 Example Cargo.toml:
   [package]
-  name = "rest-gateway"
+  name = "api-gateway"
   version = "0.1.0"
   edition = "2024"
 

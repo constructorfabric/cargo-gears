@@ -779,7 +779,7 @@ mod tests {
         .expect("module cargo toml");
 
         let workspace_root = std::env::current_dir().expect("current_dir");
-        let module_dir = workspace_root.join("modules").join("rest-gateway");
+        let module_dir = workspace_root.join("modules").join("api-gateway");
 
         let dependencies =
             get_dependencies(&doc, &module_dir, &workspace_root).expect("get_dependencies");
@@ -787,7 +787,7 @@ mod tests {
         let sdk_dep = dependencies
             .get("module_sdk")
             .expect("module_sdk dependency");
-        assert_eq!(sdk_dep.path.as_deref(), Some("modules/rest-gateway/sdk"));
+        assert_eq!(sdk_dep.path.as_deref(), Some("modules/api-gateway/sdk"));
     }
 
     #[test]
@@ -802,7 +802,7 @@ mod tests {
         .expect("module cargo toml");
 
         let workspace_root = std::env::current_dir().expect("current_dir");
-        let module_dir = workspace_root.join("modules").join("rest-gateway");
+        let module_dir = workspace_root.join("modules").join("api-gateway");
 
         let dependencies =
             get_dependencies(&doc, &module_dir, &workspace_root).expect("get_dependencies");
