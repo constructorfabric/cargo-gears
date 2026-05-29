@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct ManifestArgs {
+    /// Path to the module workspace root
     #[arg(short = 'p', long, value_parser = gears_cli_core::common::parse_path)]
     path: Option<PathBuf>,
     /// Path to the Gears manifest file
@@ -23,6 +24,8 @@ enum ManifestCommand {
 
 #[derive(Args)]
 struct ManifestFormatArgs {
+    /// Workspace path (positional, takes precedence over parent -p)
+    path: Option<PathBuf>,
     /// Output format
     #[arg(long, value_enum, default_value_t = OutputFormat::Table)]
     format: OutputFormat,
@@ -30,19 +33,21 @@ struct ManifestFormatArgs {
 
 impl From<ManifestArgs> for gears_cli_core::manifest::ManifestArgs {
     fn from(args: ManifestArgs) -> Self {
+        let parent_path = args.path;
+        let (path, command) = match args.command {
+            ManifestCommand::Validate(sub) => (
+                sub.path.or(parent_path),
+                gears_cli_core::manifest::ManifestCommand::Validate { format: sub.format },
+            ),
+            ManifestCommand::Ls(sub) => (
+                sub.path.or(parent_path),
+                gears_cli_core::manifest::ManifestCommand::Ls { format: sub.format },
+            ),
+        };
         Self {
-            path: args.path,
+            path,
             manifest: args.manifest,
-            command: match args.command {
-                ManifestCommand::Validate(args) => {
-                    gears_cli_core::manifest::ManifestCommand::Validate {
-                        format: args.format,
-                    }
-                }
-                ManifestCommand::Ls(args) => gears_cli_core::manifest::ManifestCommand::Ls {
-                    format: args.format,
-                },
-            },
+            command,
         }
     }
 }
