@@ -1,15 +1,13 @@
-use crate::common::ManifestTargetArgs;
+use crate::common::{ManifestTargetArgs, WorkspacePath};
 use clap::Args;
-use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct LintArgs {
     /// Run all available lint rules
     #[arg(long)]
     all: bool,
-    /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = gears_cli_core::common::parse_path)]
-    pub path: Option<PathBuf>,
+    #[command(flatten)]
+    pub workspace: WorkspacePath,
     #[command(flatten)]
     pub manifest: ManifestTargetArgs,
     /// Check whether the workspace is formatted with `cargo fmt`.
@@ -36,7 +34,7 @@ impl From<LintArgs> for gears_cli_core::lint::LintArgs {
     fn from(args: LintArgs) -> Self {
         Self {
             all: args.all,
-            path: args.path,
+            path: args.workspace.path,
             manifest: args.manifest.into_selection(),
             fmt: args.fmt,
             clippy: args.clippy,

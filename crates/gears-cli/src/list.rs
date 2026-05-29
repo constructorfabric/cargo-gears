@@ -1,6 +1,5 @@
-use crate::common::{OutputFormat, Registry};
+use crate::common::{OutputFormat, Registry, WorkspacePath};
 use clap::{Args, Subcommand};
-use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct ListArgs {
@@ -38,9 +37,8 @@ pub struct AppsArgs {
 
 #[derive(Args)]
 pub struct ModulesArgs {
-    /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = gears_cli_core::common::parse_path)]
-    path: Option<PathBuf>,
+    #[command(flatten)]
+    workspace: WorkspacePath,
     /// Show all information related to the modules (fetches registry metadata for system modules)
     #[arg(short = 'v', long)]
     verbose: bool,
@@ -54,9 +52,8 @@ pub struct ModulesArgs {
 
 #[derive(Args)]
 pub struct LocalModulesArgs {
-    /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = gears_cli_core::common::parse_path)]
-    path: Option<PathBuf>,
+    #[command(flatten)]
+    workspace: WorkspacePath,
     /// Show all information related to the module
     #[arg(short = 'v', long)]
     verbose: bool,
@@ -107,7 +104,7 @@ impl From<ListCommand> for gears_cli_core::list::ListCommand {
 impl From<ModulesArgs> for gears_cli_core::list::ModulesArgs {
     fn from(args: ModulesArgs) -> Self {
         Self {
-            path: args.path,
+            path: args.workspace.path,
             verbose: args.verbose,
             registry: args.registry,
             format: args.format,
@@ -118,7 +115,7 @@ impl From<ModulesArgs> for gears_cli_core::list::ModulesArgs {
 impl From<LocalModulesArgs> for gears_cli_core::list::LocalModulesArgs {
     fn from(args: LocalModulesArgs) -> Self {
         Self {
-            path: args.path,
+            path: args.workspace.path,
             verbose: args.verbose,
             format: args.format,
         }
