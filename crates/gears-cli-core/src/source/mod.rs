@@ -17,7 +17,7 @@ use std::time::Duration;
 
 /// Resolve Rust source code from a crate
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct SourceArgs {
+pub struct SourceParams {
     /// Path to the Cargo workspace or crate to inspect
     pub path: PathBuf,
     /// Registry to query when the crate is not present in local metadata
@@ -37,7 +37,7 @@ pub struct SourceArgs {
     pub query: Option<String>,
 }
 
-impl SourceArgs {
+impl SourceParams {
     pub fn run(&self) -> anyhow::Result<()> {
         if self.clean {
             clean_registry_cache(self.registry)?;

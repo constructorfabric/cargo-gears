@@ -15,11 +15,11 @@ pub struct RunArgs {
 
 impl RunArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::run::RunArgs::from(self).run()
+        gears_cli_core::run::RunParams::from(self).run()
     }
 }
 
-impl From<RunArgs> for gears_cli_core::run::RunArgs {
+impl From<RunArgs> for gears_cli_core::run::RunParams {
     fn from(args: RunArgs) -> Self {
         Self {
             watch: crate::common::ordered_bool(args.watch, args.no_watch),

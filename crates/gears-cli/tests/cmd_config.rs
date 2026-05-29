@@ -2,7 +2,7 @@ mod common;
 
 use gears_cli_core::GearsCommand;
 use gears_cli_core::app_config::{DbConnConfig, DbEngineCfg, PoolCfg};
-use gears_cli_core::common::PathConfigArgs;
+use gears_cli_core::common::PathConfigParams;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
@@ -34,12 +34,12 @@ fn parses_config_module_add_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Config(gears_cli_core::config::ConfigArgs {
+        GearsCommand::Config(gears_cli_core::config::ConfigParams {
             command: gears_cli_core::config::ConfigCommand::Mod(
-                gears_cli_core::config::modules::ModulesArgs {
+                gears_cli_core::config::modules::ModulesParams {
                     command: gears_cli_core::config::modules::ModulesCommand::Add(
-                        gears_cli_core::config::modules::add::AddArgs {
-                            path_config: PathConfigArgs {
+                        gears_cli_core::config::modules::add::AddParams {
+                            path_config: PathConfigParams {
                                 path: None,
                                 config: Some(PathBuf::from("config.yml")),
                             },
@@ -93,12 +93,12 @@ fn parses_config_db_add_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Config(gears_cli_core::config::ConfigArgs {
+        GearsCommand::Config(gears_cli_core::config::ConfigParams {
             command: gears_cli_core::config::ConfigCommand::Db(Box::new(
-                gears_cli_core::config::db::DbArgs {
+                gears_cli_core::config::db::DbParams {
                     command: gears_cli_core::config::db::DbCommand::Add(
                         gears_cli_core::config::db::AddArgs {
-                            path_config: PathConfigArgs {
+                            path_config: PathConfigParams {
                                 path: None,
                                 config: Some(PathBuf::from("config.yml")),
                             },
@@ -151,14 +151,14 @@ fn parses_config_module_db_edit_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Config(gears_cli_core::config::ConfigArgs {
+        GearsCommand::Config(gears_cli_core::config::ConfigParams {
             command: gears_cli_core::config::ConfigCommand::Mod(
-                gears_cli_core::config::modules::ModulesArgs {
+                gears_cli_core::config::modules::ModulesParams {
                     command: gears_cli_core::config::modules::ModulesCommand::Db(Box::new(
-                        gears_cli_core::config::modules::db::ModuleDbArgs {
+                        gears_cli_core::config::modules::db::ModuleDbParams {
                             command: gears_cli_core::config::modules::db::ModuleDbCommand::Edit(
                                 gears_cli_core::config::modules::db::EditArgs {
-                                    path_config: PathConfigArgs {
+                                    path_config: PathConfigParams {
                                         path: None,
                                         config: Some(PathBuf::from("config.yml")),
                                     },

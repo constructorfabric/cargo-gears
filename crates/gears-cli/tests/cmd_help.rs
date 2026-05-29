@@ -2,7 +2,9 @@ mod common;
 
 use common::{assert_parse_error, parse_command};
 use gears_cli_core::GearsCommand;
-use gears_cli_core::help::{HelpArgs, HelpCommand, SchemaArgs, SchemaTarget, Topic, TopicArgs};
+use gears_cli_core::help::{
+    HelpCommand, HelpParams, SchemaParams, SchemaTarget, Topic, TopicParams,
+};
 use std::path::PathBuf;
 
 #[test]
@@ -11,8 +13,8 @@ fn parses_help_schema_manifest() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Schema(SchemaArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Schema(SchemaParams {
                 target: SchemaTarget::Manifest,
                 section: None,
             }),
@@ -26,8 +28,8 @@ fn parses_help_schema_config_with_section() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Schema(SchemaArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Schema(SchemaParams {
                 target: SchemaTarget::Config,
                 section: Some("database".to_owned()),
             }),
@@ -41,8 +43,8 @@ fn parses_help_schema_module() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Schema(SchemaArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Schema(SchemaParams {
                 target: SchemaTarget::Module,
                 section: None,
             }),
@@ -56,8 +58,8 @@ fn parses_help_src_with_query() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Src(gears_cli_core::source::SourceArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Src(gears_cli_core::source::SourceParams {
                 path: PathBuf::from("."),
                 registry: gears_cli_core::common::Registry::CratesIo,
                 verbose: false,
@@ -88,8 +90,8 @@ fn parses_help_src_with_all_flags() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Src(gears_cli_core::source::SourceArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Src(gears_cli_core::source::SourceParams {
                 path: PathBuf::from("/tmp/ws"),
                 registry: gears_cli_core::common::Registry::CratesIo,
                 verbose: true,
@@ -108,8 +110,8 @@ fn parses_help_topic_manifest() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Topic(TopicArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Topic(TopicParams {
                 topic: Topic::Manifest,
             }),
         })
@@ -122,8 +124,8 @@ fn parses_help_topic_module_refs() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Topic(TopicArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Topic(TopicParams {
                 topic: Topic::ModuleRefs,
             }),
         })
@@ -136,8 +138,8 @@ fn parses_help_topic_generated_server() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Topic(TopicArgs {
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Topic(TopicParams {
                 topic: Topic::GeneratedServer,
             }),
         })
@@ -150,8 +152,8 @@ fn parses_help_topic_fips() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Topic(TopicArgs { topic: Topic::Fips }),
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Topic(TopicParams { topic: Topic::Fips }),
         })
     );
 }
@@ -162,8 +164,8 @@ fn parses_help_topic_otel() {
 
     assert_eq!(
         command,
-        GearsCommand::Help(HelpArgs {
-            command: HelpCommand::Topic(TopicArgs { topic: Topic::Otel }),
+        GearsCommand::Help(HelpParams {
+            command: HelpCommand::Topic(TopicParams { topic: Topic::Otel }),
         })
     );
 }

@@ -1,12 +1,12 @@
-use crate::common::{self, BuildRunArgs};
+use crate::common::{self, BuildRunParams};
 use anyhow::{Context, bail};
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct BuildArgs {
-    pub build_run_args: BuildRunArgs,
+pub struct BuildParams {
+    pub build_run_args: BuildRunParams,
 }
 
-impl BuildArgs {
+impl BuildParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let workspace_path = common::resolve_workspace_path(self.build_run_args.path.as_deref())?;
         let resolved = self.build_run_args.manifest.resolve(&workspace_path)?;
@@ -47,8 +47,8 @@ impl BuildArgs {
 
 #[cfg(test)]
 mod tests {
-    use super::BuildArgs;
-    use crate::common::BuildRunArgs;
+    use super::BuildParams;
+    use crate::common::BuildRunParams;
     use crate::manifest::ManifestSelection;
     use std::fs;
     use std::path::PathBuf;
@@ -77,8 +77,8 @@ name = "demo-server"
         fs::write(temp.path().join("config/app-dev.yml"), "server: {}\n")
             .expect("config should be written");
 
-        BuildArgs {
-            build_run_args: BuildRunArgs {
+        BuildParams {
+            build_run_args: BuildRunParams {
                 path: Some(temp.path().to_path_buf()),
                 manifest: ManifestSelection {
                     manifest: PathBuf::from("Gears.toml"),

@@ -1,7 +1,7 @@
 mod common;
 
 use gears_cli_core::GearsCommand;
-use gears_cli_core::common::BuildRunArgs;
+use gears_cli_core::common::BuildRunParams;
 use gears_cli_core::manifest::ManifestSelection;
 use std::path::PathBuf;
 
@@ -24,9 +24,9 @@ fn parses_run_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Run(gears_cli_core::run::RunArgs {
+        GearsCommand::Run(gears_cli_core::run::RunParams {
             watch: Some(true),
-            br_args: BuildRunArgs {
+            br_args: BuildRunParams {
                 path: None,
                 manifest: ManifestSelection {
                     manifest: PathBuf::from("Gears.toml"),

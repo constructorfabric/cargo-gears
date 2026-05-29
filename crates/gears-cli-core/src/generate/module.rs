@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ModuleArgs {
+pub struct ModuleParams {
     /// Template name (e.g. "background-worker").
     pub template: String,
     /// Module name; defaults to the template name when absent.
@@ -32,7 +32,7 @@ struct StagedModuleWrite {
     doc: toml_edit::DocumentMut,
 }
 
-impl ModuleArgs {
+impl ModuleParams {
     pub fn run(&self) -> anyhow::Result<()> {
         ensure_modules_directory(&self.path)?;
 

@@ -18,18 +18,18 @@ pub mod tools;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum GearsCommand {
-    Generate(generate::GenerateArgs),
-    Config(config::ConfigArgs),
-    Src(source::SourceArgs),
-    Help(help::HelpArgs),
-    Lint(lint::LintArgs),
-    List(list::ListArgs),
-    Manifest(manifest::ManifestArgs),
-    Test(test::TestArgs),
-    Tools(tools::ToolsArgs),
-    Run(run::RunArgs),
-    Build(build::BuildArgs),
-    Deploy(deploy::DeployArgs),
+    Generate(generate::GenerateParams),
+    Config(config::ConfigParams),
+    Src(source::SourceParams),
+    Help(help::HelpParams),
+    Lint(lint::LintParams),
+    List(list::ListParams),
+    Manifest(manifest::ManifestParams),
+    Test(test::TestParams),
+    Tools(tools::ToolsParams),
+    Run(run::RunParams),
+    Build(build::BuildParams),
+    Deploy(deploy::DeployParams),
 }
 
 impl GearsCommand {

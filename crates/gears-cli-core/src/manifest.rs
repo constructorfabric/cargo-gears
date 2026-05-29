@@ -92,7 +92,7 @@ fn resolve_app_env(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ManifestArgs {
+pub struct ManifestParams {
     pub path: Option<PathBuf>,
     pub manifest: PathBuf,
     pub command: ManifestCommand,
@@ -104,7 +104,7 @@ pub enum ManifestCommand {
     Ls { format: common::OutputFormat },
 }
 
-impl ManifestArgs {
+impl ManifestParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let workspace_root = common::resolve_workspace_path(self.path.as_deref())?;
         let manifest_path = resolve_manifest_path(&workspace_root, &self.manifest)?;
@@ -778,7 +778,7 @@ modules = []
         );
         temp.write("workspace/config/app-dev.yml", "server: {}\n");
 
-        let args = ManifestArgs {
+        let args = ManifestParams {
             path: Some(temp.path().join("workspace")),
             manifest: PathBuf::from(DEFAULT_MANIFEST_FILE),
             command: ManifestCommand::Ls {

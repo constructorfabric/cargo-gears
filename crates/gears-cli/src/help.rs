@@ -17,7 +17,7 @@ impl HelpArgs {
 
 impl From<HelpArgs> for gears_cli_core::GearsCommand {
     fn from(args: HelpArgs) -> Self {
-        Self::Help(gears_cli_core::help::HelpArgs {
+        Self::Help(gears_cli_core::help::HelpParams {
             command: args.command.into(),
         })
     }
@@ -63,7 +63,7 @@ pub enum SchemaTarget {
     Module,
 }
 
-impl From<SchemaArgs> for gears_cli_core::help::SchemaArgs {
+impl From<SchemaArgs> for gears_cli_core::help::SchemaParams {
     fn from(args: SchemaArgs) -> Self {
         Self {
             target: args.target.into(),
@@ -111,7 +111,7 @@ pub struct SrcArgs {
     query: Option<String>,
 }
 
-impl From<SrcArgs> for gears_cli_core::source::SourceArgs {
+impl From<SrcArgs> for gears_cli_core::source::SourceParams {
     fn from(args: SrcArgs) -> Self {
         Self {
             path: args.path,
@@ -146,7 +146,7 @@ pub enum Topic {
     Otel,
 }
 
-impl From<TopicArgs> for gears_cli_core::help::TopicArgs {
+impl From<TopicArgs> for gears_cli_core::help::TopicParams {
     fn from(args: TopicArgs) -> Self {
         Self {
             topic: args.topic.into(),

@@ -75,23 +75,23 @@ pub const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
 ];
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ModulesArgs {
+pub struct ModulesParams {
     pub command: ModulesCommand,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ModulesCommand {
     /// List available system crates
-    List(list::ListArgs),
+    List(list::ListParams),
     /// Add or update a module in the modules section (upsert)
-    Add(add::AddArgs),
+    Add(add::AddParams),
     /// Manage module-level database config
-    Db(Box<db::ModuleDbArgs>),
+    Db(Box<db::ModuleDbParams>),
     /// Remove a module from the modules section
-    Rm(remove::RemoveArgs),
+    Rm(remove::RemoveParams),
 }
 
-impl ModulesArgs {
+impl ModulesParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             ModulesCommand::List(args) => args.run(),

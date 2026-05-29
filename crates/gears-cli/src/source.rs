@@ -34,11 +34,11 @@ pub struct SourceArgs {
 
 impl SourceArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::source::SourceArgs::from(self).run()
+        gears_cli_core::source::SourceParams::from(self).run()
     }
 }
 
-impl From<SourceArgs> for gears_cli_core::source::SourceArgs {
+impl From<SourceArgs> for gears_cli_core::source::SourceParams {
     fn from(args: SourceArgs) -> Self {
         Self {
             path: args.path,

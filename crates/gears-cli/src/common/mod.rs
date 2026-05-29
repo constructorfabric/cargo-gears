@@ -17,7 +17,7 @@ pub struct PathConfigArgs {
     pub config: Option<PathBuf>,
 }
 
-impl From<PathConfigArgs> for gears_cli_core::common::PathConfigArgs {
+impl From<PathConfigArgs> for gears_cli_core::common::PathConfigParams {
     fn from(args: PathConfigArgs) -> Self {
         Self {
             path: args.path,
@@ -65,7 +65,7 @@ pub struct BuildRunArgs {
     pub name: Option<String>,
 }
 
-impl From<BuildRunArgs> for gears_cli_core::common::BuildRunArgs {
+impl From<BuildRunArgs> for gears_cli_core::common::BuildRunParams {
     fn from(args: BuildRunArgs) -> Self {
         Self {
             path: args.path,

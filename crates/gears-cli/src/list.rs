@@ -80,11 +80,11 @@ pub struct SystemModulesArgs {
 
 impl ListArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::list::ListArgs::from(self).run()
+        gears_cli_core::list::ListParams::from(self).run()
     }
 }
 
-impl From<ListArgs> for gears_cli_core::list::ListArgs {
+impl From<ListArgs> for gears_cli_core::list::ListParams {
     fn from(args: ListArgs) -> Self {
         Self {
             command: args.command.into(),
@@ -104,7 +104,7 @@ impl From<ListCommand> for gears_cli_core::list::ListCommand {
     }
 }
 
-impl From<ModulesArgs> for gears_cli_core::list::ModulesArgs {
+impl From<ModulesArgs> for gears_cli_core::list::ModulesParams {
     fn from(args: ModulesArgs) -> Self {
         Self {
             path: args.path,
@@ -115,7 +115,7 @@ impl From<ModulesArgs> for gears_cli_core::list::ModulesArgs {
     }
 }
 
-impl From<LocalModulesArgs> for gears_cli_core::list::LocalModulesArgs {
+impl From<LocalModulesArgs> for gears_cli_core::list::LocalModulesParams {
     fn from(args: LocalModulesArgs) -> Self {
         Self {
             path: args.path,
@@ -125,7 +125,7 @@ impl From<LocalModulesArgs> for gears_cli_core::list::LocalModulesArgs {
     }
 }
 
-impl From<SystemModulesArgs> for gears_cli_core::list::SystemModulesArgs {
+impl From<SystemModulesArgs> for gears_cli_core::list::SystemModulesParams {
     fn from(args: SystemModulesArgs) -> Self {
         Self {
             verbose: args.verbose,
@@ -135,7 +135,7 @@ impl From<SystemModulesArgs> for gears_cli_core::list::SystemModulesArgs {
     }
 }
 
-impl From<ConfigsArgs> for gears_cli_core::list::ConfigsArgs {
+impl From<ConfigsArgs> for gears_cli_core::list::ConfigsParams {
     fn from(args: ConfigsArgs) -> Self {
         Self {
             format: args.format,
@@ -143,7 +143,7 @@ impl From<ConfigsArgs> for gears_cli_core::list::ConfigsArgs {
     }
 }
 
-impl From<AppsArgs> for gears_cli_core::list::AppsArgs {
+impl From<AppsArgs> for gears_cli_core::list::AppsParams {
     fn from(args: AppsArgs) -> Self {
         Self {
             format: args.format,

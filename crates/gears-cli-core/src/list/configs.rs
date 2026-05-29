@@ -1,11 +1,11 @@
 use crate::common::OutputFormat;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ConfigsArgs {
+pub struct ConfigsParams {
     pub format: OutputFormat,
 }
 
-impl ConfigsArgs {
+impl ConfigsParams {
     pub fn run(&self) -> anyhow::Result<()> {
         todo!(
             "list configs is blocked on the manifest-first design (Gears.toml); \

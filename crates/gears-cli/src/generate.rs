@@ -10,11 +10,11 @@ pub struct GenerateArgs {
 
 impl GenerateArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::generate::GenerateArgs::from(self).run()
+        gears_cli_core::generate::GenerateParams::from(self).run()
     }
 }
 
-impl From<GenerateArgs> for gears_cli_core::generate::GenerateArgs {
+impl From<GenerateArgs> for gears_cli_core::generate::GenerateParams {
     fn from(args: GenerateArgs) -> Self {
         Self {
             command: args.command.into(),
@@ -57,11 +57,11 @@ pub struct WorkspaceArgs {
 
 impl WorkspaceArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::generate::workspace::WorkspaceArgs::from(self).run()
+        gears_cli_core::generate::workspace::WorkspaceParams::from(self).run()
     }
 }
 
-impl From<WorkspaceArgs> for gears_cli_core::generate::workspace::WorkspaceArgs {
+impl From<WorkspaceArgs> for gears_cli_core::generate::workspace::WorkspaceParams {
     fn from(args: WorkspaceArgs) -> Self {
         Self {
             path: args.path,
@@ -111,11 +111,11 @@ pub struct ModuleArgs {
 
 impl ModuleArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::generate::module::ModuleArgs::from(self).run()
+        gears_cli_core::generate::module::ModuleParams::from(self).run()
     }
 }
 
-impl From<ModuleArgs> for gears_cli_core::generate::module::ModuleArgs {
+impl From<ModuleArgs> for gears_cli_core::generate::module::ModuleParams {
     fn from(args: ModuleArgs) -> Self {
         Self {
             template: args.template,
@@ -155,11 +155,11 @@ pub struct GenerateConfigArgs {
 
 impl GenerateConfigArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::generate::config::GenerateConfigArgs::from(self).run()
+        gears_cli_core::generate::config::GenerateConfigParams::from(self).run()
     }
 }
 
-impl From<GenerateConfigArgs> for gears_cli_core::generate::config::GenerateConfigArgs {
+impl From<GenerateConfigArgs> for gears_cli_core::generate::config::GenerateConfigParams {
     fn from(args: GenerateConfigArgs) -> Self {
         Self {
             template: args.template,

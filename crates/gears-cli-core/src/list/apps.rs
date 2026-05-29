@@ -1,11 +1,11 @@
 use crate::common::OutputFormat;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct AppsArgs {
+pub struct AppsParams {
     pub format: OutputFormat,
 }
 
-impl AppsArgs {
+impl AppsParams {
     pub fn run(&self) -> anyhow::Result<()> {
         todo!(
             "list apps is blocked on the manifest-first design (Gears.toml); \

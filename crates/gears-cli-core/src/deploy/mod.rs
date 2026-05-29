@@ -1,4 +1,4 @@
-use crate::common::{self, PathConfigArgs};
+use crate::common::{self, PathConfigParams};
 use anyhow::{Context, bail};
 use std::fmt;
 use std::fs;
@@ -9,8 +9,8 @@ use std::str::FromStr;
 const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct DeployArgs {
-    pub path_config: PathConfigArgs,
+pub struct DeployParams {
+    pub path_config: PathConfigParams,
     /// Tag to apply to the generated Docker image
     pub tag: Option<String>,
     /// Cargo manifest to build instead of generating a server project
@@ -23,7 +23,7 @@ pub struct DeployArgs {
     pub args: Vec<DockerBuildArg>,
 }
 
-impl DeployArgs {
+impl DeployParams {
     pub fn run(&self) -> anyhow::Result<()> {
         self.path_config
             .with_workspace_dir(|workspace_path, config_path| {

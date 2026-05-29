@@ -4,7 +4,7 @@ use std::process::Command;
 use std::{fmt, slice};
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ToolsArgs {
+pub struct ToolsParams {
     /// Install all tools
     pub all: bool,
     /// Upgrade tools to the recommended version
@@ -69,7 +69,7 @@ enum InstallMethod {
 
 const ALL_TOOLS: &[ToolName] = &[ToolName::Rustup, ToolName::Rustfmt, ToolName::Clippy];
 
-impl ToolsArgs {
+impl ToolsParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let tools = self.resolve_tools()?;
 

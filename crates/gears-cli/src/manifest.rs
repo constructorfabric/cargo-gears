@@ -28,7 +28,7 @@ struct ManifestFormatArgs {
     format: OutputFormat,
 }
 
-impl From<ManifestArgs> for gears_cli_core::manifest::ManifestArgs {
+impl From<ManifestArgs> for gears_cli_core::manifest::ManifestParams {
     fn from(args: ManifestArgs) -> Self {
         Self {
             path: args.path,

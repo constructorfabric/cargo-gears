@@ -1,16 +1,16 @@
 mod run_loop;
 
-use crate::common::BuildRunArgs;
+use crate::common::BuildRunParams;
 use crate::run::run_loop::RunSignal;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct RunArgs {
+pub struct RunParams {
     /// Watch for changes
     pub watch: Option<bool>,
-    pub br_args: BuildRunArgs,
+    pub br_args: BuildRunParams,
 }
 
-impl RunArgs {
+impl RunParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let workspace_path = crate::common::resolve_workspace_path(self.br_args.path.as_deref())?;
         let resolved = self.br_args.manifest.resolve(&workspace_path)?;

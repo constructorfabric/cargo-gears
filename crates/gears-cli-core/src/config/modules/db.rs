@@ -1,12 +1,12 @@
 use super::{load_config, save_config, validate_module_name};
 use crate::app_config::{AppConfig, DbConnConfig, ModuleConfig};
-use crate::common::PathConfigArgs;
+use crate::common::PathConfigParams;
 use crate::config::ensure_conn_payload;
 use anyhow::{Context, bail};
 use std::path::Path;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ModuleDbArgs {
+pub struct ModuleDbParams {
     pub command: ModuleDbCommand,
 }
 
@@ -20,7 +20,7 @@ pub enum ModuleDbCommand {
     Rm(RemoveArgs),
 }
 
-impl ModuleDbArgs {
+impl ModuleDbParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             ModuleDbCommand::Add(args) => args.run(),
@@ -32,7 +32,7 @@ impl ModuleDbArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
-    pub path_config: PathConfigArgs,
+    pub path_config: PathConfigParams,
     /// Module name under `modules.<module>`
     pub module: String,
     pub conn: DbConnConfig,
@@ -65,7 +65,7 @@ impl AddArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct EditArgs {
-    pub path_config: PathConfigArgs,
+    pub path_config: PathConfigParams,
     /// Module name under `modules.<module>`
     pub module: String,
     pub conn: DbConnConfig,
@@ -94,7 +94,7 @@ impl EditArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct RemoveArgs {
-    pub path_config: PathConfigArgs,
+    pub path_config: PathConfigParams,
     /// Module name under `modules.<module>`
     pub module: String,
 }

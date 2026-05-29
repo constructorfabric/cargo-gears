@@ -5,7 +5,7 @@ use common::assert_parse_error;
 use common::parse_command;
 use gears_cli_core::GearsCommand;
 use gears_cli_core::common::OutputFormat;
-use gears_cli_core::manifest::{ManifestArgs, ManifestCommand};
+use gears_cli_core::manifest::{ManifestCommand, ManifestParams};
 use std::path::PathBuf;
 
 #[test]
@@ -14,7 +14,7 @@ fn parses_manifest_default_path_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Manifest(ManifestArgs {
+        GearsCommand::Manifest(ManifestParams {
             path: None,
             manifest: PathBuf::from("Gears.toml"),
             command: ManifestCommand::Ls {
@@ -40,7 +40,7 @@ fn parses_manifest_validate_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Manifest(ManifestArgs {
+        GearsCommand::Manifest(ManifestParams {
             path: Some(PathBuf::from(".").canonicalize().unwrap()),
             manifest: PathBuf::from("custom.toml"),
             command: ManifestCommand::Validate {
@@ -64,7 +64,7 @@ fn parses_manifest_ls_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Manifest(ManifestArgs {
+        GearsCommand::Manifest(ManifestParams {
             path: None,
             manifest: PathBuf::from("custom.toml"),
             command: ManifestCommand::Ls {

@@ -18,9 +18,9 @@ fn parses_list_modules_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::List(gears_cli_core::list::ListArgs {
+        GearsCommand::List(gears_cli_core::list::ListParams {
             command: gears_cli_core::list::ListCommand::Modules(
-                gears_cli_core::list::ModulesArgs {
+                gears_cli_core::list::ModulesParams {
                     path: None,
                     verbose: true,
                     registry: Registry::CratesIo,
@@ -37,9 +37,9 @@ fn parses_list_local_modules_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::List(gears_cli_core::list::ListArgs {
+        GearsCommand::List(gears_cli_core::list::ListParams {
             command: gears_cli_core::list::ListCommand::LocalModules(
-                gears_cli_core::list::LocalModulesArgs {
+                gears_cli_core::list::LocalModulesParams {
                     path: None,
                     verbose: true,
                     format: OutputFormat::Table,
@@ -62,9 +62,9 @@ fn parses_list_system_modules_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::List(gears_cli_core::list::ListArgs {
+        GearsCommand::List(gears_cli_core::list::ListParams {
             command: gears_cli_core::list::ListCommand::SystemModules(
-                gears_cli_core::list::SystemModulesArgs {
+                gears_cli_core::list::SystemModulesParams {
                     verbose: true,
                     registry: Registry::CratesIo,
                     format: OutputFormat::Table,
@@ -80,9 +80,9 @@ fn parses_list_configs_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::List(gears_cli_core::list::ListArgs {
+        GearsCommand::List(gears_cli_core::list::ListParams {
             command: gears_cli_core::list::ListCommand::Configs(
-                gears_cli_core::list::ConfigsArgs {
+                gears_cli_core::list::ConfigsParams {
                     format: OutputFormat::Table,
                 },
             ),
@@ -96,8 +96,8 @@ fn parses_list_apps_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::List(gears_cli_core::list::ListArgs {
-            command: gears_cli_core::list::ListCommand::Apps(gears_cli_core::list::AppsArgs {
+        GearsCommand::List(gears_cli_core::list::ListParams {
+            command: gears_cli_core::list::ListCommand::Apps(gears_cli_core::list::AppsParams {
                 format: OutputFormat::Table,
             },),
         })
