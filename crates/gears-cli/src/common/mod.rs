@@ -8,10 +8,16 @@ pub use gears_cli_core::app_config::DbEngineCfg;
 pub use gears_cli_core::common::{OutputFormat, Registry};
 
 #[derive(Args)]
-pub struct PathConfigArgs {
+pub struct WorkspacePath {
     /// Path to the module workspace root
     #[arg(short = 'p', long, value_parser = gears_cli_core::common::parse_path)]
     pub path: Option<PathBuf>,
+}
+
+#[derive(Args)]
+pub struct PathConfigArgs {
+    #[command(flatten)]
+    pub workspace: WorkspacePath,
     /// Path to the config file
     #[arg(short = 'c', long)]
     pub config: Option<PathBuf>,
@@ -20,7 +26,7 @@ pub struct PathConfigArgs {
 impl From<PathConfigArgs> for gears_cli_core::common::PathConfigArgs {
     fn from(args: PathConfigArgs) -> Self {
         Self {
-            path: args.path,
+            path: args.workspace.path,
             config: args.config,
         }
     }
@@ -28,9 +34,8 @@ impl From<PathConfigArgs> for gears_cli_core::common::PathConfigArgs {
 
 #[derive(Args)]
 pub struct BuildRunArgs {
-    /// Path to the module workspace root
-    #[arg(short = 'p', long, value_parser = gears_cli_core::common::parse_path)]
-    pub path: Option<PathBuf>,
+    #[command(flatten)]
+    pub workspace: WorkspacePath,
     #[command(flatten)]
     pub manifest: ManifestTargetArgs,
     /// Use OpenTelemetry tracing
@@ -68,7 +73,7 @@ pub struct BuildRunArgs {
 impl From<BuildRunArgs> for gears_cli_core::common::BuildRunArgs {
     fn from(args: BuildRunArgs) -> Self {
         Self {
-            path: args.path,
+            path: args.workspace.path,
             manifest: args.manifest.into_selection(),
             otel: ordered_bool(args.otel, args.no_otel),
             fips: ordered_bool(args.fips, args.no_fips),
