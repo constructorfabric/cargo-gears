@@ -1,10 +1,10 @@
 use super::{ensure_conn_payload, load_config, save_config, validate_name};
 use crate::app_config::DbConnConfig;
-use crate::common::PathConfigArgs;
+use crate::common::PathConfigParams;
 use anyhow::{Context, bail};
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct DbArgs {
+pub struct DbParams {
     pub command: DbCommand,
 }
 
@@ -18,7 +18,7 @@ pub enum DbCommand {
     Rm(RemoveArgs),
 }
 
-impl DbArgs {
+impl DbParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             DbCommand::Add(args) => args.run(),
@@ -30,7 +30,7 @@ impl DbArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
-    pub path_config: PathConfigArgs,
+    pub path_config: PathConfigParams,
     /// Server name under `database.servers.<name>`
     pub name: String,
     pub conn: DbConnConfig,
@@ -57,7 +57,7 @@ impl AddArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct EditArgs {
-    pub path_config: PathConfigArgs,
+    pub path_config: PathConfigParams,
     /// Server name under `database.servers.<name>`
     pub name: String,
     pub conn: DbConnConfig,
@@ -89,7 +89,7 @@ impl EditArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct RemoveArgs {
-    pub path_config: PathConfigArgs,
+    pub path_config: PathConfigParams,
     /// Server name under `database.servers.<name>`
     pub name: String,
 }

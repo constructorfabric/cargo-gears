@@ -9,11 +9,11 @@ pub struct BuildArgs {
 
 impl BuildArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::build::BuildArgs::from(self).run()
+        gears_cli_core::build::BuildParams::from(self).run()
     }
 }
 
-impl From<BuildArgs> for gears_cli_core::build::BuildArgs {
+impl From<BuildArgs> for gears_cli_core::build::BuildParams {
     fn from(args: BuildArgs) -> Self {
         Self {
             build_run_args: args.build_run_args.into(),

@@ -25,7 +25,7 @@ fn parses_src_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Src(gears_cli_core::source::SourceArgs {
+        GearsCommand::Src(gears_cli_core::source::SourceParams {
             path: PathBuf::from("workspace"),
             registry: Registry::CratesIo,
             verbose: true,

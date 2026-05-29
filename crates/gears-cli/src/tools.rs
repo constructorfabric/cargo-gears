@@ -21,11 +21,11 @@ pub struct ToolsArgs {
 
 impl ToolsArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::tools::ToolsArgs::from(self).run()
+        gears_cli_core::tools::ToolsParams::from(self).run()
     }
 }
 
-impl From<ToolsArgs> for gears_cli_core::tools::ToolsArgs {
+impl From<ToolsArgs> for gears_cli_core::tools::ToolsParams {
     fn from(args: ToolsArgs) -> Self {
         Self {
             all: args.all,

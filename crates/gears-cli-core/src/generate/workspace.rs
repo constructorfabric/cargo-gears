@@ -14,7 +14,7 @@ const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
 const DOCKERIGNORE_CONTENT: &str = include_str!("../../shared/.dockerignore");
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct WorkspaceArgs {
+pub struct WorkspaceParams {
     /// Path to initialize the project.
     pub path: PathBuf,
     /// Template name (defaults to "default").
@@ -35,7 +35,7 @@ pub struct WorkspaceArgs {
     pub r#override: bool,
 }
 
-impl WorkspaceArgs {
+impl WorkspaceParams {
     pub fn run(&self) -> anyhow::Result<()> {
         if self.path.exists() && !self.path.is_dir() {
             bail!("path is not a directory");

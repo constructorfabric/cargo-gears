@@ -74,19 +74,19 @@ pub trait HelpSchema {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HelpArgs {
+pub struct HelpParams {
     pub command: HelpCommand,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HelpCommand {
-    Schema(SchemaArgs),
-    Src(crate::source::SourceArgs),
-    Topic(TopicArgs),
+    Schema(SchemaParams),
+    Src(crate::source::SourceParams),
+    Topic(TopicParams),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SchemaArgs {
+pub struct SchemaParams {
     pub target: SchemaTarget,
     pub section: Option<String>,
 }
@@ -109,7 +109,7 @@ impl fmt::Display for SchemaTarget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TopicArgs {
+pub struct TopicParams {
     pub topic: Topic,
 }
 
@@ -134,7 +134,7 @@ impl fmt::Display for Topic {
     }
 }
 
-impl HelpArgs {
+impl HelpParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             HelpCommand::Schema(args) => args.run(),
@@ -144,7 +144,7 @@ impl HelpArgs {
     }
 }
 
-impl SchemaArgs {
+impl SchemaParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let text = match self.target {
             SchemaTarget::Manifest => schema_manifest(self.section.as_deref()),
@@ -156,7 +156,7 @@ impl SchemaArgs {
     }
 }
 
-impl TopicArgs {
+impl TopicParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let text = match self.topic {
             Topic::Manifest => include_str!("topics/manifest.md"),

@@ -12,11 +12,11 @@ pub struct TestArgs {
 
 impl TestArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::test::TestArgs::from(self).run()
+        gears_cli_core::test::TestParams::from(self).run()
     }
 }
 
-impl From<TestArgs> for gears_cli_core::test::TestArgs {
+impl From<TestArgs> for gears_cli_core::test::TestParams {
     fn from(args: TestArgs) -> Self {
         Self {
             e2e: args.e2e,

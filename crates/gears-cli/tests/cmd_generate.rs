@@ -2,7 +2,7 @@ mod common;
 
 use common::parse_command;
 use gears_cli_core::GearsCommand;
-use gears_cli_core::generate::{GenerateArgs, GenerateCommand};
+use gears_cli_core::generate::{GenerateCommand, GenerateParams};
 use std::path::PathBuf;
 
 #[test]
@@ -18,9 +18,9 @@ fn parses_generate_workspace_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Generate(GenerateArgs {
+        GearsCommand::Generate(GenerateParams {
             command: GenerateCommand::Workspace(
-                gears_cli_core::generate::workspace::WorkspaceArgs {
+                gears_cli_core::generate::workspace::WorkspaceParams {
                     path: PathBuf::from("/tmp/cf-demo"),
                     template: "default".to_owned(),
                     name: Some("cf-demo".to_owned()),
@@ -42,9 +42,9 @@ fn parses_new_alias_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Generate(GenerateArgs {
+        GearsCommand::Generate(GenerateParams {
             command: GenerateCommand::Workspace(
-                gears_cli_core::generate::workspace::WorkspaceArgs {
+                gears_cli_core::generate::workspace::WorkspaceParams {
                     path: PathBuf::from("/tmp/cf-demo"),
                     template: "default".to_owned(),
                     name: None,
@@ -73,9 +73,9 @@ fn parses_generate_workspace_with_custom_template() {
 
     assert_eq!(
         command,
-        GearsCommand::Generate(GenerateArgs {
+        GearsCommand::Generate(GenerateParams {
             command: GenerateCommand::Workspace(
-                gears_cli_core::generate::workspace::WorkspaceArgs {
+                gears_cli_core::generate::workspace::WorkspaceParams {
                     path: PathBuf::from("/tmp/cf-demo"),
                     template: "custom".to_owned(),
                     name: None,
@@ -103,8 +103,8 @@ fn parses_generate_module_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Generate(GenerateArgs {
-            command: GenerateCommand::Module(gears_cli_core::generate::module::ModuleArgs {
+        GearsCommand::Generate(GenerateParams {
+            command: GenerateCommand::Module(gears_cli_core::generate::module::ModuleParams {
                 template: "api-db-handler".to_owned(),
                 name: None,
                 path: PathBuf::from("."),
@@ -132,8 +132,8 @@ fn parses_generate_module_with_name() {
 
     assert_eq!(
         command,
-        GearsCommand::Generate(GenerateArgs {
-            command: GenerateCommand::Module(gears_cli_core::generate::module::ModuleArgs {
+        GearsCommand::Generate(GenerateParams {
+            command: GenerateCommand::Module(gears_cli_core::generate::module::ModuleParams {
                 template: "background-worker".to_owned(),
                 name: Some("jobs".to_owned()),
                 path: PathBuf::from("."),
@@ -163,9 +163,9 @@ fn parses_generate_config_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Generate(GenerateArgs {
+        GearsCommand::Generate(GenerateParams {
             command: GenerateCommand::Config(
-                gears_cli_core::generate::config::GenerateConfigArgs {
+                gears_cli_core::generate::config::GenerateConfigParams {
                     template: "dev".to_owned(),
                     app: Some("myapp".to_owned()),
                     env: Some("staging".to_owned()),

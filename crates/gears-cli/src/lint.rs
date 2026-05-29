@@ -26,11 +26,11 @@ pub struct LintArgs {
 
 impl LintArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::lint::LintArgs::from(self).run()
+        gears_cli_core::lint::LintParams::from(self).run()
     }
 }
 
-impl From<LintArgs> for gears_cli_core::lint::LintArgs {
+impl From<LintArgs> for gears_cli_core::lint::LintParams {
     fn from(args: LintArgs) -> Self {
         Self {
             all: args.all,

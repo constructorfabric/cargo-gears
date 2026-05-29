@@ -6,11 +6,11 @@ pub const DEFAULT_GIT_URL: &str = "git@github.com:Bechma/cf-template-rust.git";
 pub const DEFAULT_BRANCH: &str = "main";
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct GenerateArgs {
+pub struct GenerateParams {
     pub command: GenerateCommand,
 }
 
-impl GenerateArgs {
+impl GenerateParams {
     pub fn run(&self) -> anyhow::Result<()> {
         self.command.run()
     }
@@ -18,9 +18,9 @@ impl GenerateArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum GenerateCommand {
-    Workspace(workspace::WorkspaceArgs),
-    Module(module::ModuleArgs),
-    Config(config::GenerateConfigArgs),
+    Workspace(workspace::WorkspaceParams),
+    Module(module::ModuleParams),
+    Config(config::GenerateConfigParams),
 }
 
 impl GenerateCommand {

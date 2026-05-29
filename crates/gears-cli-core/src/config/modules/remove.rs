@@ -1,15 +1,15 @@
 use super::{load_config, save_config, validate_module_name};
-use crate::common::PathConfigArgs;
+use crate::common::PathConfigParams;
 use anyhow::bail;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct RemoveArgs {
-    pub path_config: PathConfigArgs,
+pub struct RemoveParams {
+    pub path_config: PathConfigParams,
     /// Module name
     pub module: String,
 }
 
-impl RemoveArgs {
+impl RemoveParams {
     pub fn run(&self) -> anyhow::Result<()> {
         self.path_config
             .with_workspace_dir(|_workspace_path, config_path| {

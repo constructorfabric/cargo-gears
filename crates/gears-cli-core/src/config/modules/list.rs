@@ -1,6 +1,6 @@
 use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule, load_config};
 use crate::app_config::ModuleConfig;
-use crate::common::{PathConfigArgs, Registry};
+use crate::common::{PathConfigParams, Registry};
 use crate::module_parser::{
     Capability, ConfigModule, ConfigModuleMetadata, get_module_name_from_crate,
     parse_module_rs_source,
@@ -16,8 +16,8 @@ use std::path::Path;
 use std::time::Duration;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ListArgs {
-    pub path_config: PathConfigArgs,
+pub struct ListParams {
+    pub path_config: PathConfigParams,
     /// Show system crates also. If verbose is enabled,
     /// fetches registry metadata for system crates. (makes requests to the registry)
     pub system: bool,
@@ -29,7 +29,7 @@ pub struct ListArgs {
     pub registry: Registry,
 }
 
-impl ListArgs {
+impl ListParams {
     pub fn run(&self) -> anyhow::Result<()> {
         self.path_config
             .with_workspace_dir(|workspace_path, config_path| {

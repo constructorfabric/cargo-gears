@@ -9,11 +9,11 @@ pub mod db;
 pub mod modules;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ConfigArgs {
+pub struct ConfigParams {
     pub command: ConfigCommand,
 }
 
-impl ConfigArgs {
+impl ConfigParams {
     pub fn run(&self) -> anyhow::Result<()> {
         self.command.run()
     }
@@ -21,8 +21,8 @@ impl ConfigArgs {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ConfigCommand {
-    Mod(modules::ModulesArgs),
-    Db(Box<db::DbArgs>),
+    Mod(modules::ModulesParams),
+    Db(Box<db::DbParams>),
 }
 
 impl ConfigCommand {

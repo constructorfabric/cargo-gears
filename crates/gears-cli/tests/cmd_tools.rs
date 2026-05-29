@@ -20,7 +20,7 @@ fn parses_tools_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Tools(gears_cli_core::tools::ToolsArgs {
+        GearsCommand::Tools(gears_cli_core::tools::ToolsParams {
             all: false,
             upgrade: true,
             install: Some(vec![

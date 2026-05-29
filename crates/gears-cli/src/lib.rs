@@ -62,7 +62,7 @@ impl From<Cli> for gears_cli_core::GearsCommand {
     fn from(cli: Cli) -> Self {
         match cli.command {
             Commands::Generate(generate) => Self::Generate(generate.into()),
-            Commands::New(workspace) => Self::Generate(gears_cli_core::generate::GenerateArgs {
+            Commands::New(workspace) => Self::Generate(gears_cli_core::generate::GenerateParams {
                 command: gears_cli_core::generate::GenerateCommand::Workspace(workspace.into()),
             }),
             Commands::Config(config) => Self::Config((*config).into()),

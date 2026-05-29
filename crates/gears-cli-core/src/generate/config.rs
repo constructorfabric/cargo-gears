@@ -74,7 +74,7 @@ modules: {}
 ";
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct GenerateConfigArgs {
+pub struct GenerateConfigParams {
     /// Config template to use: dev, prod, or db.
     pub template: String,
     /// Application name for the output filename.
@@ -87,7 +87,7 @@ pub struct GenerateConfigArgs {
     pub path: PathBuf,
 }
 
-impl GenerateConfigArgs {
+impl GenerateConfigParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let content = self.resolve_template_content()?;
         let output_path = self.resolve_output_path();
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn filename_defaults_to_template_name() {
-        let args = GenerateConfigArgs {
+        let args = GenerateConfigParams {
             template: "dev".to_owned(),
             app: None,
             env: None,
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn filename_uses_app_and_env() {
-        let args = GenerateConfigArgs {
+        let args = GenerateConfigParams {
             template: "dev".to_owned(),
             app: Some("myapp".to_owned()),
             env: Some("staging".to_owned()),
@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn filename_uses_custom_name() {
-        let args = GenerateConfigArgs {
+        let args = GenerateConfigParams {
             template: "dev".to_owned(),
             app: Some("ignored".to_owned()),
             env: Some("ignored".to_owned()),
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn filename_preserves_yml_extension() {
-        let args = GenerateConfigArgs {
+        let args = GenerateConfigParams {
             template: "dev".to_owned(),
             app: None,
             env: None,

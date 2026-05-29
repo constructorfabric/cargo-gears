@@ -4,13 +4,13 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct LocalModulesArgs {
+pub struct LocalModulesParams {
     pub path: Option<PathBuf>,
     pub verbose: bool,
     pub format: OutputFormat,
 }
 
-impl LocalModulesArgs {
+impl LocalModulesParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match self.format {
             OutputFormat::Table => {}

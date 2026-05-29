@@ -25,11 +25,11 @@ pub struct DeployArgs {
 
 impl DeployArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::deploy::DeployArgs::from(self).run()
+        gears_cli_core::deploy::DeployParams::from(self).run()
     }
 }
 
-impl From<DeployArgs> for gears_cli_core::deploy::DeployArgs {
+impl From<DeployArgs> for gears_cli_core::deploy::DeployParams {
     fn from(args: DeployArgs) -> Self {
         Self {
             path_config: args.path_config.into(),

@@ -9,11 +9,11 @@ pub struct ConfigArgs {
 
 impl ConfigArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        gears_cli_core::config::ConfigArgs::from(self).run()
+        gears_cli_core::config::ConfigParams::from(self).run()
     }
 }
 
-impl From<ConfigArgs> for gears_cli_core::config::ConfigArgs {
+impl From<ConfigArgs> for gears_cli_core::config::ConfigParams {
     fn from(args: ConfigArgs) -> Self {
         Self {
             command: args.command.into(),
@@ -42,7 +42,7 @@ pub struct ConfigDbArgs {
     command: ConfigDbCommand,
 }
 
-impl From<ConfigDbArgs> for gears_cli_core::config::db::DbArgs {
+impl From<ConfigDbArgs> for gears_cli_core::config::db::DbParams {
     fn from(args: ConfigDbArgs) -> Self {
         Self {
             command: args.command.into(),
@@ -133,7 +133,7 @@ pub struct ConfigModulesArgs {
     command: ConfigModulesCommand,
 }
 
-impl From<ConfigModulesArgs> for gears_cli_core::config::modules::ModulesArgs {
+impl From<ConfigModulesArgs> for gears_cli_core::config::modules::ModulesParams {
     fn from(args: ConfigModulesArgs) -> Self {
         Self {
             command: args.command.into(),
@@ -182,7 +182,7 @@ pub struct ConfigModuleListArgs {
     registry: Registry,
 }
 
-impl From<ConfigModuleListArgs> for gears_cli_core::config::modules::list::ListArgs {
+impl From<ConfigModuleListArgs> for gears_cli_core::config::modules::list::ListParams {
     fn from(args: ConfigModuleListArgs) -> Self {
         Self {
             path_config: args.path_config.into(),
@@ -216,7 +216,7 @@ pub struct ConfigModuleAddArgs {
     deps: Vec<String>,
 }
 
-impl From<ConfigModuleAddArgs> for gears_cli_core::config::modules::add::AddArgs {
+impl From<ConfigModuleAddArgs> for gears_cli_core::config::modules::add::AddParams {
     fn from(args: ConfigModuleAddArgs) -> Self {
         Self {
             path_config: args.path_config.into(),
@@ -236,7 +236,7 @@ pub struct ConfigModuleDbArgs {
     command: ConfigModuleDbCommand,
 }
 
-impl From<ConfigModuleDbArgs> for gears_cli_core::config::modules::db::ModuleDbArgs {
+impl From<ConfigModuleDbArgs> for gears_cli_core::config::modules::db::ModuleDbParams {
     fn from(args: ConfigModuleDbArgs) -> Self {
         Self {
             command: args.command.into(),
@@ -329,7 +329,7 @@ pub struct ConfigModuleRemoveArgs {
     module: String,
 }
 
-impl From<ConfigModuleRemoveArgs> for gears_cli_core::config::modules::remove::RemoveArgs {
+impl From<ConfigModuleRemoveArgs> for gears_cli_core::config::modules::remove::RemoveParams {
     fn from(args: ConfigModuleRemoveArgs) -> Self {
         Self {
             path_config: args.path_config.into(),

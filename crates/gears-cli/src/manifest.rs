@@ -30,7 +30,7 @@ struct ManifestFormatArgs {
     format: OutputFormat,
 }
 
-impl From<ManifestArgs> for gears_cli_core::manifest::ManifestArgs {
+impl From<ManifestArgs> for gears_cli_core::manifest::ManifestParams {
     fn from(args: ManifestArgs) -> Self {
         let parent_path = args.workspace.path;
         let (path, command) = match args.command {

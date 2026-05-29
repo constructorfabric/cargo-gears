@@ -5,13 +5,13 @@ use anyhow::Context;
 use std::fmt::Display;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct SystemModulesArgs {
+pub struct SystemModulesParams {
     pub verbose: bool,
     pub registry: Registry,
     pub format: OutputFormat,
 }
 
-impl SystemModulesArgs {
+impl SystemModulesParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match self.format {
             OutputFormat::Table => {}

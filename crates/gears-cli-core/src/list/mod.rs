@@ -4,27 +4,27 @@ mod local_modules;
 mod modules;
 mod system_modules;
 
-pub use apps::AppsArgs;
-pub use configs::ConfigsArgs;
-pub use local_modules::LocalModulesArgs;
-pub use modules::ModulesArgs;
-pub use system_modules::SystemModulesArgs;
+pub use apps::AppsParams;
+pub use configs::ConfigsParams;
+pub use local_modules::LocalModulesParams;
+pub use modules::ModulesParams;
+pub use system_modules::SystemModulesParams;
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ListCommand {
-    Modules(ModulesArgs),
-    LocalModules(LocalModulesArgs),
-    SystemModules(SystemModulesArgs),
-    Configs(ConfigsArgs),
-    Apps(AppsArgs),
+    Modules(ModulesParams),
+    LocalModules(LocalModulesParams),
+    SystemModules(SystemModulesParams),
+    Configs(ConfigsParams),
+    Apps(AppsParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ListArgs {
+pub struct ListParams {
     pub command: ListCommand,
 }
 
-impl ListArgs {
+impl ListParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             ListCommand::Modules(args) => args.run(),
@@ -151,7 +151,7 @@ mod tests {
     fn list_local_modules_runs_successfully() {
         let temp_dir = scaffold_workspace(&[("crate-gamma", "gamma")]);
 
-        let args = LocalModulesArgs {
+        let args = LocalModulesParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
             format: OutputFormat::Table,
@@ -164,7 +164,7 @@ mod tests {
     fn list_local_modules_verbose_runs_successfully() {
         let temp_dir = scaffold_workspace(&[("crate-delta", "delta")]);
 
-        let args = LocalModulesArgs {
+        let args = LocalModulesParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: true,
             format: OutputFormat::Table,
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn list_system_modules_runs_successfully() {
-        let args = SystemModulesArgs {
+        let args = SystemModulesParams {
             verbose: false,
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
@@ -197,7 +197,7 @@ mod tests {
     fn list_modules_combines_system_and_local() {
         let temp_dir = scaffold_workspace(&[("crate-one", "one"), ("crate-two", "two")]);
 
-        let args = ModulesArgs {
+        let args = ModulesParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
             registry: Registry::CratesIo,

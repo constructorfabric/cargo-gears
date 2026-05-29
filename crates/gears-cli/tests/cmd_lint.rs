@@ -17,7 +17,7 @@ fn parses_lint_into_core_command() {
 
     assert_eq!(
         command,
-        GearsCommand::Lint(gears_cli_core::lint::LintArgs {
+        GearsCommand::Lint(gears_cli_core::lint::LintParams {
             all: false,
             path: None,
             manifest: ManifestSelection {

@@ -15,7 +15,7 @@ use std::process::Command;
 use std::sync::LazyLock;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct PathConfigArgs {
+pub struct PathConfigParams {
     /// Path to the module workspace root
     pub path: Option<PathBuf>,
     /// Path to the config file
@@ -33,7 +33,7 @@ pub fn parse_path(s: &str) -> Result<PathBuf, String> {
         .map_err(|e| format!("failed to canonicalize {}: {e}", path.display()))
 }
 
-impl PathConfigArgs {
+impl PathConfigParams {
     pub fn resolve_config(&self) -> anyhow::Result<PathBuf> {
         let workspace_path = resolve_workspace_path(self.path.as_deref())?;
         let config = self
@@ -81,7 +81,7 @@ pub fn workspace_root() -> anyhow::Result<PathBuf> {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct BuildRunArgs {
+pub struct BuildRunParams {
     /// Path to the module workspace root
     pub path: Option<PathBuf>,
     pub manifest: crate::manifest::ManifestSelection,
@@ -99,7 +99,7 @@ pub struct BuildRunArgs {
     pub name: Option<String>,
 }
 
-impl BuildRunArgs {
+impl BuildRunParams {
     pub fn clean_build(&self, resolved: &crate::manifest::ResolvedManifest) -> anyhow::Result<()> {
         if self.clean.unwrap_or_else(|| {
             resolved
@@ -514,7 +514,7 @@ fn prepare_cargo_server_main(dependencies: &CargoTomlDependencies) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        BuildRunArgs, cargo_command, generate_server_structure, generated_project_dir,
+        BuildRunParams, cargo_command, generate_server_structure, generated_project_dir,
         make_absolute_paths_relative, merge_module_metadata, prepare_cargo_server_main,
         resolve_generated_project_name,
     };
@@ -655,7 +655,7 @@ path = "src/lib.rs"
             modules: vec![],
             dependencies: CargoTomlDependencies::default(),
         };
-        let args = BuildRunArgs {
+        let args = BuildRunParams {
             path: None,
             manifest: ManifestSelection {
                 manifest: PathBuf::from("Gears.toml"),

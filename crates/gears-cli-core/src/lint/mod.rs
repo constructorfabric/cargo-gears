@@ -20,7 +20,7 @@ mod ensure_toolchain_installed_shared {
 use ensure_toolchain_installed_shared::ensure_toolchain_installed;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct LintArgs {
+pub struct LintParams {
     /// Run all available lint rules
     pub all: bool,
     /// Path to the module workspace root
@@ -47,7 +47,7 @@ struct EffectiveLintSelection {
     dylint: bool,
 }
 
-impl LintArgs {
+impl LintParams {
     const fn has_explicit_selection(&self) -> bool {
         self.all || self.fmt || self.clippy || self.dylint
     }
@@ -206,13 +206,13 @@ fn run_dylint(_workspace_path: &Path) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::LintArgs;
+    use super::LintParams;
     use crate::manifest::{Dylint, LintPolicy, ManifestSelection};
     use std::path::PathBuf;
 
     #[allow(clippy::fn_params_excessive_bools)]
-    fn lint_args(all: bool, fmt: bool, clippy: bool, strict: bool, dylint: bool) -> LintArgs {
-        LintArgs {
+    fn lint_args(all: bool, fmt: bool, clippy: bool, strict: bool, dylint: bool) -> LintParams {
+        LintParams {
             all,
             path: None,
             manifest: ManifestSelection {

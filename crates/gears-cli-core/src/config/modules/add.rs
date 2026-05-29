@@ -1,14 +1,14 @@
 use super::{load_config, save_config, validate_module_name};
 use crate::app_config::AppConfig;
-use crate::common::PathConfigArgs;
+use crate::common::PathConfigParams;
 use crate::module_parser::{ConfigModule, ConfigModuleMetadata, get_module_name_from_crate};
 use anyhow::{Context, bail};
 use std::collections::HashMap;
 use std::path::Path;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct AddArgs {
-    pub path_config: PathConfigArgs,
+pub struct AddParams {
+    pub path_config: PathConfigParams,
     /// Module name
     pub module: String,
     /// Module package name for metadata
@@ -23,7 +23,7 @@ pub struct AddArgs {
     pub deps: Vec<String>,
 }
 
-impl AddArgs {
+impl AddParams {
     pub fn run(&self) -> anyhow::Result<()> {
         self.path_config
             .with_workspace_dir(|workspace_path, config_path| {
@@ -40,7 +40,7 @@ impl AddArgs {
     }
 }
 
-fn upsert_module_config(config: &mut AppConfig, args: &AddArgs, incoming: ConfigModuleMetadata) {
+fn upsert_module_config(config: &mut AppConfig, args: &AddParams, incoming: ConfigModuleMetadata) {
     let module_config = config.modules.entry(args.module.clone()).or_default();
     let merged_metadata = if let Some(existing) = module_config.metadata.take() {
         merge_module_metadata(existing, incoming, args)
@@ -53,7 +53,7 @@ fn upsert_module_config(config: &mut AppConfig, args: &AddArgs, incoming: Config
 fn merge_module_metadata(
     existing: ConfigModuleMetadata,
     incoming: ConfigModuleMetadata,
-    args: &AddArgs,
+    args: &AddParams,
 ) -> ConfigModuleMetadata {
     let features = if args.features.is_empty() {
         if existing.features.is_empty() {
@@ -104,7 +104,7 @@ fn merge_module_metadata(
 
 fn discover_local_modules(
     workspace_path: &Path,
-    args: &AddArgs,
+    args: &AddParams,
 ) -> anyhow::Result<HashMap<String, ConfigModule>> {
     match get_module_name_from_crate(Some(workspace_path)) {
         Ok(modules) => Ok(modules),
@@ -120,7 +120,7 @@ fn discover_local_modules(
 }
 
 fn build_required_metadata(
-    args: &AddArgs,
+    args: &AddParams,
     local_module: Option<&ConfigModule>,
 ) -> anyhow::Result<ConfigModuleMetadata> {
     let mut metadata = local_module.map_or_else(ConfigModuleMetadata::default, |module| {
@@ -150,7 +150,7 @@ fn build_required_metadata(
 }
 
 fn validate_required_metadata(
-    args: &AddArgs,
+    args: &AddParams,
     is_local: bool,
     metadata: &ConfigModuleMetadata,
 ) -> anyhow::Result<()> {
@@ -176,16 +176,16 @@ fn validate_required_metadata(
 
 #[cfg(test)]
 mod tests {
-    use super::{AddArgs, build_required_metadata, upsert_module_config};
+    use super::{AddParams, build_required_metadata, upsert_module_config};
     use crate::app_config::{AppConfig, ModuleConfig};
-    use crate::common::PathConfigArgs;
+    use crate::common::PathConfigParams;
     use crate::module_parser::{Capability, ConfigModule, ConfigModuleMetadata};
     use std::path::PathBuf;
 
     #[test]
     fn build_required_metadata_uses_local_package_and_version() {
-        let args = AddArgs {
-            path_config: PathConfigArgs {
+        let args = AddParams {
+            path_config: PathConfigParams {
                 path: Some(PathBuf::from(".")),
                 config: Some(PathBuf::from(".")),
             },
@@ -216,8 +216,8 @@ mod tests {
 
     #[test]
     fn build_required_metadata_requires_remote_package() {
-        let args = AddArgs {
-            path_config: PathConfigArgs {
+        let args = AddParams {
+            path_config: PathConfigParams {
                 path: Some(PathBuf::from(".")),
                 config: Some(PathBuf::from(".")),
             },
@@ -240,8 +240,8 @@ mod tests {
 
     #[test]
     fn build_required_metadata_requires_remote_version() {
-        let args = AddArgs {
-            path_config: PathConfigArgs {
+        let args = AddParams {
+            path_config: PathConfigParams {
                 path: Some(PathBuf::from(".")),
                 config: Some(PathBuf::from(".")),
             },
@@ -264,8 +264,8 @@ mod tests {
 
     #[test]
     fn build_required_metadata_accepts_remote_with_package_and_version() {
-        let args = AddArgs {
-            path_config: PathConfigArgs {
+        let args = AddParams {
+            path_config: PathConfigParams {
                 path: Some(PathBuf::from(".")),
                 config: Some(PathBuf::from(".")),
             },
@@ -301,8 +301,8 @@ mod tests {
             },
         );
 
-        let args = AddArgs {
-            path_config: PathConfigArgs {
+        let args = AddParams {
+            path_config: PathConfigParams {
                 path: Some(PathBuf::from(".")),
                 config: Some(PathBuf::from(".")),
             },
