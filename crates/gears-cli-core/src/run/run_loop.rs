@@ -1,7 +1,7 @@
-use crate::{app_config, common};
+use super::watch::{WatchAction, WatchPlan, WatchPlanInputs};
+use crate::common;
+use crate::manifest::WatchPolicy;
 use anyhow::{Context, bail};
-use notify::{RecursiveMode, Watcher};
-use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::AtomicBool;
@@ -18,6 +18,8 @@ pub(super) struct RunLoop {
     workspace_path: PathBuf,
     config_path: PathBuf,
     project_name: String,
+    manifest_path: PathBuf,
+    watch_policy: WatchPolicy,
     dependencies: Option<crate::module_parser::CargoTomlDependencies>,
 }
 
@@ -31,12 +33,16 @@ impl RunLoop {
         workspace_path: PathBuf,
         config_path: PathBuf,
         project_name: String,
+        manifest_path: PathBuf,
+        watch_policy: WatchPolicy,
     ) -> Self {
         Self {
             generated_dir,
             workspace_path,
             config_path,
             project_name,
+            manifest_path,
+            watch_policy,
             dependencies: None,
         }
     }
@@ -90,27 +96,16 @@ impl RunLoop {
         let mut watcher =
             notify::recommended_watcher(fs_tx).context("failed to create file watcher")?;
 
-        // On Linux and other systems using inotify, when editors perform atomic saves
-        // (write to temporary file, then rename), the rename event is reported at the directory level,
-        // not the file level. File-level watches can therefore miss these events and fail to detect config changes.
-        // Watching the parent directory is the documented best practice.
-        let config_parent = self
-            .config_path
-            .parent()
-            .context("config path has no parent directory")?;
-        let workspace_manifest = workspace_path.join("Cargo.toml");
-        watcher
-            .watch(config_parent, RecursiveMode::NonRecursive)
-            .context("failed to watch config directory")?;
-        if config_parent != workspace_path.as_path() {
-            watcher
-                .watch(workspace_path, RecursiveMode::NonRecursive)
-                .context("failed to watch workspace directory")?;
-        }
-
-        // Watch dependency paths that have `path` set
-        let mut watched_paths = watch_dependency_paths(&dependencies, &mut watcher, workspace_path);
-        let mut current_deps = dependencies;
+        let watch_plan = WatchPlan::from_policy(
+            &self.watch_policy,
+            WatchPlanInputs {
+                workspace_path,
+                manifest_path: &self.manifest_path,
+                config_path: &self.config_path,
+                dependencies: &dependencies,
+            },
+        )?;
+        watch_plan.watch(&mut watcher)?;
 
         // Event loop - runs until the watcher channel closes
         while let Ok(res_event) = fs_rx.recv() {
@@ -121,74 +116,19 @@ impl RunLoop {
                     continue;
                 }
             };
-            let is_config_change = event.paths.contains(&self.config_path)
-                && matches!(
-                    event.kind,
-                    notify::EventKind::Modify(_)
-                        | notify::EventKind::Create(_)
-                        | notify::EventKind::Remove(_)
-                );
-            let is_workspace_manifest_change = event.paths.contains(&workspace_manifest)
-                && matches!(
-                    event.kind,
-                    notify::EventKind::Modify(_)
-                        | notify::EventKind::Create(_)
-                        | notify::EventKind::Remove(_)
-                );
 
-            if is_config_change || is_workspace_manifest_change {
-                let new_deps = self.dependencies.as_ref().map_or_else(
-                    || {
-                        common::get_config(workspace_path, &self.config_path)
-                            .and_then(app_config::AppConfig::create_dependencies)
-                    },
-                    |dependencies| Ok(dependencies.clone()),
-                );
-                match new_deps {
-                    Ok(new_deps) => {
-                        if new_deps != current_deps {
-                            if let Err(e) = common::generate_server_structure(
-                                workspace_path,
-                                &self.generated_dir,
-                                &self.project_name,
-                                &new_deps,
-                            ) {
-                                eprintln!("failed to regenerate server structure: {e}");
-                            } else {
-                                // Reconcile watched dependency paths
-                                let new_watched = collect_dep_paths(&new_deps, workspace_path);
-                                for old in watched_paths.difference(&new_watched) {
-                                    if let Err(err) = watcher.unwatch(old) {
-                                        eprintln!("failed to unwatch {}: {err}", old.display());
-                                        _ = signal_tx.send(RunSignal::Stop);
-                                        runner_handle.join().map_err(|e| {
-                                            anyhow::anyhow!("runner thread panicked: {e:?}")
-                                        })?;
-                                        return Ok(RunSignal::Rerun);
-                                    }
-                                }
-                                for new_p in new_watched.difference(&watched_paths) {
-                                    if let Err(err) = watcher.watch(new_p, RecursiveMode::Recursive)
-                                    {
-                                        eprintln!("failed to watch {}: {err}", new_p.display());
-                                        _ = signal_tx.send(RunSignal::Stop);
-                                        runner_handle.join().map_err(|e| {
-                                            anyhow::anyhow!("runner thread panicked: {e:?}")
-                                        })?;
-                                        return Ok(RunSignal::Rerun);
-                                    }
-                                }
-                                watched_paths = new_watched;
-                                current_deps = new_deps;
-                            }
-                        }
-                        _ = signal_tx.send(RunSignal::Rerun);
-                    }
-                    Err(e) => eprintln!("failed to reload config: {e}"),
+            match watch_plan.action_for_event(&event)? {
+                Some(WatchAction::Regenerate) => {
+                    _ = signal_tx.send(RunSignal::Stop);
+                    runner_handle
+                        .join()
+                        .map_err(|e| anyhow::anyhow!("runner thread panicked: {e:?}"))?;
+                    return Ok(RunSignal::Rerun);
                 }
-            } else {
-                // A watched dependency path changed
-                _ = signal_tx.send(RunSignal::Rerun);
+                Some(WatchAction::Restart) => {
+                    _ = signal_tx.send(RunSignal::Rerun);
+                }
+                None => {}
             }
         }
 
@@ -276,28 +216,4 @@ fn cargo_run_loop(cargo_dir: &Path, config_path: &Path, signal_rx: &mpsc::Receiv
             _ => return,
         }
     }
-}
-
-fn collect_dep_paths(
-    deps: &crate::module_parser::CargoTomlDependencies,
-    base_path: &Path,
-) -> HashSet<PathBuf> {
-    deps.values()
-        .filter_map(|d| d.path.as_ref())
-        .map(|p| base_path.join(p))
-        .collect()
-}
-
-fn watch_dependency_paths(
-    deps: &crate::module_parser::CargoTomlDependencies,
-    watcher: &mut impl Watcher,
-    base_path: &Path,
-) -> HashSet<PathBuf> {
-    let paths = collect_dep_paths(deps, base_path);
-    for p in &paths {
-        if let Err(e) = watcher.watch(p, RecursiveMode::Recursive) {
-            eprintln!("failed to watch {}: {e}", p.display());
-        }
-    }
-    paths
 }

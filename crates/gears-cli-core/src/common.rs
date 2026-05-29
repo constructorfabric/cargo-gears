@@ -636,6 +636,7 @@ path = "src/lib.rs"
         let resolved = ResolvedManifest {
             app: "app".to_owned(),
             env: "dev".to_owned(),
+            manifest_path: PathBuf::from("/workspace/Gears.toml"),
             workspace_root: PathBuf::from("/workspace"),
             generated_dir: PathBuf::from("/workspace/.generated"),
             config_path: PathBuf::from("/workspace/config.yml"),
