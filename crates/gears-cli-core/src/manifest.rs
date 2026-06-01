@@ -117,7 +117,25 @@ impl ManifestParams {
             }
             ManifestCommand::Ls { format } => {
                 let entries = manifest.entries(&workspace_root, &manifest_path);
-                print_value(format, &entries)
+                match format {
+                    common::OutputFormat::Table => {
+                        for (i, e) in entries.iter().enumerate() {
+                            if i > 0 {
+                                println!();
+                            }
+                            println!("app: {}", e.app);
+                            println!("env: {}", e.env);
+                            if let Some(config) = &e.config {
+                                println!("config: {}", config.display());
+                            }
+                            if let Some(name) = &e.name {
+                                println!("name: {name}");
+                            }
+                        }
+                        Ok(())
+                    }
+                    common::OutputFormat::Json => print_value(format, &entries),
+                }
             }
         }
     }
