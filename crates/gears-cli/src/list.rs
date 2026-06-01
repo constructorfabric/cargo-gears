@@ -1,6 +1,5 @@
-use crate::common::{OutputFormat, Registry, WorkspacePath};
+use crate::common::{ManifestPath, OutputFormat, Registry, WorkspacePath};
 use clap::{Args, Subcommand};
-use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct ListArgs {
@@ -26,9 +25,8 @@ pub enum ListCommand {
 pub struct ConfigsArgs {
     #[command(flatten)]
     workspace: WorkspacePath,
-    /// Path to the Gears manifest file
-    #[arg(long, default_value = gears_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
-    manifest: PathBuf,
+    #[command(flatten)]
+    manifest: ManifestPath,
     /// Output format
     #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
     format: OutputFormat,
@@ -38,9 +36,8 @@ pub struct ConfigsArgs {
 pub struct AppsArgs {
     #[command(flatten)]
     workspace: WorkspacePath,
-    /// Path to the Gears manifest file
-    #[arg(long, default_value = gears_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
-    manifest: PathBuf,
+    #[command(flatten)]
+    manifest: ManifestPath,
     /// Output format
     #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
     format: OutputFormat,
@@ -147,7 +144,7 @@ impl From<ConfigsArgs> for gears_cli_core::list::ConfigsParams {
     fn from(args: ConfigsArgs) -> Self {
         Self {
             path: args.workspace.path,
-            manifest: args.manifest,
+            manifest: args.manifest.manifest,
             format: args.format,
         }
     }
@@ -157,7 +154,7 @@ impl From<AppsArgs> for gears_cli_core::list::AppsParams {
     fn from(args: AppsArgs) -> Self {
         Self {
             path: args.workspace.path,
-            manifest: args.manifest,
+            manifest: args.manifest.manifest,
             format: args.format,
         }
     }

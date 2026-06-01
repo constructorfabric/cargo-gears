@@ -1,4 +1,4 @@
-use crate::common::{OutputFormat, WorkspacePath};
+use crate::common::{ManifestPath, OutputFormat, WorkspacePath};
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
 
@@ -6,9 +6,8 @@ use std::path::PathBuf;
 pub struct ManifestArgs {
     #[command(flatten)]
     workspace: WorkspacePath,
-    /// Path to the Gears manifest file
-    #[arg(long, default_value = gears_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
-    manifest: PathBuf,
+    #[command(flatten)]
+    manifest_path: ManifestPath,
     #[command(subcommand)]
     command: ManifestCommand,
 }
@@ -45,7 +44,7 @@ impl From<ManifestArgs> for gears_cli_core::manifest::ManifestParams {
         };
         Self {
             path,
-            manifest: args.manifest,
+            manifest: args.manifest_path.manifest,
             command,
         }
     }

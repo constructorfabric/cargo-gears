@@ -15,6 +15,13 @@ pub struct WorkspacePath {
 }
 
 #[derive(Args)]
+pub struct ManifestPath {
+    /// Path to the Gears manifest file
+    #[arg(long, default_value = gears_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
+    pub manifest: PathBuf,
+}
+
+#[derive(Args)]
 pub struct PathConfigArgs {
     #[command(flatten)]
     pub workspace: WorkspacePath,
@@ -95,9 +102,8 @@ pub const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
 
 #[derive(Args)]
 pub struct ManifestTargetArgs {
-    /// Path to the Gears manifest file
-    #[arg(long, default_value = gears_cli_core::manifest::DEFAULT_MANIFEST_FILE)]
-    pub manifest: PathBuf,
+    #[command(flatten)]
+    pub manifest_path: ManifestPath,
     /// Manifest app to select (inferred from manifest if omitted)
     #[arg(long)]
     pub app: Option<String>,
@@ -109,7 +115,7 @@ pub struct ManifestTargetArgs {
 impl ManifestTargetArgs {
     pub fn into_selection(self) -> gears_cli_core::manifest::ManifestSelection {
         gears_cli_core::manifest::ManifestSelection {
-            manifest: self.manifest,
+            manifest: self.manifest_path.manifest,
             app: self.app,
             env: self.env,
         }
