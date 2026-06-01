@@ -1118,28 +1118,66 @@ cargo gears list system-modules --verbose
 
 #### `list configs`
 
-List configuration files, their inferred app/environment links, and runtime sections.
-
-**Currently unimplemented** — blocked on the manifest-first design (`Gears.toml`). Requires manifest
-parsing to resolve app/environment links and runtime sections.
+List resolved config file paths for each app/environment defined in the manifest.
 
 Synopsis:
 
 ```bash
-cargo gears list configs [--format table|json|yaml|toml]
+cargo gears list configs [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory
+- **[`--manifest <PATH>`]** Gears manifest path, defaults to `Gears.toml`
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`
+
+Behavior:
+
+- **[manifest-driven]** Reads `Gears.toml` and resolves the config path for every app/environment entry
+- **[graceful on resolution errors]** If a config path cannot be resolved, prints a warning to stderr and
+  continues with remaining entries
+
+Examples:
+
+```bash
+cargo gears list configs -p /tmp/cf-demo
+```
+
+```bash
+cargo gears list configs -p /tmp/cf-demo --format json
 ```
 
 #### `list apps`
 
-List apps, environments, and build outputs.
-
-**Currently unimplemented** — blocked on the manifest-first design (`Gears.toml`). Requires manifest
-parsing to enumerate apps, environments, and build outputs.
+List apps, environments, and their generated build names from the manifest.
 
 Synopsis:
 
 ```bash
-cargo gears list apps [--format table|json|yaml|toml]
+cargo gears list apps [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory
+- **[`--manifest <PATH>`]** Gears manifest path, defaults to `Gears.toml`
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`
+
+Behavior:
+
+- **[manifest-driven]** Reads `Gears.toml` and lists every app/environment pair with its resolved build name
+- **[graceful on resolution errors]** If an entry cannot be resolved, prints a warning to stderr and
+  continues with remaining entries
+
+Examples:
+
+```bash
+cargo gears list apps -p /tmp/cf-demo
+```
+
+```bash
+cargo gears list apps -p /tmp/cf-demo --format json
 ```
 
 ### `test`
@@ -1226,8 +1264,8 @@ cargo gears config db rm <name> [-p <workspace>] -c <config>
 cargo gears list modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
 cargo gears list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
 cargo gears list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
-cargo gears list configs [-f table|json|yaml|toml]           # unimplemented
-cargo gears list apps [-f table|json|yaml|toml]              # unimplemented
+cargo gears list configs [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
+cargo gears list apps [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]
