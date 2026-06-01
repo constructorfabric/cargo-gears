@@ -1,11 +1,7 @@
-mod apps;
-mod configs;
 mod local_modules;
 mod modules;
 mod system_modules;
 
-pub use apps::AppsParams;
-pub use configs::ConfigsParams;
 pub use local_modules::LocalModulesParams;
 pub use modules::ModulesParams;
 pub use system_modules::SystemModulesParams;
@@ -15,8 +11,6 @@ pub enum ListCommand {
     Modules(ModulesParams),
     LocalModules(LocalModulesParams),
     SystemModules(SystemModulesParams),
-    Configs(ConfigsParams),
-    Apps(AppsParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -30,8 +24,6 @@ impl ListParams {
             ListCommand::Modules(args) => args.run(),
             ListCommand::LocalModules(args) => args.run(),
             ListCommand::SystemModules(args) => args.run(),
-            ListCommand::Configs(args) => args.run(),
-            ListCommand::Apps(args) => args.run(),
         }
     }
 }

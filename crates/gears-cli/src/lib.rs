@@ -37,6 +37,7 @@ pub enum Commands {
     /// Orchestrate the linting process of the project
     Lint(lint::LintArgs),
     /// Inspect workspace modules, system modules, and project state
+    #[command(name = "ls")]
     List(list::ListArgs),
     /// Inspect and validate Gears.toml manifests
     Manifest(manifest::ManifestArgs),

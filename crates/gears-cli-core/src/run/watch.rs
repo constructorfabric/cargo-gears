@@ -436,14 +436,12 @@ mod tests {
             ..WatchPolicy::default()
         };
 
-        let err = match WatchPlan::from_policy(
+        let Err(err) = WatchPlan::from_policy(
             &policy,
             inputs(workspace, &manifest_path, &config_path, &dependencies),
-        ) {
-            Ok(_) => panic!("missing include path should fail"),
-            Err(err) => err,
+        ) else {
+            panic!("missing include path should fail")
         };
-
         assert!(err.to_string().contains("can't canonicalize watch path"));
     }
 

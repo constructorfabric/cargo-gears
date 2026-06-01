@@ -9,7 +9,7 @@ use common::parse_command;
 fn parses_list_modules_into_core_command() {
     let command = parse_command(&[
         "gears",
-        "list",
+        "ls",
         "modules",
         "--verbose",
         "--registry",
@@ -33,7 +33,7 @@ fn parses_list_modules_into_core_command() {
 
 #[test]
 fn parses_list_local_modules_into_core_command() {
-    let command = parse_command(&["gears", "list", "local-modules", "--verbose"]);
+    let command = parse_command(&["gears", "ls", "local-modules", "--verbose"]);
 
     assert_eq!(
         command,
@@ -53,7 +53,7 @@ fn parses_list_local_modules_into_core_command() {
 fn parses_list_system_modules_into_core_command() {
     let command = parse_command(&[
         "gears",
-        "list",
+        "ls",
         "system-modules",
         "--verbose",
         "--registry",
@@ -70,36 +70,6 @@ fn parses_list_system_modules_into_core_command() {
                     format: OutputFormat::Table,
                 },
             ),
-        })
-    );
-}
-
-#[test]
-fn parses_list_configs_into_core_command() {
-    let command = parse_command(&["gears", "list", "configs"]);
-
-    assert_eq!(
-        command,
-        GearsCommand::List(gears_cli_core::list::ListParams {
-            command: gears_cli_core::list::ListCommand::Configs(
-                gears_cli_core::list::ConfigsParams {
-                    format: OutputFormat::Table,
-                },
-            ),
-        })
-    );
-}
-
-#[test]
-fn parses_list_apps_into_core_command() {
-    let command = parse_command(&["gears", "list", "apps"]);
-
-    assert_eq!(
-        command,
-        GearsCommand::List(gears_cli_core::list::ListParams {
-            command: gears_cli_core::list::ListCommand::Apps(gears_cli_core::list::AppsParams {
-                format: OutputFormat::Table,
-            },),
         })
     );
 }

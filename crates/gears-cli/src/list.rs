@@ -15,24 +15,6 @@ pub enum ListCommand {
     LocalModules(LocalModulesArgs),
     /// List built-in system modules from the registry
     SystemModules(SystemModulesArgs),
-    /// List configuration files and their manifest links
-    Configs(ConfigsArgs),
-    /// List apps, environments, and build outputs
-    Apps(AppsArgs),
-}
-
-#[derive(Args)]
-pub struct ConfigsArgs {
-    /// Output format
-    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
-    format: OutputFormat,
-}
-
-#[derive(Args)]
-pub struct AppsArgs {
-    /// Output format
-    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
-    format: OutputFormat,
 }
 
 #[derive(Args)]
@@ -95,8 +77,6 @@ impl From<ListCommand> for gears_cli_core::list::ListCommand {
             ListCommand::Modules(args) => Self::Modules(args.into()),
             ListCommand::LocalModules(args) => Self::LocalModules(args.into()),
             ListCommand::SystemModules(args) => Self::SystemModules(args.into()),
-            ListCommand::Configs(args) => Self::Configs(args.into()),
-            ListCommand::Apps(args) => Self::Apps(args.into()),
         }
     }
 }
@@ -127,22 +107,6 @@ impl From<SystemModulesArgs> for gears_cli_core::list::SystemModulesParams {
         Self {
             verbose: args.verbose,
             registry: args.registry,
-            format: args.format,
-        }
-    }
-}
-
-impl From<ConfigsArgs> for gears_cli_core::list::ConfigsParams {
-    fn from(args: ConfigsArgs) -> Self {
-        Self {
-            format: args.format,
-        }
-    }
-}
-
-impl From<AppsArgs> for gears_cli_core::list::AppsParams {
-    fn from(args: AppsArgs) -> Self {
-        Self {
             format: args.format,
         }
     }

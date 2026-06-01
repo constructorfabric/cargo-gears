@@ -116,8 +116,26 @@ impl ManifestParams {
                 print_value(format, &report)
             }
             ManifestCommand::Ls { format } => {
-                let entries = manifest.entries();
-                print_value(format, &entries)
+                let entries = manifest.entries(&workspace_root, &manifest_path);
+                match format {
+                    common::OutputFormat::Table => {
+                        for (i, e) in entries.iter().enumerate() {
+                            if i > 0 {
+                                println!();
+                            }
+                            println!("app: {}", e.app);
+                            println!("env: {}", e.env);
+                            if let Some(config) = &e.config {
+                                println!("config: {}", config.display());
+                            }
+                            if let Some(name) = &e.name {
+                                println!("name: {name}");
+                            }
+                        }
+                        Ok(())
+                    }
+                    common::OutputFormat::Json => print_value(format, &entries),
+                }
             }
         }
     }
@@ -162,19 +180,25 @@ impl Manifest {
         let mut entries = Vec::new();
         for (app, envs) in &self.apps {
             for env in envs.keys() {
-                let entry = ManifestEntry {
-                    app: app.clone(),
-                    env: env.clone(),
-                };
                 match self.resolve(workspace_root, manifest_path, app, env, None) {
                     Ok(r) => entries.push(ValidationReport {
                         error: None,
-                        entry,
+                        entry: ManifestEntry {
+                            app: app.clone(),
+                            env: env.clone(),
+                            config: Some(r.config_path.clone()),
+                            name: Some(r.generated_name.clone()),
+                        },
                         info: Some(r),
                     }),
                     Err(err) => entries.push(ValidationReport {
                         error: Some(err.to_string()),
-                        entry,
+                        entry: ManifestEntry {
+                            app: app.clone(),
+                            env: env.clone(),
+                            config: None,
+                            name: None,
+                        },
                         info: None,
                     }),
                 }
@@ -185,13 +209,24 @@ impl Manifest {
     }
 
     #[must_use]
-    pub fn entries(&self) -> Vec<ManifestEntry> {
+    pub fn entries(&self, workspace_root: &Path, manifest_path: &Path) -> Vec<ManifestEntry> {
         self.apps
             .iter()
             .flat_map(|(app, envs)| {
-                envs.keys().map(|env| ManifestEntry {
-                    app: app.clone(),
-                    env: env.clone(),
+                envs.keys().map(|env| {
+                    let (config, name) =
+                        match self.resolve(workspace_root, manifest_path, app, env, None) {
+                            Ok(resolved) => {
+                                (Some(resolved.config_path), Some(resolved.generated_name))
+                            }
+                            Err(_) => (None, None),
+                        };
+                    ManifestEntry {
+                        app: app.clone(),
+                        env: env.clone(),
+                        config,
+                        name,
+                    }
                 })
             })
             .collect()
@@ -253,7 +288,7 @@ impl Manifest {
     }
 }
 
-fn resolve_manifest_path(workspace_root: &Path, manifest: &Path) -> anyhow::Result<PathBuf> {
+pub fn resolve_manifest_path(workspace_root: &Path, manifest: &Path) -> anyhow::Result<PathBuf> {
     let path = resolve_relative_to(workspace_root, manifest);
     path.canonicalize()
         .with_context(|| format!("can't canonicalize manifest {}", path.display()))
@@ -361,6 +396,10 @@ pub struct ValidationReport {
 pub struct ManifestEntry {
     pub app: String,
     pub env: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 /// Workspace-level defaults for paths and schema version.
