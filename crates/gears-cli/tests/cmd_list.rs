@@ -10,7 +10,7 @@ use common::parse_command;
 fn parses_list_modules_into_core_command() {
     let command = parse_command(&[
         "gears",
-        "list",
+        "ls",
         "modules",
         "--verbose",
         "--registry",
@@ -34,7 +34,7 @@ fn parses_list_modules_into_core_command() {
 
 #[test]
 fn parses_list_local_modules_into_core_command() {
-    let command = parse_command(&["gears", "list", "local-modules", "--verbose"]);
+    let command = parse_command(&["gears", "ls", "local-modules", "--verbose"]);
 
     assert_eq!(
         command,
@@ -54,7 +54,7 @@ fn parses_list_local_modules_into_core_command() {
 fn parses_list_system_modules_into_core_command() {
     let command = parse_command(&[
         "gears",
-        "list",
+        "ls",
         "system-modules",
         "--verbose",
         "--registry",
@@ -77,7 +77,7 @@ fn parses_list_system_modules_into_core_command() {
 
 #[test]
 fn parses_list_configs_into_core_command() {
-    let command = parse_command(&["gears", "list", "configs"]);
+    let command = parse_command(&["gears", "ls", "configs"]);
 
     assert_eq!(
         command,
@@ -95,7 +95,7 @@ fn parses_list_configs_into_core_command() {
 
 #[test]
 fn parses_list_apps_into_core_command() {
-    let command = parse_command(&["gears", "list", "apps"]);
+    let command = parse_command(&["gears", "ls", "apps"]);
 
     assert_eq!(
         command,
