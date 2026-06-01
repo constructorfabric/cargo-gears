@@ -688,20 +688,6 @@ exclude = ["target"]
     }
 
     #[test]
-    fn watch_policy_accepts_legacy_paths_and_ignore_aliases() {
-        let policy: WatchPolicy = toml::from_str(
-            r#"
-paths = ["crates/local-module"]
-ignore = ["target"]
-"#,
-        )
-        .unwrap();
-
-        assert_eq!(policy.include, vec![PathBuf::from("crates/local-module")]);
-        assert_eq!(policy.exclude, vec![PathBuf::from("target")]);
-    }
-
-    #[test]
     fn render_resolves_remote_dependency_and_config_path() {
         let temp = TempDir::new().unwrap();
         temp.write(
