@@ -99,10 +99,10 @@ pub struct RunPolicy {
 pub struct WatchPolicy {
     #[serde(default = "default_true")]
     pub enabled: bool,
-    #[serde(default)]
-    pub paths: Vec<PathBuf>,
-    #[serde(default)]
-    pub ignore: Vec<PathBuf>,
+    #[serde(default, alias = "paths", skip_serializing_if = "Vec::is_empty")]
+    pub include: Vec<PathBuf>,
+    #[serde(default, alias = "ignore", skip_serializing_if = "Vec::is_empty")]
+    pub exclude: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]

@@ -238,6 +238,7 @@ impl Manifest {
         Ok(ResolvedManifest {
             app: app.to_owned(),
             env: env.to_owned(),
+            manifest_path: manifest_path.to_path_buf(),
             workspace_root: workspace_base,
             generated_dir,
             config_path,
@@ -335,6 +336,8 @@ fn version_req_to_metadata(version: &VersionReq) -> Option<String> {
 pub struct ResolvedManifest {
     pub app: String,
     pub env: String,
+    #[serde(skip_serializing)]
+    pub manifest_path: PathBuf,
     pub workspace_root: PathBuf,
     pub generated_dir: PathBuf,
     pub config_path: PathBuf,
@@ -462,20 +465,20 @@ pub struct WatchPolicy {
     /// Enable file watching in run mode.
     #[serde(default = "default_true")]
     pub enabled: bool,
-    /// Extra paths to watch.
-    #[serde(default)]
-    pub paths: Vec<PathBuf>,
-    /// Paths to ignore.
-    #[serde(default)]
-    pub ignore: Vec<PathBuf>,
+    /// Paths to watch. When present, replaces the default watch set.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub include: Vec<PathBuf>,
+    /// Paths to exclude from the effective watch set.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exclude: Vec<PathBuf>,
 }
 
 impl Default for WatchPolicy {
     fn default() -> Self {
         Self {
             enabled: default_true(),
-            paths: vec![],
-            ignore: vec![],
+            include: vec![],
+            exclude: vec![],
         }
     }
 }
@@ -661,6 +664,27 @@ mod tests {
             toml::from_str(include_str!("../../../design/v1/manifest_example.toml")).unwrap();
         assert!(manifest.workspace.config_dir.ends_with("config"));
         assert_eq!(manifest.apps.len(), 1);
+    }
+
+    #[test]
+    fn watch_policy_uses_include_and_exclude_paths() {
+        let policy: WatchPolicy = toml::from_str(
+            r#"
+enabled = true
+include = ["crates/local-module", "Cargo.toml"]
+exclude = ["target"]
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(
+            policy.include,
+            vec![
+                PathBuf::from("crates/local-module"),
+                PathBuf::from("Cargo.toml")
+            ]
+        );
+        assert_eq!(policy.exclude, vec![PathBuf::from("target")]);
     }
 
     #[test]

@@ -778,8 +778,10 @@ Behavior:
 - **[exclusive boolean overrides]** Boolean flag pairs are mutually exclusive. Use either the positive or negative form,
   not both; for example, `--otel --no-otel` is rejected. When neither side is present, the manifest policy is used.
 - **[runs inside generated project]** Executes `cargo run` in `<generated-dir>/<name>/`
-- **[watch mode]** Restarts on config changes, workspace `Cargo.toml` changes, and changes in path-based dependencies
-- **[dependency watch management]** Reconciles watched dependency paths when config dependencies change
+- **[watch mode]** Restarts on runtime config changes and changes in watched local modules; regenerates and reruns when
+  workspace `Cargo.toml` or the selected `Gears.toml` changes
+- **[watch policy]** Manifest `run.watch.include` replaces the default watch set; `run.watch.exclude` removes matching
+  paths from either the default set or an explicit include set
 - **[manual generated-project execution]** If you invoke the generated project or compiled binary yourself instead of
   using `cargo gears run`, you must set `GEARS_CONFIG` manually
 

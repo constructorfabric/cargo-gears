@@ -139,8 +139,8 @@ To override default values(detected members, configs and generated files)
 ```toml
 [apps.app1.dev.run.watch]
 enabled = true
-paths = ["modules", "config/app1-dev.yml", "Gears.toml"]
-ignore = ["target", ".gears"]
+include = ["modules", "config/app1-dev.yml", "Gears.toml"]
+exclude = ["target", ".gears"]
 ```
 
 ### Watch Flags
