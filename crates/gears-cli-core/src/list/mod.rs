@@ -43,6 +43,7 @@ mod tests {
     use crate::config::modules::SYSTEM_REGISTRY_MODULES;
     use crate::module_parser::get_module_name_from_crate;
     use crate::module_parser::test_utils::TempDirExt;
+    use std::fmt::Write;
     use std::path::PathBuf;
     use tempfile::TempDir;
 
@@ -215,9 +216,10 @@ mod tests {
         let mut manifest = String::from("[workspace]\n\n");
         for (app, env) in apps {
             let config_file = format!("{app}-{env}.yml");
-            manifest.push_str(&format!(
+            let _ = write!(
+                manifest,
                 "[apps.{app}.{env}]\nconfig = \"{config_file}\"\n\n"
-            ));
+            );
             temp_dir.write(&format!("config/{config_file}"), "server: {}\n");
         }
 
