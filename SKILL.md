@@ -78,9 +78,7 @@ cargo gears
 ├── ls
 │   ├── modules
 │   ├── local-modules
-│   ├── system-modules
-│   ├── configs
-│   └── apps
+│   └── system-modules
 ├── manifest
 │   ├── validate
 │   └── ls
@@ -1116,70 +1114,6 @@ cargo gears ls system-modules
 cargo gears ls system-modules --verbose
 ```
 
-#### `ls configs`
-
-List resolved config file paths for each app/environment defined in the manifest.
-
-Synopsis:
-
-```bash
-cargo gears ls configs [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
-```
-
-Arguments:
-
-- **[`-p, --path <PATH>`]** Optional workspace directory
-- **[`--manifest <PATH>`]** Gears manifest path, defaults to `Gears.toml`
-- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`
-
-Behavior:
-
-- **[manifest-driven]** Reads `Gears.toml` and resolves the config path for every app/environment entry
-- **[graceful on resolution errors]** If a config path cannot be resolved, prints a warning to stderr and
-  continues with remaining entries
-
-Examples:
-
-```bash
-cargo gears ls configs -p /tmp/cf-demo
-```
-
-```bash
-cargo gears ls configs -p /tmp/cf-demo --format json
-```
-
-#### `ls apps`
-
-List apps, environments, and their generated build names from the manifest.
-
-Synopsis:
-
-```bash
-cargo gears ls apps [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
-```
-
-Arguments:
-
-- **[`-p, --path <PATH>`]** Optional workspace directory
-- **[`--manifest <PATH>`]** Gears manifest path, defaults to `Gears.toml`
-- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`
-
-Behavior:
-
-- **[manifest-driven]** Reads `Gears.toml` and lists every app/environment pair with its resolved build name
-- **[graceful on resolution errors]** If an entry cannot be resolved, prints a warning to stderr and
-  continues with remaining entries
-
-Examples:
-
-```bash
-cargo gears ls apps -p /tmp/cf-demo
-```
-
-```bash
-cargo gears ls apps -p /tmp/cf-demo --format json
-```
-
 ### `test`
 
 Declared in the CLI but **currently unimplemented**.
@@ -1264,8 +1198,6 @@ cargo gears config db rm <name> [-p <workspace>] -c <config>
 cargo gears ls modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
 cargo gears ls local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
 cargo gears ls system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
-cargo gears ls configs [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
-cargo gears ls apps [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]

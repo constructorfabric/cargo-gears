@@ -2,7 +2,6 @@ mod common;
 
 use gears_cli_core::GearsCommand;
 use gears_cli_core::common::{OutputFormat, Registry};
-use std::path::PathBuf;
 
 use common::parse_command;
 
@@ -71,40 +70,6 @@ fn parses_list_system_modules_into_core_command() {
                     format: OutputFormat::Table,
                 },
             ),
-        })
-    );
-}
-
-#[test]
-fn parses_list_configs_into_core_command() {
-    let command = parse_command(&["gears", "ls", "configs"]);
-
-    assert_eq!(
-        command,
-        GearsCommand::List(gears_cli_core::list::ListParams {
-            command: gears_cli_core::list::ListCommand::Configs(
-                gears_cli_core::list::ConfigsParams {
-                    path: None,
-                    manifest: PathBuf::from(gears_cli_core::manifest::DEFAULT_MANIFEST_FILE),
-                    format: OutputFormat::Table,
-                },
-            ),
-        })
-    );
-}
-
-#[test]
-fn parses_list_apps_into_core_command() {
-    let command = parse_command(&["gears", "ls", "apps"]);
-
-    assert_eq!(
-        command,
-        GearsCommand::List(gears_cli_core::list::ListParams {
-            command: gears_cli_core::list::ListCommand::Apps(gears_cli_core::list::AppsParams {
-                path: None,
-                manifest: PathBuf::from(gears_cli_core::manifest::DEFAULT_MANIFEST_FILE),
-                format: OutputFormat::Table,
-            }),
         })
     );
 }
