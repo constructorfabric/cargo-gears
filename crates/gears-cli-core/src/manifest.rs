@@ -253,7 +253,7 @@ impl Manifest {
     }
 }
 
-fn resolve_manifest_path(workspace_root: &Path, manifest: &Path) -> anyhow::Result<PathBuf> {
+pub fn resolve_manifest_path(workspace_root: &Path, manifest: &Path) -> anyhow::Result<PathBuf> {
     let path = resolve_relative_to(workspace_root, manifest);
     path.canonicalize()
         .with_context(|| format!("can't canonicalize manifest {}", path.display()))

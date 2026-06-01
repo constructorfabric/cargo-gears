@@ -43,6 +43,7 @@ mod tests {
     use crate::config::modules::SYSTEM_REGISTRY_MODULES;
     use crate::module_parser::get_module_name_from_crate;
     use crate::module_parser::test_utils::TempDirExt;
+    use std::path::PathBuf;
     use tempfile::TempDir;
 
     /// Scaffolds a temporary Cargo workspace with the given module crates.
@@ -205,6 +206,79 @@ mod tests {
         };
 
         args.run().expect("list modules should succeed");
+    }
+
+    /// Scaffolds a workspace with a Gears.toml manifest and config files.
+    fn scaffold_manifest_workspace(apps: &[(&str, &str)]) -> TempDir {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+
+        let mut manifest = String::from("[workspace]\n\n");
+        for (app, env) in apps {
+            let config_file = format!("{app}-{env}.yml");
+            manifest.push_str(&format!(
+                "[apps.{app}.{env}]\nconfig = \"{config_file}\"\n\n"
+            ));
+            temp_dir.write(&format!("config/{config_file}"), "server: {}\n");
+        }
+
+        temp_dir.write("Gears.toml", &manifest);
+        temp_dir
+    }
+
+    #[test]
+    fn list_configs_runs_successfully() {
+        let temp_dir = scaffold_manifest_workspace(&[("app1", "dev"), ("app1", "prod")]);
+
+        let params = ConfigsParams {
+            path: Some(temp_dir.path().to_path_buf()),
+            manifest: PathBuf::from(crate::manifest::DEFAULT_MANIFEST_FILE),
+            format: OutputFormat::Table,
+        };
+
+        params.run().expect("list configs should succeed");
+    }
+
+    #[test]
+    fn list_configs_json_runs_successfully() {
+        let temp_dir = scaffold_manifest_workspace(&[("app1", "dev")]);
+
+        let params = ConfigsParams {
+            path: Some(temp_dir.path().to_path_buf()),
+            manifest: PathBuf::from(crate::manifest::DEFAULT_MANIFEST_FILE),
+            format: OutputFormat::Json,
+        };
+
+        params
+            .run()
+            .expect("list configs --format json should succeed");
+    }
+
+    #[test]
+    fn list_apps_runs_successfully() {
+        let temp_dir = scaffold_manifest_workspace(&[("app1", "dev"), ("app2", "staging")]);
+
+        let params = AppsParams {
+            path: Some(temp_dir.path().to_path_buf()),
+            manifest: PathBuf::from(crate::manifest::DEFAULT_MANIFEST_FILE),
+            format: OutputFormat::Table,
+        };
+
+        params.run().expect("list apps should succeed");
+    }
+
+    #[test]
+    fn list_apps_json_runs_successfully() {
+        let temp_dir = scaffold_manifest_workspace(&[("app1", "dev")]);
+
+        let params = AppsParams {
+            path: Some(temp_dir.path().to_path_buf()),
+            manifest: PathBuf::from(crate::manifest::DEFAULT_MANIFEST_FILE),
+            format: OutputFormat::Json,
+        };
+
+        params
+            .run()
+            .expect("list apps --format json should succeed");
     }
 
     #[test]

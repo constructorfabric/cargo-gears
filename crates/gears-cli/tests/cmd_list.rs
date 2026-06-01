@@ -2,6 +2,7 @@ mod common;
 
 use gears_cli_core::GearsCommand;
 use gears_cli_core::common::{OutputFormat, Registry};
+use std::path::PathBuf;
 
 use common::parse_command;
 
@@ -83,6 +84,8 @@ fn parses_list_configs_into_core_command() {
         GearsCommand::List(gears_cli_core::list::ListParams {
             command: gears_cli_core::list::ListCommand::Configs(
                 gears_cli_core::list::ConfigsParams {
+                    path: None,
+                    manifest: PathBuf::from(gears_cli_core::manifest::DEFAULT_MANIFEST_FILE),
                     format: OutputFormat::Table,
                 },
             ),
@@ -98,8 +101,10 @@ fn parses_list_apps_into_core_command() {
         command,
         GearsCommand::List(gears_cli_core::list::ListParams {
             command: gears_cli_core::list::ListCommand::Apps(gears_cli_core::list::AppsParams {
+                path: None,
+                manifest: PathBuf::from(gears_cli_core::manifest::DEFAULT_MANIFEST_FILE),
                 format: OutputFormat::Table,
-            },),
+            }),
         })
     );
 }
