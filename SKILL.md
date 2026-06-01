@@ -75,7 +75,7 @@ cargo gears
 │   ├── src
 │   └── topic
 ├── lint
-├── list
+├── ls
 │   ├── modules
 │   ├── local-modules
 │   ├── system-modules
@@ -826,7 +826,7 @@ Behavior:
 
 - **[path activation]** If `-p/--path` is provided, relative manifest paths are resolved from that workspace directory.
 - **[validate]** Parses the manifest and resolves every app/environment entry.
-- **[ls]** Lists configured app/environment pairs.
+- **[ls]** Lists configured app/environment pairs with their resolved config paths and generated build names.
 - **[generated structure]** Use `build --dry-run` or `run --dry-run` to write and print the generated project structure.
 
 ### `build`
@@ -1008,18 +1008,18 @@ cargo gears lint --app app1 --env dev --dylint
 cargo gears lint -p /tmp/cf-demo --app app1 --env dev --dylint
 ```
 
-### `list`
+### `ls`
 
 Inspect workspace modules, system modules, and project state.
 
-#### `list modules`
+#### `ls modules`
 
 List all modules — both system-registry and workspace-discovered — in a single unified view.
 
 Synopsis:
 
 ```bash
-cargo gears list modules [-p <PATH>] [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+cargo gears ls modules [-p <PATH>] [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
 ```
 
 Arguments:
@@ -1038,21 +1038,21 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears list modules
+cargo gears ls modules
 ```
 
 ```bash
-cargo gears list modules -p /tmp/cf-demo --verbose
+cargo gears ls modules -p /tmp/cf-demo --verbose
 ```
 
-#### `list local-modules`
+#### `ls local-modules`
 
 List workspace-discovered modules by scanning Cargo metadata for crates that contain `src/module.rs`.
 
 Synopsis:
 
 ```bash
-cargo gears list local-modules [-p <PATH>] [--verbose] [--format table|json|yaml|toml]
+cargo gears ls local-modules [-p <PATH>] [--verbose] [--format table|json|yaml|toml]
 ```
 
 Arguments:
@@ -1073,21 +1073,21 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears list local-modules
+cargo gears ls local-modules
 ```
 
 ```bash
-cargo gears list local-modules -p /tmp/cf-demo --verbose
+cargo gears ls local-modules -p /tmp/cf-demo --verbose
 ```
 
-#### `list system-modules`
+#### `ls system-modules`
 
 List built-in system modules from the Gears registry.
 
 Synopsis:
 
 ```bash
-cargo gears list system-modules [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+cargo gears ls system-modules [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
 ```
 
 Arguments:
@@ -1100,7 +1100,7 @@ Arguments:
 
 Behavior:
 
-- **[static list]** Without `--verbose`, prints the known system module names and their crate names from a compiled-in
+- **[static listing]** Without `--verbose`, prints the known system module names and their crate names from a compiled-in
   registry
 - **[registry fetch]** With `--verbose`, fetches crate metadata and `src/module.rs` from the registry for each system
   module (concurrent, capped at 4 in-flight requests)
@@ -1109,21 +1109,21 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears list system-modules
+cargo gears ls system-modules
 ```
 
 ```bash
-cargo gears list system-modules --verbose
+cargo gears ls system-modules --verbose
 ```
 
-#### `list configs`
+#### `ls configs`
 
 List resolved config file paths for each app/environment defined in the manifest.
 
 Synopsis:
 
 ```bash
-cargo gears list configs [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
+cargo gears ls configs [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
 ```
 
 Arguments:
@@ -1141,21 +1141,21 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears list configs -p /tmp/cf-demo
+cargo gears ls configs -p /tmp/cf-demo
 ```
 
 ```bash
-cargo gears list configs -p /tmp/cf-demo --format json
+cargo gears ls configs -p /tmp/cf-demo --format json
 ```
 
-#### `list apps`
+#### `ls apps`
 
 List apps, environments, and their generated build names from the manifest.
 
 Synopsis:
 
 ```bash
-cargo gears list apps [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
+cargo gears ls apps [-p <PATH>] [--manifest <Gears.toml>] [-f table|json]
 ```
 
 Arguments:
@@ -1173,11 +1173,11 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears list apps -p /tmp/cf-demo
+cargo gears ls apps -p /tmp/cf-demo
 ```
 
 ```bash
-cargo gears list apps -p /tmp/cf-demo --format json
+cargo gears ls apps -p /tmp/cf-demo --format json
 ```
 
 ### `test`
@@ -1261,11 +1261,11 @@ cargo gears config db add <name> [-p <workspace>] -c <config> ...
 cargo gears config db edit <name> [-p <workspace>] -c <config> ...
 cargo gears config db rm <name> [-p <workspace>] -c <config>
 
-cargo gears list modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
-cargo gears list local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
-cargo gears list system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
-cargo gears list configs [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
-cargo gears list apps [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
+cargo gears ls modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo gears ls local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
+cargo gears ls system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo gears ls configs [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
+cargo gears ls apps [-p <workspace>] [--manifest <Gears.toml>] [-f table|json]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]
