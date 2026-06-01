@@ -170,7 +170,7 @@ pub enum OutputFormat {
 
 pub const DEFAULT_GENERATED_DIR: &str = ".gears";
 
-const CONFIG_PATH_ENV_VAR: &str = "GEARS_CONFIG";
+pub const CONFIG_PATH_ENV_VAR: &str = "GEARS_CONFIG";
 
 const CARGO_CONFIG_TOML: &str = r#"[build]
 target-dir = "../../target"

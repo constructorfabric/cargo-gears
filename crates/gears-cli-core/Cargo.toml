@@ -38,7 +38,13 @@ tempfile = { workspace = true }
 dylint = { workspace = true, optional = true }
 syn = { workspace = true }
 clap = { workspace = true, features = ["derive"], optional = true }
-gears-cli-derive = { version = "0.0.1", path = "../gears-cli-derive" }
+gears-cli-derive = { workspace = true }
+
+guppy = { workspace = true }
+camino = { workspace = true }
+shell-words = { workspace = true }
+nextest-runner = { workspace = true }
+nextest-filtering = { workspace = true }
 
 [lints]
 workspace = true

@@ -120,7 +120,7 @@ The following standards are enforced across all generated code, configuration, a
 | Secure-by-default defaults           | Env-var expansion for secrets; no embedded credentials                |
 | Consistent logging and observability | `--otel` feature flag; standardized tracing config schema             |
 | Built-in linting and guardrails      | `lint` orchestrates fmt, clippy, and custom dylint rules              |
-| Testing conventions                  | `test` orchestrates runners, sets, and coverage with manifest policy  |
+| Testing conventions                  | `test` orchestrates runners, sets, and CLI-selected coverage          |
 | Documentation and discoverability    | `help schema`, `help topic`, `list` commands                          |
 | Backward compatibility               | Versioned manifest schema; `--config` flow preserved                  |
 

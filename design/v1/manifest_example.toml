@@ -46,7 +46,6 @@ feature-set-test = true # inherits the feature set to test
 
 [apps.app1.dev.test]
 runner = "nextest"
-coverage = true
 feature-set = {
     "module1" = [
         ["unit", "integration"],

@@ -172,8 +172,6 @@ pub struct TestPolicy {
     pub r#ref: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runner: Option<TestRunner>,
-    #[serde(default)]
-    pub coverage: bool,
     #[serde(
         default,
         rename = "feature-set",

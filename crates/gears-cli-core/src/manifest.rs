@@ -601,16 +601,14 @@ pub struct Dylint {
     pub skip: Vec<String>,
 }
 
-/// Test policy controlling runner, coverage, and feature-set testing.
+/// Test policy controlling runner and feature-set testing.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TestPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub r#ref: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub runner: Option<TestRunner>,
     #[serde(default)]
-    pub coverage: bool,
+    pub runner: TestRunner,
     #[serde(
         default,
         rename = "feature-set",
@@ -657,10 +655,12 @@ pub enum TemplateSource {
     Embedded,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "kebab-case")]
 pub enum TestRunner {
     Cargo,
+    #[default]
     Nextest,
 }
 

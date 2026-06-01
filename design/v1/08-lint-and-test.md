@@ -131,7 +131,7 @@ custom-command = "./scripts/integration-tests.sh"
 
 ### Coverage
 
-Coverage should be a mode, not a separate runner.
+Coverage is selected by the CLI and runs through the llvm-cov runner.
 
 Preferred tool:
 
