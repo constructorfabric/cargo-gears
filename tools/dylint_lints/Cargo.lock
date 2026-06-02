@@ -681,17 +681,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "de0205_operation_builder"
-version = "0.1.0"
-dependencies = [
- "clippy_utils",
- "dylint_linting",
- "dylint_testing",
- "lint_utils",
- "tokio",
-]
-
-[[package]]
 name = "de0301_no_infra_in_domain"
 version = "0.1.0"
 dependencies = [
@@ -717,16 +706,6 @@ dependencies = [
  "dylint_linting",
  "dylint_testing",
  "http",
- "lint_utils",
-]
-
-[[package]]
-name = "de0309_must_have_domain_model"
-version = "0.1.0"
-dependencies = [
- "clippy_utils",
- "dylint_linting",
- "dylint_testing",
  "lint_utils",
 ]
 
@@ -803,21 +782,6 @@ dependencies = [
  "dylint_testing",
  "lint_utils",
  "serde",
-]
-
-[[package]]
-name = "de0901_gts_string_pattern"
-version = "0.1.0"
-dependencies = [
- "clippy_utils",
- "dylint_linting",
- "dylint_testing",
- "gts",
- "gts-macros",
- "lint_utils",
- "schemars",
- "serde",
- "serde_json",
 ]
 
 [[package]]
