@@ -38,6 +38,15 @@ pub fn is_in_contract_module_ast(
     is_in_contract_path(cx.sess().source_map(), item.span)
 }
 
+/// AST-based helper to check if an item is in a domain module.
+/// This works with EarlyLintPass and checks both file paths and simulated_dir comments.
+pub fn is_in_domain_module_ast(
+    cx: &rustc_lint::EarlyContext<'_>,
+    item: &rustc_ast::Item,
+) -> bool {
+    is_in_domain_path(cx.sess().source_map(), item.span)
+}
+
 pub fn is_in_api_rest_folder(source_map: &SourceMap, span: Span) -> bool {
     check_span_path(source_map, span, "/api/rest/")
 }
