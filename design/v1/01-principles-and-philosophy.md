@@ -10,7 +10,7 @@
 
 ## Overview
 
-The Cyberware CLI is a **deterministic enforcement layer** for the Cyberware framework. It exists because:
+The Gears CLI is a **deterministic enforcement layer** for the Gears framework. It exists because:
 
 - Framework adoption has a high cognitive barrier regardless of developer background.
 - LLM-generated code is fast but non-deterministic and can drift from approved conventions.
@@ -18,28 +18,28 @@ The Cyberware CLI is a **deterministic enforcement layer** for the Cyberware fra
 - Without a canonical tool, teams make divergent decisions that compound over time.
 
 The CLI makes the correct path the easiest path. Every command, default, and validation rule should guide developers
-toward Cyberware-approved patterns without requiring them to read or memorize the framework's internal design.
+toward Gears-approved patterns without requiring them to read or memorize the framework's internal design.
 
 ## Core Principles
 
 ### 1. Convention Over Configuration
 
-Every command has sensible defaults derived from Cyberware conventions. Explicit overrides are available but never
+Every command has sensible defaults derived from Gears conventions. Explicit overrides are available but never
 required for the common case.
 
 - `new` produces a workspace that compiles and runs without further configuration.
 - `lint` runs all quality gates by default; individual suites are opt-in only when narrowing scope.
 - `run` resolves config path, module set, and features from the manifest without requiring flags.
-- Generated project paths follow a deterministic naming convention: `.cyberware/<app>-<env>`.
+- Generated project paths follow a deterministic naming convention: `.gears/<app>-<env>`.
 
 ### 2. Manifest-First Orchestration
 
-The manifest (`Cyberware.toml`) is the single source of truth for what the CLI generates and orchestrates. Runtime
+The manifest (`Gears.toml`) is the single source of truth for what the CLI generates and orchestrates. Runtime
 configuration is the single source of truth for runtime values. This separation eliminates the ambiguity of the current
 config-centric model where dependency metadata and runtime values coexist.
 
 - Manifest answers: **what** to build (apps, environments, modules, features, policies). You can find the schema in [manifest_schema.rs](manifest_schema.rs). And an example in [manifest_example.toml](manifest_example.toml).
-- Runtime config answers: **how** to behave at runtime (endpoints, credentials, tuning). You can find examples of the config files in cyberware-rust repository [quickstart](https://github.com/cyberfabric/cyberware-rust/blob/main/config/quickstart.yaml). More available in config directory [cyberware-rust](https://github.com/cyberfabric/cyberware-rust/blob/main/config/).
+- Runtime config answers: **how** to behave at runtime (endpoints, credentials, tuning). You can find examples of the config files in gears-rust repository [quickstart](https://github.com/constructorfabric/gears-rust/blob/main/config/quickstart.yaml). More available in config directory [gears-rust](https://github.com/constructorfabric/gears-rust/blob/main/config/).
 
 ### 3. Deterministic Outputs
 
@@ -68,7 +68,7 @@ machine-readable.
 
 ### 5. Orchestrate, Don't Replace
 
-The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest` and `cargo-llvm-cov`. 
+The CLI wraps `cargo`, `cargo-generate`, `cargo-clippy`, `cargo-fmt`, `cargo-nextest` and `cargo-llvm-cov`.
 It never reimplements their core functionality.
 
 - `lint` invokes `cargo fmt`, `cargo clippy` and compiled dylint libraries with the right flags, not a custom formatter.
@@ -92,7 +92,7 @@ output is the default for humans; JSON is the stable contract for tools, CI, and
 The CLI never embeds secrets in generated files. Credentials flow through environment variable expansion
 (`${VAR}` syntax) in config files and are resolved at runtime.
 
-- Generated code reads config paths from `CF_CLI_CONFIG`, not hardcoded paths.
+- Generated code reads config paths from `GEARS_CONFIG`, not hardcoded paths.
 - Database passwords in config use `${DB_PASSWORD}` notation.
 - `manifest render` redacts values that look like secrets.
 
@@ -120,7 +120,7 @@ The following standards are enforced across all generated code, configuration, a
 | Secure-by-default defaults           | Env-var expansion for secrets; no embedded credentials                |
 | Consistent logging and observability | `--otel` feature flag; standardized tracing config schema             |
 | Built-in linting and guardrails      | `lint` orchestrates fmt, clippy, and custom dylint rules              |
-| Testing conventions                  | `test` orchestrates runners, sets, and coverage with manifest policy  |
+| Testing conventions                  | `test` orchestrates runners, sets, and CLI-selected coverage          |
 | Documentation and discoverability    | `help schema`, `help topic`, `list` commands                          |
 | Backward compatibility               | Versioned manifest schema; `--config` flow preserved                  |
 
@@ -137,7 +137,7 @@ When making design decisions, apply these tradeoff rules in order:
 3. **Convention over configuration.** If a reasonable default exists, it should be the default. Configuration is for
    exceptions, not the common case.
 
-4. **Explicit over implicit.** When the CLI takes a significant action (generating files, modifying config, invoking), 
+4. **Explicit over implicit.** When the CLI takes a significant action (generating files, modifying config, invoking),
    it should state what it is doing. Use `--dry-run` to preview.
 
 5. **Machine-first, human-friendly.** Design output for programmatic consumption first, then add human-friendly
@@ -156,4 +156,4 @@ The CLI intentionally does not:
 - **Enforce at runtime.** The CLI enforces standards at development time. Runtime enforcement is the framework's
   responsibility.
 - **Provide a GUI.** The CLI is a terminal tool. IDE integration should consume the CLI's JSON output, not replace it.
-- **Support non-Rust languages.** Cyberware is a Rust framework. The CLI is Rust-specific.
+- **Support non-Rust languages.** Gears is a Rust framework. The CLI is Rust-specific.

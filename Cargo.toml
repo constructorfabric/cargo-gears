@@ -1,18 +1,23 @@
 [workspace]
-members = ["crates/cli", "crates/module-parser"]
+members = [
+    "crates/gears-cli",
+    "crates/gears-cli-core",
+    "crates/gears-cli-derive",
+]
 resolver = "3"
 
 [workspace.package]
 version = "0.0.1"
 license-file = "LICENSE"
-authors = ["CyberFabric"]
-repository = "https://github.com/cyberfabric/cf-cli"
-description = "Command-line interface for CyberFabric"
+authors = ["Gears"]
+repository = "https://github.com/constructorfabric/cf-cli"
+description = "Command-line interface for Gears"
 edition = "2024"
 readme = "README.md"
 
 [workspace.dependencies]
-module-parser = { path = "crates/module-parser" }
+gears-cli-derive = { path = "crates/gears-cli-derive" }
+gears-cli-core = { path = "crates/gears-cli-core" }
 
 anyhow = { version = "1.0" }
 clap = { version = "4.5", features = ["derive"] }
@@ -20,10 +25,10 @@ clap = { version = "4.5", features = ["derive"] }
 cargo-generate = { version = "0.23.8" }
 cargo_metadata = { version = "0.23.1" }
 
-dylint = "5.0.0"
+dylint = "=6.0.1"
 
 serde = { version = "1.0", features = ["derive"] }
-serde-saphyr = { version = "0.0.24" }
+serde-saphyr = { version = "0.0.27" }
 serde_json = { version = "1.0" }
 
 toml = { version = "1.1.2", features = ["serde"] }
@@ -40,7 +45,16 @@ syn = { version = "2.0.117", features = ["full"] }
 
 prettyplease = { version = "0.2.37" }
 proc-macro2 = { version = "1.0.106" }
+quote = { version = "1.0" }
 tempfile = { version = "3.27.0" }
+
+# BEGIN related to nextest
+guppy = { version =  "0.17.26" }
+camino = { version = "1.2.2" }
+shell-words = { version =  "1.1.1" }
+nextest-runner = { version =  "0.118.0" }
+nextest-filtering = { version =  "0.21.1" }
+# END related to nextest
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
@@ -52,4 +66,3 @@ struct_excessive_bools = "allow"
 missing_errors_doc = "allow"
 unwrap_used = "deny"
 expect_used = "deny"
-

@@ -52,8 +52,8 @@ Dylint runs embedded custom rules when the binary is built with `dylint-rules`.
 Add lint targets from the manifest:
 
 ```text
-cargo cyberware lint
-cargo cyberware lint --app app1
+cargo gears lint
+cargo gears lint --app app1
 ```
 
 ### Manifest Integration
@@ -105,22 +105,37 @@ command and fail unless `--install-missing-tools` is passed.
 
 ### Testing matrix
 
-Testing matrix is a list of test sets that can be run with `cargo cyberware test --app app1 --env dev --matrix default`.
+Testing matrix is a list of test sets that can be run with `cargo gears test --app app1 --env dev --matrix default`.
 Test execution uses the runtime config declared by the selected environment, for example `apps.app1.dev.config`.
 
 ```toml
 [apps.app1.dev.test.default]
 runner = "nextest"
-feature-set = {
-    "module1" = [
-        ["unit", "integration"],
-        ["sqlite"],
-        ["postgres"],
-        ["fips"],
-        false # disable all features
-    ],
-    "module2" = true, # enable all features
-}
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["unit", "integration"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["sqlite"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["postgres"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["fips"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "no-default-features"
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "default-features"
+
+[[apps.app1.dev.test.default.feature-set.module2]]
+mode = "all-features"
 ```
 
 ```toml
@@ -131,7 +146,7 @@ custom-command = "./scripts/integration-tests.sh"
 
 ### Coverage
 
-Coverage should be a mode, not a separate runner.
+Coverage is selected by the CLI and runs through the llvm-cov runner.
 
 Preferred tool:
 
@@ -142,9 +157,9 @@ cargo llvm-cov
 Suggested commands:
 
 ```text
-cargo cyberware test --coverage
-cargo cyberware test --coverage --coverage-format lcov
-cargo cyberware test --coverage --coverage-format html
+cargo gears test --coverage
+cargo gears test --coverage --coverage-format lcov
+cargo gears test --coverage --coverage-format html
 ```
 
 Coverage format enum:
@@ -156,3 +171,6 @@ Coverage format enum:
 
 Coverage should support module/app filtering where possible, but the first
 implementation can run workspace coverage and label the limitation clearly.
+When feature-set policy expands into multiple runs, coverage artifacts are
+cleaned once before the matrix and reported once after all runs so the final
+report aggregates every collected profile.

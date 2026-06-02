@@ -30,11 +30,11 @@ workspace/app overview as well.
 ## Proposed Commands
 
 ```text
-cargo cyberware list modules
-cargo cyberware list system-modules
-cargo cyberware list local-modules
-cargo cyberware list configs
-cargo cyberware list apps
+cargo gears list modules
+cargo gears list system-modules
+cargo gears list local-modules
+cargo gears list configs
+cargo gears list apps
 ```
 
 ## System Modules
@@ -42,7 +42,7 @@ cargo cyberware list apps
 Command:
 
 ```text
-cargo cyberware list system-modules [--verbose] [--registry crates.io]
+cargo gears list system-modules [--verbose] [--registry crates.io]
 ```
 
 Output should include:
@@ -55,7 +55,7 @@ Output should include:
 - available features
 - whether the module is already used by any manifest app
 
-Initial system module registry can continue to use the ~~current static list~~. There will be a simple registry in 
+Initial system module registry can continue to use the ~~current static list~~. There will be a simple registry in
 the templates directory until we have a better alternative with the resolution of the system modules we have available:
 
 - `credstore`
@@ -82,7 +82,7 @@ persist that resolved value instead of depending on time-relative "latest" wordi
 Command:
 
 ```text
-cargo cyberware list local-modules [--verbose]
+cargo gears list local-modules [--verbose]
 ```
 
 Output should include:
@@ -103,9 +103,9 @@ This can reuse existing `get_module_name_from_crate()` discovery.
 Commands:
 
 ```text
-cargo cyberware list configs
-cargo cyberware list apps
-cargo cyberware list modules --app app1 --env dev
+cargo gears list configs
+cargo gears list apps
+cargo gears list modules --app app1 --env dev
 ```
 
 `list configs` should show:

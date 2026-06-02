@@ -26,7 +26,7 @@ All commands follow these conventions:
 ## Complete Command Tree
 
 ```text
-cargo cyberware
+cargo gears
 │
 ├── new <path>                                        # Initialize workspace (alias: generate workspace)
 │
@@ -34,7 +34,7 @@ cargo cyberware
 │   ├── workspace <path>                              # Full workspace scaffolding
 │   ├── module --template <template> [--name <name>]  # Module scaffolding
 │   ├── config <kind>                                 # Runtime config scaffolding
-│   ├── manifest                                      # Cyberware.toml scaffolding
+│   ├── manifest                                      # Gears.toml scaffolding
 │   └── ai [--skill --provider <p> --agents]          # SKILL.md generation
 │
 ├── manifest
@@ -54,7 +54,7 @@ cargo cyberware
 │
 ├── help
 │   ├── schema <manifest|config|module>             # Schema reference
-│   ├── docs <rust-path>                            # Rust source resolution 
+│   ├── docs <rust-path>                            # Rust source resolution
 │   └── topic <topic>                               # Operational topic docs
 │
 ├── config
@@ -77,7 +77,7 @@ cargo cyberware
 ├── tools                                           # Tool bootstrap (rustup, fmt, clippy)
 ├── run                                             # Generate and run server
 ├── build                                           # Generate and build server
-├── ci                                              # Alias (manifest verify + lint + test + build) 
+├── ci                                              # Alias (manifest verify + lint + test + build)
 └── completions --shell <shell>                     # Generate shell completions
 ```
 
@@ -87,7 +87,7 @@ cargo cyberware
 |---------------|----------------------------------------------|-------------------------------------------------------------|
 | `new`         | Create a new workspace from scratch          | Creates directories and files                               |
 | `generate`    | Scaffold a specific artifact from a template | Creates files, may modify workspace Cargo.toml              |
-| `manifest`    | Inspect or mutate `Cyberware.toml`           | `validate`/`render` are read-only; `add`/`edit`/`rm` mutate |
+| `manifest`    | Inspect or mutate `Gears.toml`           | `validate`/`render` are read-only; `add`/`edit`/`rm` mutate |
 | `list`        | Read-only inspection of workspace state      | None                                                        |
 | `help`        | Read-only documentation and schema output    | None                                                        |
 | `config`      | Mutate runtime config YAML                   | Modifies config file                                        |
@@ -119,7 +119,7 @@ config. Resolved relative to the workspace root after `-w/--workspace` is applie
 
 Available on: `run`, `build`, `lint`, `test`, `manifest`, `list modules`, `list apps`.
 
-`--manifest` overrides automatic `Cyberware.toml` discovery. `--app` and `--env` select the target within the
+`--manifest` overrides automatic `Gears.toml` discovery. `--app` and `--env` select the target within the
 manifest. When the manifest has exactly one app and one environment, they are selected automatically.
 
 ### Dry Run: `--dry-run`
@@ -158,7 +158,7 @@ Every command and subcommand has:
 The CLI generates shell completion scripts for `bash`, `zsh`, `fish`, and `powershell`:
 
 ```bash
-cargo cyberware completions --shell zsh > _cyberware
+cargo gears completions --shell zsh > _gears
 ```
 
 Completion scripts use clap's `clap_complete` crate and include `ValueEnum` variants for all typed arguments.

@@ -2,7 +2,7 @@
 version = 1
 root = "." # default, current working directory
 config-dir = "config" # default
-generated-dir = ".cyberware" # default
+generated-dir = ".gears" # default
 
 [apps.app1.dev]
 config = "app1-dev.yml" # relative from config_dir
@@ -46,17 +46,31 @@ feature-set-test = true # inherits the feature set to test
 
 [apps.app1.dev.test]
 runner = "nextest"
-coverage = true
-feature-set = {
-    "module1" = [
-        ["unit", "integration"],
-        ["sqlite"],
-        ["postgres"],
-        ["fips"],
-        false # disable all features
-    ],
-    "module2" = true, # enable all features
-}
+
+[[apps.app1.dev.test.feature-set.module1]]
+mode = "features"
+features = ["unit", "integration"]
+
+[[apps.app1.dev.test.feature-set.module1]]
+mode = "features"
+features = ["sqlite"]
+
+[[apps.app1.dev.test.feature-set.module1]]
+mode = "features"
+features = ["postgres"]
+
+[[apps.app1.dev.test.feature-set.module1]]
+mode = "features"
+features = ["fips"]
+
+[[apps.app1.dev.test.feature-set.module1]]
+mode = "no-default-features"
+
+[[apps.app1.dev.test.feature-set.module1]]
+mode = "default-features"
+
+[[apps.app1.dev.test.feature-set.module2]]
+mode = "all-features"
 
 [apps.app1.prod]
 config = "app1-prod.yml"
@@ -98,6 +112,6 @@ path = "templates/grpc-service"
 
 [templates.agents.custom-agent]
 source = "git"
-url = "ssh://github.com/cyberware/cf-template-rust.git"
+url = "ssh://github.com/constructorfabric/cf-template-rust.git"
 tag = "0.2"
 subfolder = "Agents/custom-agent"

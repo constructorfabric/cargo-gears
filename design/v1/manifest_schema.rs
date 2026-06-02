@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     #[serde(default)]
@@ -99,10 +99,10 @@ pub struct RunPolicy {
 pub struct WatchPolicy {
     #[serde(default = "default_true")]
     pub enabled: bool,
-    #[serde(default)]
-    pub paths: Vec<PathBuf>,
-    #[serde(default)]
-    pub ignore: Vec<PathBuf>,
+    #[serde(default, alias = "paths", skip_serializing_if = "Vec::is_empty")]
+    pub include: Vec<PathBuf>,
+    #[serde(default, alias = "ignore", skip_serializing_if = "Vec::is_empty")]
+    pub exclude: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
@@ -122,15 +122,13 @@ pub enum BuildProfile {
     Custom(String),
 }
 
-impl TryFrom<String> for BuildProfile {
-    type Error = std::convert::Infallible;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(match value.as_str() {
-            "debug" => BuildProfile::Debug,
-            "release" => BuildProfile::Release,
-            _ => BuildProfile::Custom(value),
-        })
+impl From<String> for BuildProfile {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "debug" => Self::Debug,
+            "release" => Self::Release,
+            _ => Self::Custom(value),
+        }
     }
 }
 
@@ -174,8 +172,6 @@ pub struct TestPolicy {
     pub r#ref: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runner: Option<TestRunner>,
-    #[serde(default)]
-    pub coverage: bool,
     #[serde(
         default,
         rename = "feature-set",
@@ -228,21 +224,21 @@ pub enum TestRunner {
     Nextest,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum ModuleFeatureSet {
-    All(bool),
-    Sets(Vec<FeatureSet>),
-}
+pub type ModuleFeatureSet = Vec<FeatureSet>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(tag = "mode", rename_all = "kebab-case")]
 pub enum FeatureSet {
-    Disabled(bool),
-    Features(Vec<String>),
+    DefaultFeatures,
+    AllFeatures,
+    NoDefaultFeatures,
+    Features {
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        features: Vec<String>,
+    },
 }
 
-fn default_version() -> u32 {
+const fn default_version() -> u32 {
     1
 }
 
@@ -251,7 +247,7 @@ fn default_config_dir() -> PathBuf {
 }
 
 fn default_generated_dir() -> PathBuf {
-    PathBuf::from(".cyberware")
+    PathBuf::from(".gears")
 }
 
 const fn default_true() -> bool {
@@ -272,7 +268,7 @@ mod tests {
         assert_eq!(app.len(), 2);
         let dev = app.get("dev").unwrap();
         let _prod = app.get("prod").unwrap();
-        assert_eq!(dev.lint.clippy, true);
+        assert!(dev.lint.clippy);
         assert_eq!(dev.test.runner.as_ref().unwrap(), &TestRunner::Nextest);
         // Add more assertions if required
     }

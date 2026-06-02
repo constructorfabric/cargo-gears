@@ -15,13 +15,13 @@ The manifest detaches the **orchestration layer** from the **configuration layer
 module dependency metadata that the CLI uses to shape generated `Cargo.toml` and `src/main.rs`. The manifest makes this
 explicit:
 
-- **Manifest** (`Cyberware.toml`): what the CLI builds, how it builds it, and which policies apply.
+- **Manifest** (`Gears.toml`): what the CLI builds, how it builds it, and which policies apply.
 - **Runtime config** (`config/*.yml`): what the generated server reads at runtime.
 
 This separation eliminates metadata duplication, reduces config-file complexity, and makes the CLI's behavior
 inspectable without reading YAML runtime values.
 
-The manifest will be required for the `run`, `test`, `lint` and `build` commands. These commands require the 
+The manifest will be required for the `run`, `test`, `lint` and `build` commands. These commands require the
 orchestration information that the manifest provides.
 
 For the rest of proposed commands, the manifest will not be required. For example: the `generate`, `help`, `list`, `config`, `tools` commands
@@ -31,7 +31,7 @@ For the rest of proposed commands, the manifest will not be required. For exampl
 Default file name:
 
 ```text
-Cyberware.toml
+Gears.toml
 ```
 
 TOML is recommended because the current ecosystem in Rust for handling `toml`, with the `toml_edit` crate, allows us to
@@ -64,13 +64,13 @@ Recommendation: Always use the `package`'s name to be precise.
 ## Commands
 
 ```text
-cargo cyberware manifest [--manifest Cyberware.toml] <CMD>
-cargo cyberware manifest validate
-cargo cyberware manifest ls [flags]
-cargo cyberware manifest add <app> <env> [<module-ref1> <module-ref2> ...]
-cargo cyberware manifest edit <app> <env> [flags]
-cargo cyberware manifest rm <app> <env> <module-ref>
-cargo cyberware manifest render <app> <env>
+cargo gears manifest [--manifest Gears.toml] <CMD>
+cargo gears manifest validate
+cargo gears manifest ls [flags]
+cargo gears manifest add <app> <env> [<module-ref1> <module-ref2> ...]
+cargo gears manifest edit <app> <env> [flags]
+cargo gears manifest rm <app> <env> <module-ref>
+cargo gears manifest render <app> <env>
 ```
 
 `manifest render` should produce the resolved generation model:
@@ -79,7 +79,7 @@ cargo cyberware manifest render <app> <env>
 - module dependency metadata
 - generated Cargo dependencies
 - generated features
-- generated `.cyberware` inputs
+- generated `.gears` inputs
 
 This command is useful for debugging and for LLMs because it exposes the exact
 input to generation without executing Cargo.
@@ -109,6 +109,6 @@ New flow:
    `--config`.
 4. Resolve modules from manifest.
 5. Merge discovered metadata with manifest constraints.
-6. Generate `.cyberware/<app>-<env>` or configured generated name.
+6. Generate `.gears/<app>-<env>` or configured generated name.
 7. Provide the relative path in the first argument to the config file.
 8. Run the selected operation.

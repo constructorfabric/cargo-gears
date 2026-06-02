@@ -26,16 +26,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install Cyberware CLI
-        run: cargo install --git https://github.com/cyberware/cf-cli
+      - name: Install Gears CLI
+        run: cargo install --git https://github.com/constructorfabric/cf-cli
       - name: Validate manifest
-        run: cargo cyberware manifest validate --format json
+        run: cargo gears manifest validate --format json
       - name: Lint
-        run: cargo cyberware lint --app app1 --env prod --strict
+        run: cargo gears lint --app app1 --env prod --strict
       - name: Test
-        run: cargo cyberware test --app app1 --env prod --coverage --coverage-format lcov
+        run: cargo gears test --app app1 --env prod --coverage --coverage-format lcov
       - name: Build
-        run: cargo cyberware build --app app1 --env prod --output binary --release
+        run: cargo gears build --app app1 --env prod --output binary --release
 ```
 
 Or with alias:
@@ -50,10 +50,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install Cyberware CLI
-        run: cargo install --git https://github.com/cyberware/cf-cli
+      - name: Install Gears CLI
+        run: cargo install --git https://github.com/constructorfabric/cf-cli
       - name: Validate manifest
-        run: cargo cyberware ci --app app1 --env prod
+        run: cargo gears ci --app app1 --env prod
 ```
 
 ### Key Patterns
@@ -66,7 +66,7 @@ jobs:
 ### Pre-Flight Check
 
 ```bash
-cargo cyberware build --app app1 --env prod --dry-run --format json | jq '.modules | length'
+cargo gears build --app app1 --env prod --dry-run --format json | jq '.modules | length'
 ```
 
 Dry-run produces the resolved generation model without executing anything. CI can validate the model before committing
@@ -90,14 +90,14 @@ The CLI is designed to be usable by LLM-driven coding agents (Codex, Copilot, Cl
 
 ```text
 1. LLM reads SKILL.md for command reference.
-2. LLM runs: cargo cyberware list modules --format json
+2. LLM runs: cargo gears list modules --format json
 3. LLM parses the JSON to understand available modules.
-4. LLM runs: cargo cyberware manifest render --app app1 --env dev --format json
+4. LLM runs: cargo gears manifest render --app app1 --env dev --format json
 5. LLM parses the generation model to understand the app structure.
 6. LLM writes module code following the patterns in the existing modules.
-7. LLM runs: cargo cyberware lint --format json
+7. LLM runs: cargo gears lint --format json
 8. LLM parses lint results and fixes any issues.
-9. LLM runs: cargo cyberware test --format json
+9. LLM runs: cargo gears test --format json
 10. LLM verifies tests pass.
 ```
 

@@ -1,4 +1,4 @@
-# Cyberware CLI v1 Roadmap
+# Gears CLI v1 Roadmap
 
 This roadmap converts the v1 design documents into implementation work. It is
 organized by dependency order rather than release date: later phases assume the
@@ -9,8 +9,8 @@ core manifest pipeline, output model, and tool orchestration are already in plac
 | Phase | Theme                   | Outcome                                                                      | Source                                                                         |
 |-------|-------------------------|------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
 | 0     | Architecture foundation | Testable crates, shared command/output plumbing, tool runner                 | [02](./02-architecture.md), [03](./03-command-surface.md)                      |
-| 1     | Manifest-first core     | `Cyberware.toml` can be validated, rendered, and used as orchestration input | [04](./04-manifest-and-configuration.md)                                       |
-| 2     | Build and run           | Deterministic `.cyberware/<app>-<env>/` generation plus `run` and `build`    | [09](./09-build-and-run.md)                                                    |
+| 1     | Manifest-first core     | `Gears.toml` can be validated, rendered, and used as orchestration input | [04](./04-manifest-and-configuration.md)                                       |
+| 2     | Build and run           | Deterministic `.gears/<app>-<env>/` generation plus `run` and `build`    | [09](./09-build-and-run.md)                                                    |
 | 3     | Scaffolding             | Workspace, module, config, manifest, build, agent, and skill templates       | [05](./05-scaffolding-and-templates.md)                                        |
 | 4     | Inspection and help     | Machine-readable list/help surfaces for humans, CI, and LLMs                 | [06](./06-list-and-inspection.md), [07](./07-documentation-and-llm-helpers.md) |
 | 5     | Quality gates           | Manifest-aware linting, testing, coverage, and tool bootstrap                | [08](./08-lint-and-test.md)                                                    |
@@ -38,7 +38,7 @@ Some of the work is already done in the codebase, however, it will need a refact
 
 ## Phase 1: Manifest-First Core
 
-- [ ] Implement `Cyberware.toml` parsing from the schema in [manifest_schema.rs](./manifest_schema.rs).
+- [ ] Implement `Gears.toml` parsing from the schema in [manifest_schema.rs](./manifest_schema.rs).
 - [ ] Preserve comments and formatting for manifest edits using `toml_edit`.
 - [ ] Implement manifest discovery with `--manifest` override.
 - [ ] Implement app/environment selection with automatic selection when the
@@ -47,8 +47,8 @@ Some of the work is already done in the codebase, however, it will need a refact
 - [ ] Validate unknown apps/environments, unknown module reference kinds,
   unresolved local modules, unresolved remote modules, duplicate packages,
   dependency conflicts, unsupported policies, and incompatible FIPS requests.
-- [ ] Implement `cargo cyberware manifest validate`.
-- [ ] Implement `cargo cyberware manifest render` as the canonical resolved
+- [ ] Implement `cargo gears manifest validate`.
+- [ ] Implement `cargo gears manifest render` as the canonical resolved
   generation model for build, run, CI, and LLM context.
 - [ ] Implement manifest mutation commands: `add`, `edit`, `rm`, and `migrate`.
 - [ ] Keep the existing `--config` flow working during migration.
@@ -56,15 +56,15 @@ Some of the work is already done in the codebase, however, it will need a refact
 
 ## Phase 2: Build and Run
 
-- [ ] Generate deterministic server projects under `.cyberware/<app>-<env>/`
-  or `.cyberware/<name>/` when `--name` is provided.
-- [ ] Generate `.cyberware/<name>/Cargo.toml` from resolved module references,
+- [ ] Generate deterministic server projects under `.gears/<app>-<env>/`
+  or `.gears/<name>/` when `--name` is provided.
+- [ ] Generate `.gears/<name>/Cargo.toml` from resolved module references,
   features, versions, and path dependencies.
-- [ ] Generate `.cyberware/<name>/src/main.rs` with the configured module list and runtime config loading.
-- [ ] Generate `.cyberware/<name>/.cargo/config.toml` to reuse the workspace target directory.
-- [ ] Add `cargo cyberware run` with manifest selection, config override,
+- [ ] Generate `.gears/<name>/src/main.rs` with the configured module list and runtime config loading.
+- [ ] Generate `.gears/<name>/.cargo/config.toml` to reuse the workspace target directory.
+- [ ] Add `cargo gears run` with manifest selection, config override,
   `--release`, feature flags, `--clean`, and `--dry-run`.
-- [ ] Add `cargo cyberware build` with the same pipeline and output selection.
+- [ ] Add `cargo gears build` with the same pipeline and output selection.
 - [ ] Implement CLI/manifest/default precedence for run and build settings.
 - [ ] Implement `--otel`, `--no-otel`, `--fips`, and `--no-fips`.
 - [ ] Warn when FIPS is enabled outside production environments.
@@ -72,7 +72,7 @@ Some of the work is already done in the codebase, however, it will need a refact
 - [ ] Implement `--dry-run --format json` without generating files or invoking Cargo.
 - [ ] Preserve existing watch behavior while adding manifest app/env selection.
 - [ ] Add watch path customization from manifest policy after the basic watch flow is stable.
-- [ ] Ensure `.cyberware/` is ignored, derived, reproducible, and safe to delete.
+- [ ] Ensure `.gears/` is ignored, derived, reproducible, and safe to delete.
 
 ## Phase 3: Scaffolding and Templates
 
@@ -80,10 +80,10 @@ Some of the work is already done in the codebase, however, it will need a refact
 - [ ] Resolve template sources from Git, local paths, and embedded fallback files.
 - [ ] Use cargo-generate bindings for template execution.
 - [ ] Pass normalized template variables for project names, module names, and feature selections.
-- [ ] Add `cargo cyberware generate workspace <path>` and keep `new <path>` as an alias.
+- [ ] Add `cargo gears generate workspace <path>` and keep `new <path>` as an alias.
 - [ ] Generate canonical workspaces with `Cargo.toml`, `modules/`, `config/`,
-  `Cyberware.toml`, `.gitignore`, and optional AI/build assets.
-- [ ] Add `cargo cyberware generate module --template <template> --name <name>`.
+  `Gears.toml`, `.gitignore`, and optional AI/build assets.
+- [ ] Add `cargo gears generate module --template <template> --name <name>`.
 - [ ] Support initial module templates: `background-worker`, `api-db-handler`,
   `api-gateway`, `grpc-service`, and `oop-module`.
 - [ ] Wire generated modules and SDK crates into workspace members.
@@ -99,25 +99,25 @@ Some of the work is already done in the codebase, however, it will need a refact
 
 ## Phase 4: Inspection and Help
 
-- [ ] Implement `cargo cyberware list modules`.
-- [ ] Implement `cargo cyberware list system-modules`.
-- [ ] Implement `cargo cyberware list local-modules`.
-- [ ] Implement `cargo cyberware list configs`.
-- [ ] Implement `cargo cyberware list apps`.
+- [ ] Implement `cargo gears list modules`.
+- [ ] Implement `cargo gears list system-modules`.
+- [ ] Implement `cargo gears list local-modules`.
+- [ ] Implement `cargo gears list configs`.
+- [ ] Implement `cargo gears list apps`.
 - [ ] Reuse existing module discovery from Cargo metadata and `src/module.rs`.
 - [ ] Add a simple system module registry until remote registry resolution is available.
 - [ ] Include resolved versions, capabilities, dependencies, features, and app/env usage in list output.
-- [ ] Add `cargo cyberware help schema <manifest|config|module>`.
+- [ ] Add `cargo gears help schema <manifest|config|module>`.
 - [ ] Generate schema help from the same Rust types used by parsing where possible.
-- [ ] Add `cargo cyberware help docs <rust-path>` as an alias for the existing`docs` command.
-- [ ] Add `cargo cyberware help topic <topic>` for `manifest`, `module-refs`, `generated-server`, `fips`, and `otel`.
+- [ ] Add `cargo gears help docs <rust-path>` as an alias for the existing`docs` command.
+- [ ] Add `cargo gears help topic <topic>` for `manifest`, `module-refs`, `generated-server`, `fips`, and `otel`.
 
 ## Phase 5: Lint, Test, and Coverage
 
-- [ ] Make `cargo cyberware lint` manifest-aware with `--app` and `--env`.
+- [ ] Make `cargo gears lint` manifest-aware with `--app` and `--env`.
 - [ ] Preserve existing lint modes for fmt, clippy, dylint, strict, and workspace checks.
 - [ ] Apply manifest lint policy for clippy, fmt, feature-set testing, and dylint skips.
-- [ ] Add `cargo cyberware test` with runner resolution from CLI, app policy, workspace default, then `cargo-test`.
+- [ ] Add `cargo gears test` with runner resolution from CLI, app policy, workspace default, then `cargo-test`.
 - [ ] Support runner enum values `cargo-test` and `nextest`. If possible, by including nextest as a dependency instead
   of relying on the system having it installed.
 - [ ] Print exact "install" commands for missing optional tools.
@@ -130,7 +130,7 @@ Some of the work is already done in the codebase, however, it will need a refact
 
 ## Phase 6: CI and Automation
 
-- [ ] Add `cargo cyberware ci` as an alias for manifest validation, lint, test, and build.
+- [ ] Add `cargo gears ci` as an alias for manifest validation, lint, test, and build.
 - [ ] Make `ci` read app/env lint, test, and build policy from the manifest.
 - [ ] Support strict CI behavior that turns warnings into failures.
 - [ ] Provide generated or documented GitHub Actions workflow examples.
