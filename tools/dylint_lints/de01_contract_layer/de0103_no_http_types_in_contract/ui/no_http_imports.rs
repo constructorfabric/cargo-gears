@@ -1,7 +1,7 @@
-// simulated_dir=/cyberfabric/modules/some_module/contract/
+// simulated_dir=/cyberfabric/modules/some_module/domain/
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-// Should not trigger DE0103 - HTTP types in contract
+// Should not trigger DE0103 - HTTP types in domain
 pub enum OrderStatus {
     Pending,
     Confirmed,
@@ -10,7 +10,7 @@ pub enum OrderStatus {
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-// Should not trigger DE0103 - HTTP types in contract
+// Should not trigger DE0103 - HTTP types in domain
 pub struct OrderResult {
     pub status: OrderStatus,
 }

@@ -6,24 +6,24 @@ extern crate rustc_ast;
 use rustc_ast::{Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 
-use lint_utils::is_in_contract_module_ast;
+use lint_utils::is_in_domain_module_ast;
 
 dylint_linting::declare_pre_expansion_lint! {
     /// ### What it does
     ///
-    /// Checks that structs and enums in contract modules do not use the `api_dto` attribute macro.
+    /// Checks that structs and enums in domain modules do not use the `api_dto` attribute macro.
     ///
     /// ### Why is this bad?
     ///
-    /// Contract models should remain independent of API serialization concerns.
+    /// Domain models should remain independent of API serialization concerns.
     /// The `api_dto` macro is specifically designed for API DTOs (Data Transfer Objects)
-    /// and should only be used in the API layer, not in contract models.
+    /// and should only be used in the API layer, not in domain models.
     ///
     /// ### Example
     ///
     /// ```rust
-    /// // Bad - contract model uses api_dto
-    /// mod contract {
+    /// // Bad - domain model uses api_dto
+    /// mod domain {
     ///     #[modkit_macros::api_dto(request, response)]
     ///     pub struct User { pub id: String }
     /// }
@@ -32,8 +32,8 @@ dylint_linting::declare_pre_expansion_lint! {
     /// Use instead:
     ///
     /// ```rust
-    /// // Good - contract model without api_dto
-    /// mod contract {
+    /// // Good - domain model without api_dto
+    /// mod domain {
     ///     pub struct User { pub id: String }
     /// }
     ///
@@ -45,7 +45,7 @@ dylint_linting::declare_pre_expansion_lint! {
     /// ```
     pub DE0104_NO_API_DTO_IN_CONTRACT,
     Deny,
-    "contract models should not use api_dto macro (DE0104)"
+    "domain models should not use api_dto macro (DE0104)"
 }
 
 impl EarlyLintPass for De0104NoApiDtoInContract {
@@ -55,7 +55,7 @@ impl EarlyLintPass for De0104NoApiDtoInContract {
             return;
         }
 
-        if !is_in_contract_module_ast(cx, item) {
+        if !is_in_domain_module_ast(cx, item) {
             return;
         }
 
@@ -78,8 +78,8 @@ impl EarlyLintPass for De0104NoApiDtoInContract {
 
                 if is_api_dto {
                     cx.span_lint(DE0104_NO_API_DTO_IN_CONTRACT, attr.span, |diag| {
-                        diag.primary_message("contract type should not use `api_dto` macro (DE0104)");
-                        diag.help("api_dto is for API DTOs; use plain structs in contract/ and create DTOs in api/rest/");
+                        diag.primary_message("domain type should not use `api_dto` macro (DE0104)");
+                        diag.help("api_dto is for API DTOs; use plain structs in domain/ and create DTOs in api/rest/");
                     });
                 }
             }
@@ -97,6 +97,6 @@ mod tests {
     #[test]
     fn test_comment_annotations_match_stderr() {
         let ui_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("ui");
-        lint_utils::test_comment_annotations_match_stderr(&ui_dir, "DE0104", "api_dto in contract");
+        lint_utils::test_comment_annotations_match_stderr(&ui_dir, "DE0104", "api_dto in domain");
     }
 }

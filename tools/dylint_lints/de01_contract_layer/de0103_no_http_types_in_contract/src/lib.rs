@@ -6,24 +6,24 @@ extern crate rustc_ast;
 use rustc_ast::{Item, ItemKind, UseTree, UseTreeKind};
 use rustc_lint::{EarlyLintPass, LintContext};
 
-use lint_utils::is_in_contract_module_ast;
+use lint_utils::is_in_domain_module_ast;
 
 dylint_linting::declare_early_lint! {
     /// ### What it does
     ///
-    /// Checks that contract modules do not import HTTP-specific types.
+    /// Checks that domain modules do not import HTTP-specific types.
     ///
     /// ### Why is this bad?
     ///
-    /// Contract modules should be transport-agnostic. HTTP is just one possible
-    /// transport layer. Using HTTP types in contracts couples the domain logic
+    /// Domain modules should be transport-agnostic. HTTP is just one possible
+    /// transport layer. Using HTTP types in domain couples the domain logic
     /// to a specific transport mechanism.
     ///
     /// ### Example
     ///
     /// ```rust
-    /// // Bad - HTTP types in contract
-    /// mod contract {
+    /// // Bad - HTTP types in domain
+    /// mod domain {
     ///     use http::StatusCode\;
     ///
     ///     pub struct OrderResult {
@@ -35,8 +35,8 @@ dylint_linting::declare_early_lint! {
     /// Use instead:
     ///
     /// ```rust
-    /// // Good - domain types in contract
-    /// mod contract {
+    /// // Good - domain types
+    /// mod domain {
     ///     pub enum OrderStatus {
     ///         Pending,
     ///         Confirmed,
@@ -56,7 +56,7 @@ dylint_linting::declare_early_lint! {
     /// ```
     pub DE0103_NO_HTTP_TYPES_IN_CONTRACT,
     Deny,
-    "contract modules should not reference HTTP-specific types (DE0103)"
+    "domain modules should not reference HTTP-specific types (DE0103)"
 }
 
 const HTTP_TYPE_PATTERNS: &[&str] = &[
@@ -101,7 +101,7 @@ fn use_tree_to_string(tree: &UseTree) -> String {
     }
 }
 
-fn check_use_in_contract(cx: &rustc_lint::EarlyContext<'_>, item: &Item) {
+fn check_use_in_domain(cx: &rustc_lint::EarlyContext<'_>, item: &Item) {
     let ItemKind::Use(use_tree) = &item.kind else {
         return;
     };
@@ -110,9 +110,9 @@ fn check_use_in_contract(cx: &rustc_lint::EarlyContext<'_>, item: &Item) {
     for pattern in HTTP_TYPE_PATTERNS {
         if path_str.contains(pattern) {
             cx.span_lint(DE0103_NO_HTTP_TYPES_IN_CONTRACT, item.span, |diag| {
-                diag.primary_message("contract module imports HTTP type (DE0103)");
+                diag.primary_message("domain module imports HTTP type (DE0103)");
                 diag.help(
-                    "contract modules should be transport-agnostic; move HTTP types to api/rest/",
+                    "domain modules should be transport-agnostic; move HTTP types to api/rest/",
                 );
             });
             break;
@@ -122,9 +122,9 @@ fn check_use_in_contract(cx: &rustc_lint::EarlyContext<'_>, item: &Item) {
 
 impl EarlyLintPass for De0103NoHttpTypesInContract {
     fn check_item(&mut self, cx: &rustc_lint::EarlyContext<'_>, item: &Item) {
-        // Check use statements in file-based contract modules
-        if matches!(item.kind, ItemKind::Use(_)) && is_in_contract_module_ast(cx, item) {
-            check_use_in_contract(cx, item);
+        // Check use statements in file-based domain modules
+        if matches!(item.kind, ItemKind::Use(_)) && is_in_domain_module_ast(cx, item) {
+            check_use_in_domain(cx, item);
         }
     }
 }
@@ -142,7 +142,7 @@ mod tests {
         lint_utils::test_comment_annotations_match_stderr(
             &ui_dir,
             "DE0103",
-            "HTTP types in contract",
+            "HTTP types in domain",
         );
     }
 }

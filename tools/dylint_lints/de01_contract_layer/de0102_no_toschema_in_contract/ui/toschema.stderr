@@ -1,4 +1,4 @@
-error: contract type should not derive `ToSchema` (DE0102)
+error: domain type should not derive `ToSchema` (DE0102)
   --> $DIR/toschema.rs:6:1
    |
 LL | #[derive(Debug, Clone, ToSchema)]
@@ -7,7 +7,7 @@ LL | #[derive(Debug, Clone, ToSchema)]
    = help: ToSchema is an OpenAPI concern; use DTOs in api/rest/ instead
    = note: `#[deny(de0102_no_toschema_in_contract)]` on by default
 
-error: contract type should not derive `ToSchema` (DE0102)
+error: domain type should not derive `ToSchema` (DE0102)
   --> $DIR/toschema.rs:15:1
    |
 LL | #[derive(Debug, Clone, ToSchema)]
@@ -15,7 +15,7 @@ LL | #[derive(Debug, Clone, ToSchema)]
    |
    = help: ToSchema is an OpenAPI concern; use DTOs in api/rest/ instead
 
-error: contract type should not derive `ToSchema` (DE0102)
+error: domain type should not derive `ToSchema` (DE0102)
   --> $DIR/toschema.rs:23:1
    |
 LL | #[derive(Debug, Clone, ToSchema)]

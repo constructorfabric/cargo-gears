@@ -6,23 +6,23 @@ extern crate rustc_ast;
 use rustc_ast::{Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 
-use lint_utils::is_in_contract_path;
+use lint_utils::is_in_domain_path;
 
 dylint_linting::declare_pre_expansion_lint! {
     /// ### What it does
     ///
-    /// Checks that structs and enums in contract modules do not derive ToSchema.
+    /// Checks that structs and enums in domain modules do not derive ToSchema.
     ///
     /// ### Why is this bad?
     ///
-    /// Contract models should remain independent of OpenAPI documentation concerns.
+    /// Domain models should remain independent of OpenAPI documentation concerns.
     /// ToSchema is for API documentation and should only be used on DTOs in the API layer.
     ///
     /// ### Example
     ///
     /// ```rust
-    /// // Bad - contract model derives ToSchema
-    /// mod contract {
+    /// // Bad - domain model derives ToSchema
+    /// mod domain {
     ///     use utoipa::ToSchema;
     ///     #[derive(ToSchema)]
     ///     pub struct Product { pub id: String }
@@ -32,8 +32,8 @@ dylint_linting::declare_pre_expansion_lint! {
     /// Use instead:
     ///
     /// ```rust
-    /// // Good - contract model without ToSchema
-    /// mod contract {
+    /// // Good - domain model without ToSchema
+    /// mod domain {
     ///     pub struct Product { pub id: String }
     /// }
     ///
@@ -47,7 +47,7 @@ dylint_linting::declare_pre_expansion_lint! {
     /// ```
     pub DE0102_NO_TOSCHEMA_IN_CONTRACT,
     Deny,
-    "contract models should not have ToSchema derive (DE0102)"
+    "domain models should not have ToSchema derive (DE0102)"
 }
 
 impl EarlyLintPass for De0102NoToschemaInContract {
@@ -57,7 +57,7 @@ impl EarlyLintPass for De0102NoToschemaInContract {
             return;
         }
 
-        if !is_in_contract_path(cx.sess().source_map(), item.span) {
+        if !is_in_domain_path(cx.sess().source_map(), item.span) {
             return;
         }
 
@@ -69,7 +69,7 @@ impl EarlyLintPass for De0102NoToschemaInContract {
             // Handles: ToSchema, utoipa::ToSchema, ::utoipa::ToSchema
             if lint_utils::is_utoipa_trait(&segments, "ToSchema") {
                 cx.span_lint(DE0102_NO_TOSCHEMA_IN_CONTRACT, attr.span, |diag| {
-                    diag.primary_message("contract type should not derive `ToSchema` (DE0102)");
+                    diag.primary_message("domain type should not derive `ToSchema` (DE0102)");
                     diag.help("ToSchema is an OpenAPI concern; use DTOs in api/rest/ instead");
                 });
             }
@@ -90,7 +90,7 @@ mod tests {
         lint_utils::test_comment_annotations_match_stderr(
             &ui_dir,
             "DE0102",
-            "ToSchema in contract",
+            "ToSchema in domain",
         );
     }
 }

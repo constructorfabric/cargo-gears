@@ -1,6 +1,6 @@
-// simulated_dir=/cyberfabric/modules/some_module/contract/
+// simulated_dir=/cyberfabric/modules/some_module/domain/
 #[allow(dead_code)]
-// Should not trigger DE0101 - Serde in contract
+// Should not trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, PartialEq)]
 pub struct Invoice {
     pub id: String,
@@ -8,7 +8,7 @@ pub struct Invoice {
 }
 
 #[allow(dead_code)]
-// Should not trigger DE0101 - Serde in contract
+// Should not trigger DE0101 - Serde in domain
 #[derive(Clone, PartialEq)]
 pub enum OrderStatus {
     Pending,

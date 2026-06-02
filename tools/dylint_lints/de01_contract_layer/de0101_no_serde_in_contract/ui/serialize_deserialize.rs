@@ -1,8 +1,8 @@
-// simulated_dir=/cyberfabric/modules/some_module/contract/
+// simulated_dir=/cyberfabric/modules/some_module/domain/
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
-// Should trigger DE0101 - Serde in contract
+// Should trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub id: String,
@@ -10,7 +10,7 @@ pub struct User {
 }
 
 #[allow(dead_code)]
-// Should trigger DE0101 - Serde in contract
+// Should trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, Serialize)]
 pub struct Product {
     pub id: String,
@@ -18,7 +18,7 @@ pub struct Product {
 }
 
 #[allow(dead_code)]
-// Should trigger DE0101 - Serde in contract
+// Should trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, Deserialize)]
 pub struct Order {
     pub id: String,
@@ -26,7 +26,7 @@ pub struct Order {
 }
 
 #[allow(dead_code)]
-// Should not trigger DE0101 - Serde in contract
+// Should not trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, PartialEq)]
 pub struct Invoice {
     pub id: String,
@@ -34,7 +34,7 @@ pub struct Invoice {
 }
 
 #[allow(dead_code)]
-// Should trigger DE0101 - Serde in contract
+// Should trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UserRole {
     Admin,
@@ -43,7 +43,7 @@ pub enum UserRole {
 }
 
 #[allow(dead_code)]
-// Should not trigger DE0101 - Serde in contract
+// Should not trigger DE0101 - Serde in domain
 #[derive(Debug, Clone, PartialEq)]
 pub enum OrderStatus {
     Pending,

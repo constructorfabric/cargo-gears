@@ -1,6 +1,6 @@
-// simulated_dir=/cyberfabric/modules/some_module/contract/
+// simulated_dir=/cyberfabric/modules/some_module/domain/
 #[allow(dead_code)]
-// Should not trigger DE0102 - ToSchema in contract
+// Should not trigger DE0102 - ToSchema in domain
 #[derive(Debug, Clone, PartialEq)]
 pub struct Product {
     pub id: String,
@@ -9,7 +9,7 @@ pub struct Product {
 }
 
 #[allow(dead_code)]
-// Should not trigger DE0102 - ToSchema in contract
+// Should not trigger DE0102 - ToSchema in domain
 #[derive(Clone, PartialEq)]
 pub enum Status {
     Active,

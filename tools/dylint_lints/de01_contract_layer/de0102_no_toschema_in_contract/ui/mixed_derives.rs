@@ -1,8 +1,8 @@
-// simulated_dir=/cyberfabric/modules/some_module/contract/
+// simulated_dir=/cyberfabric/modules/some_module/domain/
 use utoipa::ToSchema;
 
 #[allow(dead_code)]
-// Should trigger DE0102 - ToSchema in contract
+// Should trigger DE0102 - ToSchema in domain
 #[derive(Debug, Clone, ToSchema)]
 pub struct Product {
     pub id: String,
@@ -11,7 +11,7 @@ pub struct Product {
 }
 
 #[allow(dead_code)]
-// Should not trigger DE0102 - ToSchema in contract
+// Should not trigger DE0102 - ToSchema in domain
 #[derive(Debug, Clone, PartialEq)]
 pub struct Order {
     pub id: String,
@@ -19,7 +19,7 @@ pub struct Order {
 }
 
 #[allow(dead_code)]
-// Should trigger DE0102 - ToSchema in contract
+// Should trigger DE0102 - ToSchema in domain
 #[derive(Debug, Clone, ToSchema)]
 pub enum Status {
     Active,
@@ -28,7 +28,7 @@ pub enum Status {
 }
 
 #[allow(dead_code)]
-// Should not trigger DE0102 - ToSchema in contract
+// Should not trigger DE0102 - ToSchema in domain
 #[derive(Clone, PartialEq)]
 pub enum Priority {
     High,

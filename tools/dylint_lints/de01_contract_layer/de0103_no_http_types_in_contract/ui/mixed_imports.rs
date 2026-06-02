@@ -1,7 +1,7 @@
-// simulated_dir=/cyberfabric/modules/some_module/contract/
-// Should not trigger DE0103 - HTTP types in contract
+// simulated_dir=/cyberfabric/modules/some_module/domain/
+// Should not trigger DE0103 - HTTP types in domain
 use std::collections::HashMap;
-// Should trigger DE0103 - HTTP types in contract
+// Should trigger DE0103 - HTTP types in domain
 use http::StatusCode;
 
 #[derive(Debug, Clone)]
