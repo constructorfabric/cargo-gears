@@ -23,27 +23,42 @@ use nextest_runner::{
     test_filter::{FilterBound, RunIgnored, TestFilter},
     test_output::CaptureStrategy,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Cursor, Write};
 use std::path::Path;
 use std::process::Stdio;
 use std::sync::Arc;
 
 pub(super) fn run(plan: &TestPlan) -> anyhow::Result<()> {
+    run_with_env(plan, &[])
+}
+
+pub fn run_with_env(plan: &TestPlan, extra_env: &[(String, String)]) -> anyhow::Result<()> {
     for run in &plan.runs {
-        run_nextest(plan, run)?;
+        run_nextest(plan, run, extra_env)?;
     }
 
     Ok(())
 }
 
-fn run_nextest(plan: &TestPlan, run: &TestRun) -> anyhow::Result<()> {
+pub(super) fn run_nextest(
+    plan: &TestPlan,
+    run: &TestRun,
+    extra_env: &[(String, String)],
+) -> anyhow::Result<()> {
     let workspace_root = utf8_path(&plan.workspace_root, "workspace root")?;
     let graph_json = cargo_metadata_json(plan, run)?;
     let graph = PackageGraph::from_json(&graph_json).context("failed to parse cargo metadata")?;
     let build_platforms = detect_build_platforms()?;
-    let binary_list = Arc::new(build_binary_list(plan, run, &graph, build_platforms)?);
-    let cargo_config = cargo_config_with_gears_config(&workspace_root, &plan.config_path)?;
+    let binary_list = Arc::new(build_binary_list(
+        plan,
+        run,
+        &graph,
+        build_platforms,
+        extra_env,
+    )?);
+    let cargo_config =
+        cargo_config_with_gears_config(&workspace_root, &plan.config_path, extra_env)?;
     let cargo_env = EnvironmentMap::new(&cargo_config.configs);
 
     let pcx = ParseContext::new(&graph);
@@ -154,6 +169,7 @@ fn build_binary_list(
     run: &TestRun,
     graph: &PackageGraph,
     build_platforms: BuildPlatforms,
+    extra_env: &[(String, String)],
 ) -> anyhow::Result<BinaryList> {
     let mut args = vec![
         "test".to_owned(),
@@ -166,6 +182,7 @@ fn build_binary_list(
     let output = crate::common::cargo_cmd()?
         .args(args)
         .current_dir(&plan.workspace_root)
+        .envs(extra_env.iter().map(|(key, value)| (key, value)))
         .env(CONFIG_PATH_ENV_VAR, &plan.config_path)
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -198,15 +215,20 @@ struct CargoConfigGuard {
 fn cargo_config_with_gears_config(
     workspace_root: &Utf8Path,
     config_path: &Path,
+    extra_env: &[(String, String)],
 ) -> anyhow::Result<CargoConfigGuard> {
     let mut file = tempfile::NamedTempFile::new()
         .context("failed to create temporary Cargo config for nextest")?;
-    let encoded = toml_edit::Value::from(config_path.to_string_lossy().to_string()).to_string();
-    write!(
-        file,
-        "[env.{CONFIG_PATH_ENV_VAR}]\nvalue = {encoded}\nforce = true\n"
-    )
-    .context("failed to write temporary Cargo config for nextest")?;
+    let mut env = extra_env.iter().cloned().collect::<BTreeMap<_, _>>();
+    env.insert(
+        CONFIG_PATH_ENV_VAR.to_owned(),
+        config_path.to_string_lossy().to_string(),
+    );
+
+    for (key, value) in env {
+        write_cargo_env_config(&mut file, &key, &value)
+            .context("failed to write temporary Cargo config for nextest")?;
+    }
 
     let config_path = utf8_path(file.path(), "temporary Cargo config")?;
     let configs = CargoConfigs::new_with_isolation(
@@ -220,6 +242,20 @@ fn cargo_config_with_gears_config(
         configs,
         _file: file,
     })
+}
+
+fn write_cargo_env_config(
+    file: &mut tempfile::NamedTempFile,
+    key: &str,
+    value: &str,
+) -> anyhow::Result<()> {
+    let encoded_key = toml_edit::Value::from(key).to_string();
+    let encoded_value = toml_edit::Value::from(value).to_string();
+    write!(
+        file,
+        "[env.{encoded_key}]\nvalue = {encoded_value}\nforce = true\n"
+    )?;
+    Ok(())
 }
 
 fn utf8_path(path: &Path, label: &str) -> anyhow::Result<Utf8PathBuf> {

@@ -114,8 +114,8 @@ If the CLI is built without the `dylint-rules` feature, `lint --dylint` returns 
 ### Testing
 
 `cargo gears test --app <APP> --env <ENV>` reads the selected manifest test policy and runs either `cargo test`
-or the embedded nextest runner. With `--coverage`, it runs `cargo llvm-cov` instead. It passes the selected
-environment config to tests through `GEARS_CONFIG`.
+or the embedded nextest runner. With `--coverage`, it uses `cargo llvm-cov` with the selected test runner.
+It passes the selected environment config to tests through `GEARS_CONFIG`.
 
 ### Tool bootstrap
 

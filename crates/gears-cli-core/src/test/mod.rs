@@ -30,11 +30,11 @@ impl TestParams {
         let resolved = self.manifest.resolve(&workspace_path)?;
         let plan = TestPlan::new(&resolved, self.module.as_deref());
 
-        if self.coverage {
-            return llvm_cov::run(&plan);
-        }
-
         let runner = self.runner.unwrap_or(resolved.test.runner);
+
+        if self.coverage {
+            return llvm_cov::run(&plan, runner);
+        }
 
         if let Some(command) = &resolved.test.custom_command {
             return run_custom_command(command, &resolved.workspace_root, &resolved.config_path);
@@ -189,9 +189,9 @@ fn expand_feature_set(package: Option<String>, feature_set: &ModuleFeatureSet) -
 impl From<&FeatureSet> for FeatureSelection {
     fn from(set: &FeatureSet) -> Self {
         match set {
-            FeatureSet::Disabled(true) => FeatureSelection::AllFeatures,
-            FeatureSet::Disabled(false) => FeatureSelection::NoDefaultFeatures,
-            FeatureSet::Features(features) => FeatureSelection::Features(features.clone()),
+            FeatureSet::Disabled(true) => Self::AllFeatures,
+            FeatureSet::Disabled(false) => Self::NoDefaultFeatures,
+            FeatureSet::Features(features) => Self::Features(features.clone()),
         }
     }
 }
