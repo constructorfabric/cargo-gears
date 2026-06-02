@@ -171,3 +171,6 @@ Coverage format enum:
 
 Coverage should support module/app filtering where possible, but the first
 implementation can run workspace coverage and label the limitation clearly.
+When feature-set policy expands into multiple runs, coverage artifacts are
+cleaned once before the matrix and reported once after all runs so the final
+report aggregates every collected profile.

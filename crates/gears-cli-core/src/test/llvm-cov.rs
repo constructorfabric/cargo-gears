@@ -2,6 +2,7 @@ use super::{CONFIG_PATH_ENV_VAR, TestPlan, TestRun, nextest};
 use crate::common::cargo_cmd;
 use crate::manifest::TestRunner;
 use anyhow::{Context, bail};
+use std::collections::BTreeSet;
 use std::process::Command;
 
 pub(super) fn run(plan: &TestPlan, runner: TestRunner) -> anyhow::Result<()> {
@@ -12,31 +13,32 @@ pub(super) fn run(plan: &TestPlan, runner: TestRunner) -> anyhow::Result<()> {
 }
 
 fn run_cargo_llvm_cov(plan: &TestPlan) -> anyhow::Result<()> {
+    run_llvm_cov_clean(plan, &[])?;
     for run in &plan.runs {
-        let mut cmd = llvm_cov_command(plan, run)?;
+        let mut cmd = llvm_cov_test_command(plan, run)?;
         let status = cmd.status().context("failed to run llvm-cov test runner")?;
         if !status.success() {
             bail!("llvm-cov test runner exited with {status}");
         }
     }
 
-    Ok(())
+    run_llvm_cov_report(plan, &[])
 }
 
 fn run_nextest_llvm_cov(plan: &TestPlan) -> anyhow::Result<()> {
     let coverage_env = llvm_cov_env(plan)?;
+    run_llvm_cov_clean(plan, &coverage_env)?;
     for run in &plan.runs {
-        run_llvm_cov_clean(plan, &coverage_env)?;
         nextest::run_nextest(plan, run, &coverage_env)?;
-        run_llvm_cov_report(plan, run, &coverage_env)?;
     }
 
-    Ok(())
+    run_llvm_cov_report(plan, &coverage_env)
 }
 
-fn llvm_cov_command(plan: &TestPlan, run: &TestRun) -> anyhow::Result<Command> {
+fn llvm_cov_test_command(plan: &TestPlan, run: &TestRun) -> anyhow::Result<Command> {
     let mut cmd = cargo_cmd()?;
     cmd.arg("llvm-cov");
+    cmd.args(["--no-report", "--no-clean"]);
 
     let mut args = Vec::new();
     run.append_cargo_args(&mut args);
@@ -78,26 +80,46 @@ fn run_llvm_cov_clean(plan: &TestPlan, coverage_env: &[(String, String)]) -> any
     Ok(())
 }
 
-fn run_llvm_cov_report(
-    plan: &TestPlan,
-    run: &TestRun,
-    coverage_env: &[(String, String)],
-) -> anyhow::Result<()> {
-    let mut args = vec!["llvm-cov".to_owned(), "report".to_owned()];
-    run.append_cargo_args(&mut args);
+fn run_llvm_cov_report(plan: &TestPlan, coverage_env: &[(String, String)]) -> anyhow::Result<()> {
+    let mut cmd = llvm_cov_report_command(plan, coverage_env)?;
 
-    let status = cargo_cmd()?
-        .args(args)
-        .current_dir(&plan.workspace_root)
-        .envs(coverage_env.iter().map(|(key, value)| (key, value)))
-        .status()
-        .context("failed to run llvm-cov report")?;
+    let status = cmd.status().context("failed to run llvm-cov report")?;
 
     if !status.success() {
         bail!("llvm-cov report exited with {status}");
     }
 
     Ok(())
+}
+
+fn llvm_cov_report_command(
+    plan: &TestPlan,
+    coverage_env: &[(String, String)],
+) -> anyhow::Result<Command> {
+    let mut cmd = cargo_cmd()?;
+    let mut args = vec!["llvm-cov".to_owned(), "report".to_owned()];
+    append_report_package_args(&mut args, &plan.runs);
+    cmd.args(args);
+    cmd.current_dir(&plan.workspace_root);
+    cmd.envs(coverage_env.iter().map(|(key, value)| (key, value)));
+
+    Ok(cmd)
+}
+
+fn append_report_package_args(args: &mut Vec<String>, runs: &[TestRun]) {
+    if runs.iter().any(|run| run.package.is_none()) {
+        return;
+    }
+
+    let packages = runs
+        .iter()
+        .filter_map(|run| run.package.as_deref())
+        .collect::<BTreeSet<_>>();
+
+    for package in packages {
+        args.push("-p".to_owned());
+        args.push(package.to_owned());
+    }
 }
 
 fn parse_llvm_cov_env(output: &str) -> anyhow::Result<Vec<(String, String)>> {
@@ -135,7 +157,7 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn llvm_cov_uses_package_and_feature_args() {
+    fn llvm_cov_test_uses_package_and_feature_args_without_reporting() {
         let plan = TestPlan {
             workspace_root: PathBuf::from("/workspace"),
             config_path: PathBuf::from("/workspace/config/app-dev.yml"),
@@ -147,7 +169,7 @@ mod tests {
         };
 
         let command =
-            llvm_cov_command(&plan, &run).expect("CARGO env var should exist under tests");
+            llvm_cov_test_command(&plan, &run).expect("CARGO env var should exist under tests");
         let args = command
             .get_args()
             .map(|arg| arg.to_string_lossy().into_owned())
@@ -157,6 +179,8 @@ mod tests {
             args,
             vec![
                 "llvm-cov",
+                "--no-report",
+                "--no-clean",
                 "-p",
                 "cf-module",
                 "--no-default-features",
@@ -177,6 +201,61 @@ mod tests {
                 Some(plan.config_path.as_os_str())
             ))
         );
+    }
+
+    #[test]
+    fn llvm_cov_report_uses_selected_packages_without_feature_args() {
+        let plan = TestPlan {
+            workspace_root: PathBuf::from("/workspace"),
+            config_path: PathBuf::from("/workspace/config/app-dev.yml"),
+            runs: vec![
+                TestRun {
+                    package: Some("cf-module-b".to_owned()),
+                    features: FeatureSelection::AllFeatures,
+                },
+                TestRun {
+                    package: Some("cf-module-a".to_owned()),
+                    features: FeatureSelection::Features(vec!["sqlite".to_owned()]),
+                },
+                TestRun {
+                    package: Some("cf-module-a".to_owned()),
+                    features: FeatureSelection::NoDefaultFeatures,
+                },
+            ],
+        };
+        let coverage_env = vec![(
+            "LLVM_PROFILE_FILE".to_owned(),
+            "target/%p-%m.profraw".to_owned(),
+        )];
+
+        let command = llvm_cov_report_command(&plan, &coverage_env)
+            .expect("CARGO env var should exist under tests");
+        let args = command
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            args,
+            vec![
+                "llvm-cov",
+                "report",
+                "-p",
+                "cf-module-a",
+                "-p",
+                "cf-module-b"
+            ]
+        );
+        assert_eq!(
+            command.get_current_dir(),
+            Some(plan.workspace_root.as_path())
+        );
+        let env_value = command
+            .get_envs()
+            .find(|(key, _)| key == &"LLVM_PROFILE_FILE")
+            .and_then(|(_, value)| value)
+            .map(|value| value.to_string_lossy().into_owned());
+        assert_eq!(env_value.as_deref(), Some("target/%p-%m.profraw"));
     }
 
     #[test]

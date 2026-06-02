@@ -239,7 +239,7 @@ fn run_custom_command(
         .split_first()
         .context("test custom-command must not be empty")?;
 
-    let status = Command::new(&program)
+    let status = Command::new(program)
         .args(parts)
         .current_dir(workspace_root)
         .env(CONFIG_PATH_ENV_VAR, config_path)
