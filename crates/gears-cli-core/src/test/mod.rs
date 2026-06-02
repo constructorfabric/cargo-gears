@@ -16,7 +16,7 @@ pub struct TestParams {
     /// Path to the module workspace root.
     pub path: Option<PathBuf>,
     pub manifest: ManifestSelection,
-    /// Test runner override. Defaults to the manifest policy, then cargo.
+    /// Test runner override. Defaults to the manifest policy, then nextest(built-in integrated).
     pub runner: Option<TestRunner>,
     /// Limit tests to a module/package.
     pub module: Option<String>,
@@ -37,6 +37,11 @@ impl TestParams {
         }
 
         if let Some(command) = &resolved.test.custom_command {
+            if self.runner.is_some() {
+                eprintln!(
+                    "WARN: custom command is specified in manifest, ignoring runner override"
+                );
+            }
             return run_custom_command(command, &resolved.workspace_root, &resolved.config_path);
         }
 
@@ -77,7 +82,7 @@ fn resolve_runs(resolved: &ResolvedManifest, module: Option<&str>) -> Vec<TestRu
     if let Some(module) = module {
         let package = package_for_module(resolved, module);
         return match policy.feature_set.get(module) {
-            Some(set) => expand_feature_set(Some(package), set),
+            Some(set) => expand_feature_set(Some(package.as_str()), set),
             None => vec![TestRun {
                 package: Some(package),
                 features: FeatureSelection::Default,
@@ -90,7 +95,7 @@ fn resolve_runs(resolved: &ResolvedManifest, module: Option<&str>) -> Vec<TestRu
         .iter()
         .flat_map(|(module, set)| {
             let package = package_for_module(resolved, module);
-            expand_feature_set(Some(package), set)
+            expand_feature_set(Some(package.as_str()), set)
         })
         .collect()
 }
@@ -166,32 +171,23 @@ impl FeatureSelection {
     }
 }
 
-fn expand_feature_set(package: Option<String>, feature_set: &ModuleFeatureSet) -> Vec<TestRun> {
-    match feature_set {
-        ModuleFeatureSet::All(true) => vec![TestRun {
-            package,
-            features: FeatureSelection::AllFeatures,
-        }],
-        ModuleFeatureSet::All(false) => vec![TestRun {
-            package,
-            features: FeatureSelection::NoDefaultFeatures,
-        }],
-        ModuleFeatureSet::Sets(sets) => sets
-            .iter()
-            .map(|set| TestRun {
-                package: package.clone(),
-                features: set.into(),
-            })
-            .collect(),
-    }
+fn expand_feature_set(package: Option<&str>, feature_set: &ModuleFeatureSet) -> Vec<TestRun> {
+    feature_set
+        .iter()
+        .map(|set| TestRun {
+            package: package.map(str::to_owned),
+            features: set.into(),
+        })
+        .collect()
 }
 
 impl From<&FeatureSet> for FeatureSelection {
     fn from(set: &FeatureSet) -> Self {
         match set {
-            FeatureSet::Disabled(true) => Self::AllFeatures,
-            FeatureSet::Disabled(false) => Self::NoDefaultFeatures,
-            FeatureSet::Features(features) => Self::Features(features.clone()),
+            FeatureSet::DefaultFeatures => Self::Default,
+            FeatureSet::AllFeatures => Self::AllFeatures,
+            FeatureSet::NoDefaultFeatures => Self::NoDefaultFeatures,
+            FeatureSet::Features { features } => Self::Features(features.clone()),
         }
     }
 }
@@ -237,13 +233,11 @@ fn run_custom_command(
     workspace_root: &Path,
     config_path: &Path,
 ) -> anyhow::Result<()> {
-    let mut parts = shell_words::split(command)
+    let parts = shell_words::split(command)
         .with_context(|| format!("failed to parse test custom-command `{command}`"))?;
-    let program = parts
-        .first()
-        .cloned()
+    let (program, parts) = parts
+        .split_first()
         .context("test custom-command must not be empty")?;
-    parts.remove(0);
 
     let status = Command::new(&program)
         .args(parts)
@@ -307,10 +301,14 @@ mod tests {
         let policy = TestPolicy {
             feature_set: BTreeMap::from([(
                 "module-a".to_owned(),
-                ModuleFeatureSet::Sets(vec![
-                    FeatureSet::Features(vec!["sqlite".to_owned()]),
-                    FeatureSet::Disabled(false),
-                ]),
+                vec![
+                    FeatureSet::Features {
+                        features: vec!["sqlite".to_owned()],
+                    },
+                    FeatureSet::NoDefaultFeatures,
+                    FeatureSet::AllFeatures,
+                    FeatureSet::DefaultFeatures,
+                ],
             )]),
             ..Default::default()
         };
@@ -326,6 +324,14 @@ mod tests {
                 TestRun {
                     package: Some("cf-module-a".to_owned()),
                     features: FeatureSelection::NoDefaultFeatures,
+                },
+                TestRun {
+                    package: Some("cf-module-a".to_owned()),
+                    features: FeatureSelection::AllFeatures,
+                },
+                TestRun {
+                    package: Some("cf-module-a".to_owned()),
+                    features: FeatureSelection::Default,
                 },
             ]
         );

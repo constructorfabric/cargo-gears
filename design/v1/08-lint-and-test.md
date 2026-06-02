@@ -111,16 +111,31 @@ Test execution uses the runtime config declared by the selected environment, for
 ```toml
 [apps.app1.dev.test.default]
 runner = "nextest"
-feature-set = {
-    "module1" = [
-        ["unit", "integration"],
-        ["sqlite"],
-        ["postgres"],
-        ["fips"],
-        false # disable all features
-    ],
-    "module2" = true, # enable all features
-}
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["unit", "integration"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["sqlite"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["postgres"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["fips"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "no-default-features"
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "default-features"
+
+[[apps.app1.dev.test.default.feature-set.module2]]
+mode = "all-features"
 ```
 
 ```toml

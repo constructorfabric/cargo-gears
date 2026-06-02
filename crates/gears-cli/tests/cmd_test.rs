@@ -1,7 +1,6 @@
 mod common;
 
-use clap::error::ErrorKind;
-use common::{assert_parse_error, parse_command};
+use common::parse_command;
 use gears_cli_core::GearsCommand;
 use gears_cli_core::manifest::{ManifestSelection, TestRunner};
 use std::path::PathBuf;
@@ -41,17 +40,21 @@ fn parses_test_into_core_command() {
 }
 
 #[test]
-fn rejects_removed_no_coverage_flag() {
-    assert_parse_error(
-        &[
-            "gears",
-            "test",
-            "--app",
-            "app1",
-            "--env",
-            "dev",
-            "--no-coverage",
-        ],
-        ErrorKind::UnknownArgument,
+fn parses_test_defaults_into_core_command() {
+    let command = parse_command(&["gears", "test"]);
+
+    assert_eq!(
+        command,
+        GearsCommand::Test(gears_cli_core::test::TestParams {
+            path: None,
+            manifest: ManifestSelection {
+                manifest: PathBuf::from("Gears.toml"),
+                app: None,
+                env: None,
+            },
+            runner: None,
+            module: None,
+            coverage: false,
+        })
     );
 }

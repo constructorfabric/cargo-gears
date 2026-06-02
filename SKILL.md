@@ -1126,7 +1126,7 @@ cargo gears test [-p <PATH>] [--manifest <PATH>] [--app <APP>] [--env <ENV>] [--
 
 Arguments:
 
-- **[`--runner <cargo|nextest>`]** Overrides the manifest `test.runner`; defaults to `cargo`
+- **[`--runner <cargo|nextest>`]** Overrides the manifest `test.runner`; defaults to `nextest` that it's integrated in the tool
 - **[`--module <NAME>`]** Limits tests to a module/package. When manifest `test.feature-set` contains that module, its feature matrix is used.
 - **[`--coverage`]** Runs coverage with `cargo llvm-cov` using the selected or manifest test runner
 
@@ -1137,7 +1137,7 @@ Behavior:
 - **[nextest runner]** Builds test binaries with Cargo JSON messages, then executes them through the embedded nextest runner from `cargo-nextest`
 - **[coverage runner]** With `cargo`, runs `cargo llvm-cov` with the same module and feature-set expansion as the cargo runner
 - **[nextest coverage]** With `nextest`, uses `cargo llvm-cov show-env`, cleans llvm-cov artifacts, runs the embedded nextest runner under the coverage environment, then generates the report with `cargo llvm-cov report`
-- **[feature-set policy]** Expands manifest `test.feature-set` into package-specific runs with `--all-features`, `--no-default-features`, or exact `--features`
+- **[feature-set policy]** Expands manifest `test.feature-set` module entries by `mode`: `all-features` uses `--all-features`, `no-default-features` uses `--no-default-features`, `default-features` uses Cargo defaults, and `features` uses `--no-default-features --features <LIST>`
 
 ## Practical End-to-End Flows
 
