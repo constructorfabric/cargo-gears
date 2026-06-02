@@ -24,8 +24,8 @@ fn run_cargo_llvm_cov(plan: &TestPlan) -> anyhow::Result<()> {
 }
 
 fn run_nextest_llvm_cov(plan: &TestPlan) -> anyhow::Result<()> {
+    let coverage_env = llvm_cov_env(plan)?;
     for run in &plan.runs {
-        let coverage_env = llvm_cov_env(plan)?;
         run_llvm_cov_clean(plan, &coverage_env)?;
         nextest::run_nextest(plan, run, &coverage_env)?;
         run_llvm_cov_report(plan, run, &coverage_env)?;
