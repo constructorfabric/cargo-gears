@@ -1,13 +1,25 @@
 [package]
-name = "de0104_no_api_dto_in_contract"
+name = "de0102_no_toschema_in_domain"
 version = "0.1.0"
 authors = ["Cyber Fabric"]
-description = "Prevents use of api_dto macro in contract layer"
+description = "Contract models should not have ToSchema derive (DE0102)"
 edition.workspace = true
 publish = false
 
 [lib]
 crate-type = ["cdylib"]
+
+[[example]]
+name = "toschema"
+path = "ui/toschema.rs"
+
+[[example]]
+name = "no_toschema_derive"
+path = "ui/no_toschema_derive.rs"
+
+[[example]]
+name = "mixed_derives"
+path = "ui/mixed_derives.rs"
 
 [dependencies]
 clippy_utils.workspace = true
@@ -16,18 +28,7 @@ lint_utils.workspace = true
 
 [dev-dependencies]
 dylint_testing.workspace = true
-modkit-macros.workspace = true
-modkit.workspace = true
-serde.workspace = true
-utoipa.workspace = true
+utoipa = "5.2"
 
 [package.metadata.rust-analyzer]
 rustc_private = true
-
-[[example]]
-name = "with_api_dto"
-path = "ui/with_api_dto.rs"
-
-[[example]]
-name = "without_api_dto"
-path = "ui/without_api_dto.rs"

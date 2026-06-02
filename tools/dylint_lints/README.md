@@ -6,12 +6,12 @@ These rules are compiled at build time (behind the `dylint-rules` feature of `ge
 
 ## Available Lints
 
-### Contract Layer (DE01xx)
-- **DE0101** No Serde in Contract
-- **DE0102** No ToSchema in Contract
-- **DE0103** No HTTP Types in Contract
-- **DE0104** No API DTO in Contract
-- **DE0110** No `schema_for!` on GTS Structs (contract scope)
+### Domain Layer (DE01xx)
+- **DE0101** No Serde in Domain
+- **DE0102** No ToSchema in Domain
+- **DE0103** No HTTP Types in Domain
+- **DE0104** No API DTO in Domain
+- **DE0110** No `schema_for!` on GTS Structs
 
 ### API Layer (DE02xx)
 - **DE0201** DTOs Only in API Rest Folder
@@ -55,7 +55,7 @@ These rules are compiled at build time (behind the `dylint-rules` feature of `ge
 ```text
 tools/dylint_lints/
 ├── lint_utils/               # Shared helper crate
-├── de01_contract_layer/      # One crate per lint rule
+├── de01_domain_layer/        # One crate per lint rule
 │   ├── de0101_.../
 │   │   ├── src/lib.rs        # Lint implementation
 │   │   ├── ui/               # UI test fixtures (.rs + .stderr)

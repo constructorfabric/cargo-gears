@@ -1,5 +1,5 @@
 [package]
-name = "de0103_no_http_types_in_contract"
+name = "de0103_no_http_types_in_domain"
 version = "0.1.0"
 authors = ["Cyber Fabric"]
 description = "Contract modules should not reference HTTP types (DE0103)"

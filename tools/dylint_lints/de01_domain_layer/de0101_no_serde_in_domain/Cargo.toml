@@ -1,5 +1,5 @@
 [package]
-name = "de0101_no_serde_in_contract"
+name = "de0101_no_serde_in_domain"
 version = "0.1.0"
 authors = ["Cyber Fabric"]
 description = "description goes here"
