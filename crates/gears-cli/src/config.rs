@@ -1,4 +1,4 @@
-use crate::common::{DbConnConfig, PathConfigArgs, Registry};
+use crate::common::{DbConnConfig, PathConfigArgs};
 use clap::{Args, Subcommand};
 
 #[derive(Args)]
@@ -143,8 +143,6 @@ impl From<ConfigModulesArgs> for gears_cli_core::config::modules::ModulesParams 
 
 #[derive(Subcommand)]
 pub enum ConfigModulesCommand {
-    /// List available system crates
-    List(ConfigModuleListArgs),
     /// Add or update a module in the modules section (upsert)
     Add(ConfigModuleAddArgs),
     /// Manage module-level database config
@@ -156,39 +154,9 @@ pub enum ConfigModulesCommand {
 impl From<ConfigModulesCommand> for gears_cli_core::config::modules::ModulesCommand {
     fn from(command: ConfigModulesCommand) -> Self {
         match command {
-            ConfigModulesCommand::List(args) => Self::List(args.into()),
             ConfigModulesCommand::Add(args) => Self::Add(args.into()),
             ConfigModulesCommand::Db(args) => Self::Db(Box::new((*args).into())),
             ConfigModulesCommand::Rm(args) => Self::Rm(args.into()),
-        }
-    }
-}
-
-#[derive(Args)]
-pub struct ConfigModuleListArgs {
-    #[command(flatten)]
-    path_config: PathConfigArgs,
-    /// Show system crates also. If verbose is enabled,
-    /// fetches registry metadata for system crates. (makes requests to the registry)
-    #[arg(short = 's', long)]
-    system: bool,
-    /// Show all information related to the module.
-    #[arg(short = 'v', long)]
-    verbose: bool,
-    /// Registry to query for system-crate metadata. Only consulted when both
-    /// `--system` and `--verbose` are enabled; `--verbose` alone does not query
-    /// any registry. Defaults to `crates.io`.
-    #[arg(long, value_enum, default_value_t = Registry::CratesIo)]
-    registry: Registry,
-}
-
-impl From<ConfigModuleListArgs> for gears_cli_core::config::modules::list::ListParams {
-    fn from(args: ConfigModuleListArgs) -> Self {
-        Self {
-            path_config: args.path_config.into(),
-            system: args.system,
-            verbose: args.verbose,
-            registry: args.registry,
         }
     }
 }

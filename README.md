@@ -72,7 +72,7 @@ The current CLI surface is centered on Gears workspace setup, configuration, cod
 
 ### Configuration management
 
-- `config mod list` inspects available and configured modules
+- `ls modules` inspects available system and workspace modules
 - `config mod add` and `config mod rm` manage module entries in the YAML config
 - `config mod db add|edit|rm` manages module-level database settings
 - `config db add|edit|rm` manages shared database server definitions

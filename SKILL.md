@@ -3,18 +3,21 @@ name: gears
 description: cli reference to help with the development of constructor fabric gears framework. It helps with the development of
   the framework from its initialization, adding/removing modules, modifying configuration files,
   build and/or run project, lint the project and managing applications through its manifest.
+  
+  Always load this skill whenever you detect Gears.toml or you locate a reference to gears, cargo-gears, modkit, 
+  modules, plugins or packages that include the prefix cf- in its name.
 ---
 
-# Gears CLI Skills Guide
+# General Guidelines to follow
 
-This document summarizes the CLI parser implemented under `crates/gears-cli/src`
-and the orchestration logic implemented under `crates/gears-cli-core/src`.
-It focuses on:
-
-- **[command surface]** Every top-level command and nested subcommand
-- **[arguments]** The supported flags and positional arguments
-- **[purpose]** What each command is meant to do
-- **[examples]** Realistic usage patterns
+- When adding new dependencies use `cargo add`, do not edit Cargo.toml manually
+- When linting, use lint command of the cli to check if there are any lint errors.
+  Do not try to run cargo check, clippy or fmt by your own.
+- Always verify that the application runs successfully after modifying the code.
+- Unless the user specifically mentions to use a custom module, prefer to use system modules
+  instead of implementing your own ones. Pay attention to the "deps" section of the modules, as the module will be
+  required to be added in order to be used.
+- Do not try to create a module from scratch, always use the generate module command to create a new module.
 
 ## Invocation Forms
 
@@ -40,13 +43,6 @@ This CLI is a tool for automating gears development, a Rust framework. You can g
 Clone(shallow) the repo to .gears folder (create it if it doesn't exist), and use it as a reference.
 If so, prefer to use the ssh version instead of https to avoid authentication issues.
 
-## Guideliness to follow
-
-- When adding new dependencies use `cargo add`, do not edit Cargo.toml manually
-- When linting, use lint command of the cli to check if there are any lint errors. Do not try to run cargo check, clippy or fmt by your own.
-- Always verify that the application runs successfully after modifying the code.
-- Unless specified, prefer to use system modules instead of implementing your own ones.
-
 ## Command Tree
 
 ```text
@@ -58,7 +54,6 @@ cargo gears
 ├── new
 ├── config
 │   ├── mod
-│   │   ├── list
 │   │   ├── add
 │   │   ├── db
 │   │   │   ├── add
@@ -76,9 +71,7 @@ cargo gears
 │   └── topic
 ├── lint
 ├── ls
-│   ├── modules
-│   ├── local-modules
-│   └── system-modules
+│   └── modules
 ├── manifest
 │   ├── validate
 │   └── ls
@@ -289,68 +282,6 @@ There are two branches:
 ### `config mod`
 
 Manage the `modules` section in the app config.
-
-#### `config mod list`
-
-List workspace modules, configured modules, and optionally known system crates.
-
-Synopsis:
-
-```bash
-cargo gears config mod list -c <CONFIG> [-p <PATH>] [--system] [--verbose] [--registry <REGISTRY>]
-```
-
-Arguments:
-
-- **[`-c, --config <CONFIG>`]** Required config file path
-- **[`-p, --path <PATH>`]** Optional workspace directory
-- **[`-s, --system`]** Also print built-in system registry modules
-- **[`-v, --verbose`]** Print full metadata
-- **[`--registry <REGISTRY>`]** Registry used only for verbose system lookups, defaults to `crates.io`
-
-Behavior:
-
-- **[discovers local modules]** Scans the workspace for module crates
-- **[loads configured modules]** Reads enabled modules from the config file
-- **[path activation]** If `-p/--path` is provided, the CLI first changes the current working directory there before
-  resolving `-c/--config`
-- **[marks enabled locals]** Shows when a workspace module is enabled in config
-- **[shows missing locals]** Shows when a configured module is not present in the workspace
-- **[optional crates.io fetch]** If both `--system` and `--verbose` are used, the CLI fetches registry metadata and
-  `src/module.rs` details from crates.io
-- **[registry support]** Only `crates.io` is currently supported
-
-Built-in system module names:
-
-- **[`credstore`]**
-- **[`file-parser`]**
-- **[`api-gateway`]**
-- **[`authn-resolver`]**
-- **[`static-authn-plugin`]**
-- **[`authz-resolver`]**
-- **[`static-authz-plugin`]**
-- **[`grpc-hub`]**
-- **[`module-orchestrator`]**
-- **[`nodes-registry`]**
-- **[`oagw`]**
-- **[`single-tenant-tr-plugin`]**
-- **[`static-tr-plugin`]**
-- **[`tenant-resolver`]**
-- **[`types-registry`]**
-
-Examples:
-
-```bash
-cargo gears config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
-```
-
-```bash
-cargo gears config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --system
-```
-
-```bash
-cargo gears config mod list -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --system --verbose
-```
 
 #### `config mod add`
 
@@ -1017,21 +948,33 @@ List all modules — both system-registry and workspace-discovered — in a sing
 Synopsis:
 
 ```bash
-cargo gears ls modules [-p <PATH>] [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
+cargo gears ls modules [-p <PATH>] [--system] [--local] [--verbose] [--registry crates.io] [--format table|json]
 ```
 
 Arguments:
 
 - **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
+- **[`--system`]** Only print built-in system registry modules
+- **[`--local`]** Only print workspace-discovered modules
 - **[`-v, --verbose`]** Show full metadata for both system and local modules (fetches registry metadata for system
   modules)
 - **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
-- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Only `table` is currently implemented
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `json`. Supported values: `table`, `json`
 
 Behavior:
 
 - **[combined output]** Prints system modules first, then workspace modules, separated by a blank line
+- **[filtered output]** `--system` prints only system modules; `--local` prints only workspace modules; passing both is
+  equivalent to the default combined output
+- **[json output]** `--format json` prints a `modules` array with each module's `source` (`system` or `local`), static
+  metadata, and verbose metadata when `--verbose` is enabled
+- **[system usage marker]** System modules include `used: yes/no` in table output and `used: true/false` in JSON output,
+  based on whether `Gears.toml` references the system module as a remote module or the workspace has a discovered module
+  with the same module name
 - **[config-independent]** Does not require a `-c/--config` file
+- **[workspace scanning]** Local output runs `cargo metadata --no-deps` and discovers crates with a `src/module.rs` target
+- **[system registry]** System output uses the compiled-in registry, and `--verbose` fetches crate metadata from the
+  selected registry
 
 Examples:
 
@@ -1043,75 +986,12 @@ cargo gears ls modules
 cargo gears ls modules -p /tmp/cf-demo --verbose
 ```
 
-#### `ls local-modules`
-
-List workspace-discovered modules by scanning Cargo metadata for crates that contain `src/module.rs`.
-
-Synopsis:
-
 ```bash
-cargo gears ls local-modules [-p <PATH>] [--verbose] [--format table|json|yaml|toml]
-```
-
-Arguments:
-
-- **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
-- **[`-v, --verbose`]** Show full module metadata: package, version, path, features, deps, and capabilities
-- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Supported values: `table`, `json`, `yaml`, `toml`.
-  Only `table` is currently implemented; other formats will be added in a future release
-
-Behavior:
-
-- **[workspace scanning]** Runs `cargo metadata --no-deps` and discovers crates with a `src/module.rs` target
-- **[config-independent]** Does not require a `-c/--config` file; only inspects the workspace
-- **[sorted output]** Modules are listed alphabetically by name
-- **[verbose metadata]** With `--verbose`, prints package name, version, path, default-features, features, deps, and
-  capabilities for each module
-
-Examples:
-
-```bash
-cargo gears ls local-modules
+cargo gears ls modules --local
 ```
 
 ```bash
-cargo gears ls local-modules -p /tmp/cf-demo --verbose
-```
-
-#### `ls system-modules`
-
-List built-in system modules from the Gears registry.
-
-Synopsis:
-
-```bash
-cargo gears ls system-modules [--verbose] [--registry crates.io] [--format table|json|yaml|toml]
-```
-
-Arguments:
-
-- **[`-v, --verbose`]** Fetch registry metadata and show latest version, features, deps, and capabilities for each
-  system module
-- **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
-- **[`-f, --format <FORMAT>`]** Output format; defaults to `table`. Supported values: `table`, `json`, `yaml`, `toml`.
-  Only `table` is currently implemented; other formats will be added in a future release
-
-Behavior:
-
-- **[static listing]** Without `--verbose`, prints the known system module names and their crate names from a compiled-in
-  registry
-- **[registry fetch]** With `--verbose`, fetches crate metadata and `src/module.rs` from the registry for each system
-  module (concurrent, capped at 4 in-flight requests)
-- **[config-independent]** Does not require a workspace or config file
-
-Examples:
-
-```bash
-cargo gears ls system-modules
-```
-
-```bash
-cargo gears ls system-modules --verbose
+cargo gears ls modules --system --verbose
 ```
 
 ### `test`
@@ -1190,7 +1070,6 @@ cargo gears {new|generate workspace} <path> [--template <template>] [--name <nam
 cargo gears generate module --template <background-worker|api-db-handler|api-gateway> [--name <name>] [-p <workspace>]
 cargo gears generate config --template <dev|prod|db> [--app <app>] [--env <env>] [--name <name>] [-p <workspace>]
 
-cargo gears config mod list [-p <workspace>] -c <config>
 cargo gears config mod add <module> [-p <workspace>] -c <config>
 cargo gears config mod rm <module> [-p <workspace>] -c <config>
 cargo gears config mod db add <module> [-p <workspace>] -c <config> ...
@@ -1201,9 +1080,7 @@ cargo gears config db add <name> [-p <workspace>] -c <config> ...
 cargo gears config db edit <name> [-p <workspace>] -c <config> ...
 cargo gears config db rm <name> [-p <workspace>] -c <config>
 
-cargo gears ls modules [-p <workspace>] [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
-cargo gears ls local-modules [-p <workspace>] [--verbose] [-f table|json|yaml|toml]
-cargo gears ls system-modules [--verbose] [--registry crates.io] [-f table|json|yaml|toml]
+cargo gears ls modules [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint]
