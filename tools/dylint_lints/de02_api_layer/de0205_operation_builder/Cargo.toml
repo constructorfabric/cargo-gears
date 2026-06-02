@@ -29,7 +29,7 @@ lint_utils.workspace = true
 [dev-dependencies]
 dylint_testing.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }
-modkit = { workspace = true }
+# modkit = { workspace = true }  # TODO: fix path dependency
 
 [package.metadata.rust-analyzer]
 rustc_private = true

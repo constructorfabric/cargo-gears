@@ -16,8 +16,8 @@ lint_utils.workspace = true
 
 [dev-dependencies]
 dylint_testing.workspace = true
-modkit-macros.workspace = true
-modkit.workspace = true
+# modkit-macros.workspace = true  # TODO: fix path dependency
+# modkit.workspace = true          # TODO: fix path dependency
 serde.workspace = true
 utoipa.workspace = true
 
