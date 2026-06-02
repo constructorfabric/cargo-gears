@@ -111,16 +111,31 @@ Test execution uses the runtime config declared by the selected environment, for
 ```toml
 [apps.app1.dev.test.default]
 runner = "nextest"
-feature-set = {
-    "module1" = [
-        ["unit", "integration"],
-        ["sqlite"],
-        ["postgres"],
-        ["fips"],
-        false # disable all features
-    ],
-    "module2" = true, # enable all features
-}
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["unit", "integration"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["sqlite"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["postgres"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "features"
+features = ["fips"]
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "no-default-features"
+
+[[apps.app1.dev.test.default.feature-set.module1]]
+mode = "default-features"
+
+[[apps.app1.dev.test.default.feature-set.module2]]
+mode = "all-features"
 ```
 
 ```toml
@@ -131,7 +146,7 @@ custom-command = "./scripts/integration-tests.sh"
 
 ### Coverage
 
-Coverage should be a mode, not a separate runner.
+Coverage is selected by the CLI and runs through the llvm-cov runner.
 
 Preferred tool:
 
@@ -156,3 +171,6 @@ Coverage format enum:
 
 Coverage should support module/app filtering where possible, but the first
 implementation can run workspace coverage and label the limitation clearly.
+When feature-set policy expands into multiple runs, coverage artifacts are
+cleaned once before the matrix and reported once after all runs so the final
+report aggregates every collected profile.

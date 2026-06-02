@@ -1,13 +1,22 @@
-use clap::Args;
+use crate::common::{ManifestTargetArgs, WorkspacePath};
+use clap::{ArgAction, Args};
+use gears_cli_core::manifest::TestRunner;
 
 #[derive(Args)]
 pub struct TestArgs {
+    #[command(flatten)]
+    pub workspace: WorkspacePath,
+    #[command(flatten)]
+    pub manifest: ManifestTargetArgs,
+    /// Test runner override.
+    #[arg(long, value_enum)]
+    pub runner: Option<TestRunner>,
+    /// Limit tests to a module/package.
     #[arg(long)]
-    e2e: bool,
-    #[arg(long)]
-    module: Option<String>,
-    #[arg(long)]
-    coverage: bool,
+    pub module: Option<String>,
+    /// Run test coverage.
+    #[arg(long, action = ArgAction::SetTrue)]
+    pub coverage: bool,
 }
 
 impl TestArgs {
@@ -19,7 +28,9 @@ impl TestArgs {
 impl From<TestArgs> for gears_cli_core::test::TestParams {
     fn from(args: TestArgs) -> Self {
         Self {
-            e2e: args.e2e,
+            path: args.workspace.path,
+            manifest: args.manifest.into_selection(),
+            runner: args.runner,
             module: args.module,
             coverage: args.coverage,
         }

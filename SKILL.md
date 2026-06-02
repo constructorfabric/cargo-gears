@@ -91,16 +91,16 @@ cargo gears
 
 ## Shared Argument Patterns
 
-- **[`-p, --path <PATH>`]** Optional workspace path. When provided to `config ...`, `build`, `run`, `deploy`, and
-  `lint`, relative config paths, manifest paths, generated project locations, and workspace-scoped lint resolution use
+- **[`-p, --path <PATH>`]** Optional workspace path. When provided to `config ...`, `build`, `run`, `deploy`, `lint`,
+  and `test`, relative config paths, manifest paths, generated project locations, and workspace-scoped lint/test resolution use
   that directory as the workspace root. When omitted, the current working directory is used as the workspace root.
 - **[`-c, --config <PATH>`]** Config file path. This is required for `config ...` and `deploy` commands because there is
   no default. `build` and `run` no longer accept `--config`; they compose their generation inputs from `Gears.toml`
   and forward the manifest-declared runtime config path through the `GEARS_CONFIG` environment variable.
 - **[`--manifest <PATH>`]** Gears manifest path, defaulting to `Gears.toml`, for `manifest`, `build`, `run`,
-  and `lint`.
+  `lint`, and `test`.
   For `manifest`, you can combine this with `-p/--path` to resolve relative manifest paths from a selected workspace.
-- **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build`, `run`, and `lint`.
+- **[`--app <APP> --env <ENV>`]** Selects a manifest app/environment for manifest-driven `build`, `run`, `lint`, and `test`.
   When omitted, inferred from the manifest: a single app is used automatically; with multiple apps the command
   fails listing available names. For environments, `dev` is selected by default if it exists; otherwise the
   command fails listing available names.
@@ -1116,23 +1116,29 @@ cargo gears ls system-modules --verbose
 
 ### `test`
 
-Declared in the CLI but **currently unimplemented**.
+Orchestrates manifest-driven Rust tests with either `cargo test` or the in-process nextest runner.
 
 Synopsis:
 
 ```bash
-cargo gears test [--e2e] [--module <NAME>] [--coverage]
+cargo gears test [-p <PATH>] [--manifest <PATH>] [--app <APP>] [--env <ENV>] [--runner <cargo|nextest>] [--module <NAME>] [--coverage]
 ```
 
 Arguments:
 
-- **[`--e2e`]**
-- **[`--module <NAME>`]**
-- **[`--coverage`]**
+- **[`--runner <cargo|nextest>`]** Overrides the manifest `test.runner`; defaults to `nextest` that it's integrated in the tool
+- **[`--module <NAME>`]** Limits tests to a module/package. When manifest `test.feature-set` contains that module, its feature matrix is used.
+- **[`--coverage`]** Runs coverage with `cargo llvm-cov` using the selected or manifest test runner
 
-Current status:
+Behavior:
 
-- **[placeholder only]** Calling this subcommand currently reaches `unimplemented!("Not implemented yet")`
+- **[manifest selection]** Resolves the selected app/environment and passes its config path to tests via `GEARS_CONFIG`
+- **[cargo runner]** Runs `cargo test` with `--workspace` by default, or `-p <package>` for module-specific runs
+- **[nextest runner]** Builds test binaries with Cargo JSON messages, then executes them through the embedded nextest runner from `cargo-nextest`
+- **[coverage runner]** Cleans llvm-cov artifacts once, executes every selected module/feature-set run, then generates one aggregate report across all collected profiles
+- **[cargo coverage]** With `cargo`, runs each selected module/feature-set through `cargo llvm-cov --no-report --no-clean`, then reports once with `cargo llvm-cov report`
+- **[nextest coverage]** With `nextest`, uses `cargo llvm-cov show-env`, runs the embedded nextest runner under the coverage environment for every selected module/feature-set, then reports once with `cargo llvm-cov report`
+- **[feature-set policy]** Expands manifest `test.feature-set` module entries by `mode`: `all-features` uses `--all-features`, `no-default-features` uses `--no-default-features`, `default-features` uses Cargo defaults, and `features` uses `--no-default-features --features <LIST>`
 
 ## Practical End-to-End Flows
 

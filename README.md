@@ -111,13 +111,15 @@ GEARS_CONFIG=/tmp/cf-demo/config/quickstart.yml cargo run --manifest-path /tmp/c
 
 If the CLI is built without the `dylint-rules` feature, `lint --dylint` returns an error.
 
+### Testing
+
+`cargo gears test --app <APP> --env <ENV>` reads the selected manifest test policy and runs either `cargo test`
+or the embedded nextest runner. With `--coverage`, it uses `cargo llvm-cov` with the selected test runner.
+It passes the selected environment config to tests through `GEARS_CONFIG`.
+
 ### Tool bootstrap
 
 - `tools` installs or upgrades `rustup`, `rustfmt`, and `clippy`
-
-### Current placeholders
-
-- `test` is declared but not implemented yet
 
 ## Command overview
 

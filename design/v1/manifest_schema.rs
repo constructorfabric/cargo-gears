@@ -172,8 +172,6 @@ pub struct TestPolicy {
     pub r#ref: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub runner: Option<TestRunner>,
-    #[serde(default)]
-    pub coverage: bool,
     #[serde(
         default,
         rename = "feature-set",
@@ -226,18 +224,18 @@ pub enum TestRunner {
     Nextest,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum ModuleFeatureSet {
-    All(bool),
-    Sets(Vec<FeatureSet>),
-}
+pub type ModuleFeatureSet = Vec<FeatureSet>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(untagged)]
+#[serde(tag = "mode", rename_all = "kebab-case")]
 pub enum FeatureSet {
-    Disabled(bool),
-    Features(Vec<String>),
+    DefaultFeatures,
+    AllFeatures,
+    NoDefaultFeatures,
+    Features {
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        features: Vec<String>,
+    },
 }
 
 const fn default_version() -> u32 {
