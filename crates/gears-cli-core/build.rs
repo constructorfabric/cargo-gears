@@ -8,12 +8,6 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[cfg(feature = "dylint-rules")]
-const LINTS_REPO_URL: &str = "git@github.com:constructorfabric/gears-rust.git";
-
-#[cfg(feature = "dylint-rules")]
-const LINTS_REPO_REVISION: &str = "543a190d1ad2301798df46a599d1eb33a591d642";
-
-#[cfg(feature = "dylint-rules")]
 mod ensure_toolchain_installed_shared {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -32,7 +26,7 @@ fn build_dylint_rules() -> anyhow::Result<()> {
     use std::fmt::Write as _;
 
     let out_dir = PathBuf::from(env::var("OUT_DIR")?);
-    let lints_dir = ensure_lints_dir(&out_dir)?;
+    let lints_dir = lints_dir()?;
     let lint_build_dir = out_dir.join("lint_build");
 
     emit_rerun_markers(&lints_dir);
@@ -186,69 +180,18 @@ fn main() -> anyhow::Result<()> {
 }
 
 #[cfg(feature = "dylint-rules")]
-fn clone_lints_repo(repo_dir: &Path) -> anyhow::Result<()> {
-    let status = Command::new("git")
-        .args(["clone", "--no-checkout", LINTS_REPO_URL])
-        .arg(repo_dir)
-        .status()
-        .context("failed to clone gears-core")?;
+fn lints_dir() -> anyhow::Result<PathBuf> {
+    let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?);
+    let lints_dir = manifest_dir
+        .parent()
+        .and_then(Path::parent)
+        .context("could not resolve workspace root from CARGO_MANIFEST_DIR")?
+        .join("tools")
+        .join("dylint_lints");
 
-    if !status.success() {
-        bail!("git clone failed for {LINTS_REPO_URL}");
-    }
-
-    let status = Command::new("git")
-        .arg("-C")
-        .arg(repo_dir)
-        .args(["fetch", "--depth", "1", "origin", LINTS_REPO_REVISION])
-        .status()
-        .with_context(|| format!("failed to fetch pinned revision {LINTS_REPO_REVISION}"))?;
-
-    if !status.success() {
-        bail!("git fetch failed for revision {LINTS_REPO_REVISION}");
-    }
-
-    let status = Command::new("git")
-        .arg("-C")
-        .arg(repo_dir)
-        .args(["checkout", "--detach", "FETCH_HEAD"])
-        .status()
-        .with_context(|| format!("failed to checkout pinned revision {LINTS_REPO_REVISION}"))?;
-
-    if !status.success() {
-        bail!("git checkout failed for revision {LINTS_REPO_REVISION}");
-    }
-
-    Ok(())
-}
-
-#[cfg(feature = "dylint-rules")]
-fn ensure_lints_dir(out_dir: &Path) -> anyhow::Result<PathBuf> {
-    let repo_dir = out_dir.join("gears-core");
-    let lints_dir = repo_dir.join("tools").join("dylint_lints");
-
-    if !repo_dir.exists() {
-        clone_lints_repo(&repo_dir)?;
-    }
-
-    if repo_dir.join(".git").is_dir() && lints_dir.join("Cargo.toml").is_file() {
-        return Ok(lints_dir);
-    }
-
-    if repo_dir.exists() {
-        fs::remove_dir_all(&repo_dir).with_context(|| {
-            format!(
-                "failed to remove invalid cached repo {}",
-                repo_dir.display()
-            )
-        })?;
-    }
-
-    clone_lints_repo(&repo_dir)?;
-
-    if !repo_dir.join(".git").is_dir() || !lints_dir.join("Cargo.toml").is_file() {
+    if !lints_dir.join("Cargo.toml").is_file() {
         bail!(
-            "dylint workspace manifest not found in cached repo: {}",
+            "dylint workspace manifest not found at: {}",
             lints_dir.display()
         );
     }
