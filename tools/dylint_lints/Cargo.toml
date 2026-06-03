@@ -3,31 +3,50 @@
 [workspace]
 members = [
     "lint_utils",
+
+    # DE01xx — Domain layer
     "de01_domain_layer/de0101_no_serde_in_domain",
     "de01_domain_layer/de0102_no_toschema_in_domain",
     "de01_domain_layer/de0104_no_api_dto_in_domain",
-    # de0110 removed: duplicate of de0902 (no schema_for on GTS structs)
+    # de0103 removed: redundant with DE0308
+    # de0110 removed: duplicate of DE0902
+
+    # DE02xx — API layer
     "de02_api_layer/de0201_dtos_only_in_api_rest",
     "de02_api_layer/de0202_dtos_not_referenced_outside_api",
     "de02_api_layer/de0203_dtos_must_use_api_dto",
     "de02_api_layer/de0204_dtos_must_have_toschema_derive",
     # "de02_api_layer/de0205_operation_builder",  # disabled: tag capitalization is opinionated
+
+    # DE03xx — Domain layer (infra / HTTP boundaries)
     "de03_domain_layer/de0301_no_infra_in_domain",
     "de03_domain_layer/de0308_no_http_in_domain",
+    # "de03_domain_layer/de0309_must_have_domain_model",  # disabled: too restrictive
+
+    # DE05xx — Client layer
     "de05_client_layer/de0503_plugin_client_suffix",
+    "de05_client_layer/de0504_client_versioning",
+
+    # DE07xx — Security
     "de07_security/de0706_no_direct_sqlx",
+    "de07_security/de0707_drop_zeroize",
+
+    # DE08xx — REST API conventions
     "de08_rest_api_conventions/de0801_api_endpoint_version",
     "de08_rest_api_conventions/de0802_use_odata_ext",
     "de08_rest_api_conventions/de0803_api_snake_case",
-    # "de09_gts_layer/de0901_gts_string_pattern",  # disabled: hardcoded vendor allowlist, needs to be configurable
+
+    # DE09xx — GTS layer
+    # "de09_gts_layer/de0901_gts_string_pattern",  # disabled: hardcoded vendor allowlist
     "de09_gts_layer/de0902_no_schema_for_on_gts_structs",
-    # "de03_domain_layer/de0309_must_have_domain_model",  # disabled: too restrictive, not every domain type needs #[domain_model]
-    "de05_client_layer/de0504_client_versioning",
-    "de07_security/de0707_drop_zeroize",
+
+    # DE11xx — Testing
+    "de11_testing/de1101_tests_in_separate_files",
+
+    # DE13xx — Common patterns
     "de13_common_patterns/de1301_no_print_macros",
     "de13_common_patterns/de1302_error_from_to_string",
     "de13_common_patterns/de1303_no_primitive_type_alias",
-    "de11_testing/de1101_tests_in_separate_files",
 ]
 resolver = "3"
 
@@ -37,15 +56,8 @@ edition = "2024"
 license = "Apache-2.0"
 authors = ["Cyber Fabric"]
 
-# This workspace contains dylint linter crates for Cyber Ware architecture enforcement
-#
-# Current linters:
-# - DE0101-DE0104: Domain layer validation (serde, toschema, api_dto)
-# - DE0103 removed: redundant with DE0308 (no HTTP in domain)
-# - DE0201-DE0204: API layer validation (DTOs location, references, derives)
-# - DE0503-DE0504: Client layer validation (naming conventions, versioning)
-# - DE0801-DE0803: REST API conventions (endpoints, odata, snake_case)
-# - DE0901-DE0902: GTS layer validation (string patterns, schema_for)
+# This workspace contains dylint linter crates for Cyber Ware architecture enforcement.
+# See the members list above for the full inventory (grouped by category).
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
