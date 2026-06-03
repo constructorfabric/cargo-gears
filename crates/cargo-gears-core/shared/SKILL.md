@@ -912,6 +912,8 @@ Behavior:
 - **[strict scope]** `--strict` is rejected unless Clippy is active through `--clippy` or `--all`
 - **[workspace-scoped dylint]** Dylint receives the resolved workspace manifest path, so `-p/--path` is the way to lint
   another workspace without manually changing directories
+- **[manifest dylint skips]** Manifest `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints, so
+  listed rules are ignored for that lint run
 - **[toolchain bootstrap]** Before running Dylint, the CLI ensures the toolchains required by the embedded lint dylibs
   are installed
 
@@ -935,6 +937,13 @@ cargo gears lint --app app1 --env dev --dylint
 
 ```bash
 cargo gears lint -p /tmp/cf-demo --app app1 --env dev --dylint
+```
+
+Manifest Dylint skip example:
+
+```toml
+[apps.app1.dev.lint]
+dylint = { enabled = true, skip = ["de0301_no_infra_in_domain"] }
 ```
 
 ### `ls`

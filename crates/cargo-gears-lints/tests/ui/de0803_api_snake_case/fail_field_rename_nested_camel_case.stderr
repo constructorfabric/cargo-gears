@@ -1,0 +1,49 @@
+error: api/rest DTO type must use the api_dto macro (DE0203)
+  --> $DIR/fail_field_rename_nested_camel_case.rs:5:1
+   |
+LL | / pub struct BadNestedFieldRenameDto {
+LL | |     // Should trigger DE0803 - DTO fields must not use non-snake_case in serde rename/rename_all
+LL | |     #[serde(rename(serialize = "userName"))]
+LL | |     pub user_name_serialize: String,
+...  |
+LL | |     pub user_name_deserialize: String,
+LL | | }
+   | |_^
+   |
+   = help: Use #[modkit_macros::api_dto(request)] for request DTOs, #[modkit_macros::api_dto(response)] for response DTOs, or #[modkit_macros::api_dto(request, response)] for both
+   = note: `#[deny(de0203_dtos_must_use_api_dto)]` on by default
+
+error: api/rest type is missing required ToSchema derive (DE0204)
+  --> $DIR/fail_field_rename_nested_camel_case.rs:5:1
+   |
+LL | / pub struct BadNestedFieldRenameDto {
+LL | |     // Should trigger DE0803 - DTO fields must not use non-snake_case in serde rename/rename_all
+LL | |     #[serde(rename(serialize = "userName"))]
+LL | |     pub user_name_serialize: String,
+...  |
+LL | |     pub user_name_deserialize: String,
+LL | | }
+   | |_^
+   |
+   = help: DTOs in api/rest must derive ToSchema for OpenAPI documentation
+   = note: `#[deny(de0204_dtos_must_have_toschema_derive)]` on by default
+
+error: DTO fields must not use non-snake_case in serde rename (DE0803)
+  --> $DIR/fail_field_rename_nested_camel_case.rs:7:20
+   |
+LL |     #[serde(rename(serialize = "userName"))]
+   |                    ^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: DTO fields in api/rest must use snake_case to match API standards
+   = note: `#[deny(de0803_api_snake_case)]` on by default
+
+error: DTO fields must not use non-snake_case in serde rename (DE0803)
+  --> $DIR/fail_field_rename_nested_camel_case.rs:10:20
+   |
+LL |     #[serde(rename(deserialize = "userName"))]
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: DTO fields in api/rest must use snake_case to match API standards
+
+error: aborting due to 4 previous errors
+

@@ -5,6 +5,10 @@ use anyhow::{Context, Result};
 #[cfg(feature = "dylint-rules")]
 use std::collections::BTreeSet;
 #[cfg(feature = "dylint-rules")]
+use std::fs;
+#[cfg(feature = "dylint-rules")]
+use std::io::ErrorKind;
+#[cfg(feature = "dylint-rules")]
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -93,7 +97,12 @@ impl LintParams {
         }
 
         if selection.dylint {
-            run_dylint(&resolved.workspace_root)?;
+            let skipped_lints = resolved
+                .lint
+                .dylint
+                .as_ref()
+                .map_or(&[][..], |dylint| dylint.skip.as_slice());
+            run_dylint(&resolved.workspace_root, skipped_lints)?;
         }
 
         Ok(())
@@ -148,9 +157,10 @@ fn embedded_toolchains() -> Result<BTreeSet<String>> {
 }
 
 #[cfg(feature = "dylint-rules")]
-fn run_dylint(workspace_path: &Path) -> Result<()> {
+fn run_dylint(workspace_path: &Path, skipped_lints: &[String]) -> Result<()> {
     for toolchain in embedded_toolchains()? {
         ensure_toolchain_installed(&toolchain)?;
+        clear_dylint_rustc_info_cache(workspace_path, &toolchain)?;
     }
 
     // Write every embedded dylib to a per-run temp directory so dylint can
@@ -191,6 +201,7 @@ fn run_dylint(workspace_path: &Path) -> Result<()> {
             },
             // Lint the whole workspace, not just the root crate.
             workspace: true,
+            args: dylint_cargo_check_args(skipped_lints)?,
             ..Default::default()
         }),
         ..Default::default()
@@ -199,8 +210,53 @@ fn run_dylint(workspace_path: &Path) -> Result<()> {
     dylint::run(&opts)
 }
 
+#[cfg(feature = "dylint-rules")]
+fn dylint_cargo_check_args(skipped_lints: &[String]) -> Result<Vec<String>> {
+    if skipped_lints.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let rustflags = skipped_lints
+        .iter()
+        .flat_map(|lint| ["-A".to_owned(), lint.clone()])
+        .collect::<Vec<_>>();
+    let rustflags = serde_json::to_string(&rustflags).context("failed to encode dylint skips")?;
+
+    Ok(vec![
+        "--config".to_owned(),
+        format!("build.rustflags={rustflags}"),
+    ])
+}
+
+#[cfg(feature = "dylint-rules")]
+fn clear_dylint_rustc_info_cache(workspace_path: &Path, toolchain: &str) -> Result<()> {
+    let metadata = cargo_metadata::MetadataCommand::new()
+        .manifest_path(workspace_path.join("Cargo.toml"))
+        .no_deps()
+        .exec()
+        .context("failed to resolve workspace metadata for dylint target dir")?;
+
+    let rustc_info = metadata
+        .target_directory
+        .as_std_path()
+        .join("dylint/target")
+        .join(toolchain)
+        .join(".rustc_info.json");
+
+    match fs::remove_file(&rustc_info) {
+        Ok(()) => Ok(()),
+        Err(err) if err.kind() == ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(err).with_context(|| {
+            format!(
+                "failed to clear stale dylint rustc info cache at {}",
+                rustc_info.display()
+            )
+        }),
+    }
+}
+
 #[cfg(not(feature = "dylint-rules"))]
-fn run_dylint(_workspace_path: &Path) -> Result<()> {
+fn run_dylint(_workspace_path: &Path, _skipped_lints: &[String]) -> Result<()> {
     anyhow::bail!("dylint-rules feature not enabled")
 }
 
@@ -305,6 +361,25 @@ mod tests {
         assert_eq!(
             error.to_string(),
             "`--strict` requires `--clippy` or `--all`"
+        );
+    }
+
+    #[cfg(feature = "dylint-rules")]
+    #[test]
+    fn dylint_skip_list_is_converted_to_cargo_rustflags_config() {
+        let args = super::dylint_cargo_check_args(&[
+            "de0301_no_infra_in_domain".to_owned(),
+            "de1302_error_from_to_string".to_owned(),
+        ])
+        .expect("skip args should encode");
+
+        assert_eq!(
+            args,
+            vec![
+                "--config".to_owned(),
+                "build.rustflags=[\"-A\",\"de0301_no_infra_in_domain\",\"-A\",\"de1302_error_from_to_string\"]"
+                    .to_owned(),
+            ]
         );
     }
 }

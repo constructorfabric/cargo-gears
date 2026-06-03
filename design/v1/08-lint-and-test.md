@@ -62,11 +62,12 @@ Manifest example:
 
 ```toml
 [apps.app1.dev.lint]
-skip-dylint = [
-    "rule-name"
-]
-# To skip all lint rules
-# skip-dylint = true
+dylint = {
+    enabled = true,
+    skip = [
+        "rule-name",
+    ],
+}
 clippy = true # by default
 fmt = true # by default
 feature-set-test = true # inherits the feature set to test

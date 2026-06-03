@@ -1,0 +1,22 @@
+error: api/rest type is missing required ToSchema derive (DE0204)
+  --> $DIR/pass_outside_api.rs:7:1
+   |
+LL | / pub struct OutsideApiDto {
+LL | |     pub id: String,
+LL | | }
+   | |_^
+   |
+   = help: DTOs in api/rest must derive ToSchema for OpenAPI documentation
+   = note: `#[deny(de0204_dtos_must_have_toschema_derive)]` on by default
+
+error: DTO type `OutsideApiDto` is defined outside of api/rest folder (DE0201)
+  --> $DIR/pass_outside_api.rs:7:1
+   |
+LL | pub struct OutsideApiDto {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: move DTO types to src/api/rest/dto.rs
+   = note: `#[deny(de0201_dtos_only_in_api_rest)]` on by default
+
+error: aborting due to 2 previous errors
+

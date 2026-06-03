@@ -76,21 +76,31 @@ These rules are compiled at build time (behind the `dylint-rules` feature of `ca
 ## Project Structure
 
 ```text
-tools/dylint_lints/
-├── lint_utils/               # Shared helper crate
-├── de01_domain_layer/        # One crate per lint rule
-│   ├── de0101_.../
-│   │   ├── src/lib.rs        # Lint implementation
-│   │   ├── ui/               # UI test fixtures (.rs + .stderr)
-│   │   └── Cargo.toml
+crates/cargo-gears-lints/
+├── src/
+│   ├── lib.rs                # Registers all lints in one dylint library
+│   ├── lint_utils.rs         # Shared helpers
+│   ├── de01_domain_layer/    # Lint implementations grouped by category
+│   │   ├── de0101_....rs
+│   │   └── ...
+│   ├── de02_api_layer/
 │   └── ...
-├── de02_api_layer/
-├── ...
-├── Cargo.toml                # Workspace manifest
+├── docs/                     # Per-lint documentation, grouped by category
+│   ├── README.md             # Index linking to each lint README
+│   ├── de01_domain_layer/
+│   │   ├── de0101_.../
+│   │   │   └── README.md
+│   │   └── ...
+│   └── ...
+├── tests/
+│   └── ui/
+│       ├── de0101_.../       # UI test fixtures (.rs + .stderr)
+│       └── ...
+├── Cargo.toml                # Publishable package manifest
 └── rust-toolchain.toml       # Nightly channel for dylint
 ```
 
-Each lint crate contains a `ui/` directory with test fixtures: `.rs` files with code that should trigger (or not) the lint, and `.stderr` files with the expected compiler diagnostics.
+Each lint implementation lives in `src/<category>/<lint>.rs`. Per-lint documentation lives in `docs/<category>/<lint>/README.md`, with [docs/README.md](docs/README.md) as the index. UI fixtures live in `tests/ui/<lint>/`: `.rs` files contain code that should trigger (or not) the lint, and `.stderr` files contain the expected compiler diagnostics.
 
 ## Usage
 
@@ -99,11 +109,11 @@ cargo gears lint --dylint
 cargo gears lint --all
 ```
 
-See the per-lint `README.md` files for details on what each rule checks and examples.
+See [docs/README.md](docs/README.md) for links to each lint's detailed documentation.
 
 ## Troubleshooting
 
-**Build fails for lint workspace** — Dylint rules require a specific nightly toolchain
+**Build fails for lint package** — Dylint rules require a specific nightly toolchain
 (declared in `rust-toolchain.toml`). The build script installs it automatically via `rustup`.
 
 **Lint not triggering** — Check that the file path matches the expected module pattern

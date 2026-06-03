@@ -63,44 +63,49 @@ fn build_dylint_rules() -> anyhow::Result<()> {
     // Full versioned toolchain name used in the dylib filename convention.
     let versioned_toolchain = format!("{channel}-{host}");
 
-    // -- Build the lint workspace -------------------------------------------
+    // -- Build the lint package ---------------------------------------------
     // Use `rustup run` so the toolchain is explicit, and strip every env var
     // that the outer stable `cargo build` injects — in particular `RUSTC`,
     // `CARGO`, `RUSTFLAGS`, and `RUSTUP_TOOLCHAIN` — so the inner build
     // cannot accidentally inherit a stable toolchain.
-    if !lint_build_dir.exists() {
-        let status = Command::new("rustup")
-            .args([
-                "run",
-                &channel,
-                "cargo",
-                "build",
-                "--release",
-                "--workspace",
-                "--manifest-path",
-            ])
-            .arg(lints_dir.join("Cargo.toml"))
-            .arg("--target-dir")
-            .arg(&lint_build_dir)
-            .env_remove("RUSTUP_TOOLCHAIN")
-            .env_remove("RUSTC")
-            .env_remove("RUSTC_WRAPPER")
-            .env_remove("RUSTC_WORKSPACE_WRAPPER")
-            .env_remove("RUSTDOC")
-            .env_remove("CARGO")
-            .env_remove("RUSTFLAGS")
-            .env_remove("CARGO_ENCODED_RUSTFLAGS")
-            .status()
-            .context("failed to spawn cargo build for lint workspace")?;
+    if lint_build_dir.exists() {
+        fs::remove_dir_all(&lint_build_dir).context("failed to clear lint package build dir")?;
+    }
 
-        if !status.success() {
-            bail!("cargo build failed for lint workspace");
-        }
+    let status = Command::new("rustup")
+        .args([
+            "run",
+            &channel,
+            "cargo",
+            "build",
+            "--release",
+            "--workspace",
+            "--manifest-path",
+        ])
+        .arg(lints_dir.join("Cargo.toml"))
+        .arg("--target-dir")
+        .arg(&lint_build_dir)
+        .env_remove("RUSTUP_TOOLCHAIN")
+        .env_remove("RUSTC")
+        .env_remove("RUSTC_WRAPPER")
+        .env_remove("RUSTC_WORKSPACE_WRAPPER")
+        .env_remove("RUSTDOC")
+        .env_remove("CARGO")
+        .env_remove("RUSTFLAGS")
+        .env_remove("CARGO_ENCODED_RUSTFLAGS")
+        .status()
+        .context("failed to spawn cargo build for lint package")?;
+
+    if !status.success() {
+        bail!("cargo build failed for lint package");
     }
 
     // -- Copy dylibs with versioned names -----------------------------------
     let release_dir = lint_build_dir.join("release");
     let libs_dir = out_dir.join("dylint_libs");
+    if libs_dir.exists() {
+        fs::remove_dir_all(&libs_dir).context("failed to clear embedded dylint libs dir")?;
+    }
     fs::create_dir_all(&libs_dir)?;
 
     let (dll_prefix, dll_suffix) = if cfg!(target_os = "macos") {
@@ -182,11 +187,14 @@ fn main() -> anyhow::Result<()> {
 #[cfg(feature = "dylint-rules")]
 fn lints_dir() -> anyhow::Result<PathBuf> {
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?);
-    let lints_dir = manifest_dir.join("dylint_lints");
+    let lints_dir = manifest_dir
+        .parent()
+        .context("could not find crates directory from CARGO_MANIFEST_DIR")?
+        .join("cargo-gears-lints");
 
     if !lints_dir.join("Cargo.toml").is_file() {
         bail!(
-            "dylint workspace manifest not found at: {}",
+            "dylint package manifest not found at: {}",
             lints_dir.display()
         );
     }
@@ -234,10 +242,10 @@ fn read_toolchain_components(lints_dir: &Path) -> anyhow::Result<Vec<String>> {
 fn read_toolchain(lints_dir: &Path) -> anyhow::Result<toml::Value> {
     let toolchain_file = lints_dir.join("rust-toolchain.toml");
     let toolchain_content = fs::read_to_string(&toolchain_file)
-        .context("could not read rust-toolchain.toml from lint workspace")?;
+        .context("could not read rust-toolchain.toml from lint package")?;
 
     toml::from_str(&toolchain_content)
-        .context("could not parse rust-toolchain.toml from lint workspace")
+        .context("could not parse rust-toolchain.toml from lint package")
 }
 
 #[cfg(feature = "dylint-rules")]
@@ -249,5 +257,10 @@ fn emit_rerun_markers(lints_dir: &Path) {
     println!(
         "cargo:rerun-if-changed={}",
         lints_dir.join("rust-toolchain.toml").display()
+    );
+    println!("cargo:rerun-if-changed={}", lints_dir.join("src").display());
+    println!(
+        "cargo:rerun-if-changed={}",
+        lints_dir.join("tests").display()
     );
 }
