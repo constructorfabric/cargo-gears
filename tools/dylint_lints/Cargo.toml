@@ -61,33 +61,33 @@ authors = ["Cyber Fabric"]
 unsafe_code = "forbid"
 unused_extern_crates = "warn"
 
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+
 [workspace.dependencies]
 clippy_utils = { git = "https://github.com/rust-lang/rust-clippy", rev = "54482290b5f32e6c6b57cc9e0a17153f432b0036" }
 dylint_linting = "=5.0.0"
 dylint_testing = "=5.0.0"
-lint_utils = { path = "lint_utils" }
-tokio = { version = "1.44", features = ["macros", "rt"] }
 # NOTE: Keep gts version in sync with /Cargo.toml workspace dependencies
+gts = "0.9.0"
+gts-id = "0.9.0"
+gts-macros = "0.9.0"
+lint_utils = { path = "lint_utils" }
+# Uncomment when gears-modkit crates are published to crates.io
+# modkit = { package = "gears-modkit", version = "0.1" }
+# modkit-macros = { package = "gears-modkit-macros", version = "0.1" }
+schemars = { version = "1.2", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+tokio = { version = "1.44", features = ["macros", "rt"] }
 utoipa = "5.2"
-# Uncomment when gears-modkit crates are published to crates.io
-# modkit-macros = { package = "gears-modkit-macros", version = "0.1" }
-# modkit = { package = "gears-modkit", version = "0.1" }
-gts-id = "0.9.0"
-gts = "0.9.0"
-gts-macros = "0.9.0"
-schemars = { version = "1.2", features = ["derive"] }
 
 # Dev dependencies for lint tests
+anyhow = "1.0"
+axum = "0.7"
+http = "1.0"
 sea-orm = "1.0"
 sqlx = "0.8"
-axum = "0.7"
-uuid = "1.0"
-anyhow = "1.0"
 thiserror = "2.0"
-http = "1.0"
-
-[workspace.lints.clippy]
-all = "warn"
-pedantic = "warn"
+uuid = "1.0"
