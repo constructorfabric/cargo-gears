@@ -25,7 +25,7 @@ fn parses_list_modules_into_core_command() {
                     verbose: true,
                     output: gears_cli_core::list::ModulesOutput::all(),
                     registry: Registry::CratesIo,
-                    format: OutputFormat::Table,
+                    format: OutputFormat::Json,
                 },
             ),
         })
@@ -45,7 +45,7 @@ fn parses_list_modules_local_flag_into_core_command() {
                     verbose: false,
                     output: gears_cli_core::list::ModulesOutput::local(),
                     registry: Registry::CratesIo,
-                    format: OutputFormat::Table,
+                    format: OutputFormat::Json,
                 },
             ),
         })
@@ -73,7 +73,7 @@ fn parses_list_modules_system_flag_into_core_command() {
                     verbose: true,
                     output: gears_cli_core::list::ModulesOutput::system(),
                     registry: Registry::CratesIo,
-                    format: OutputFormat::Table,
+                    format: OutputFormat::Json,
                 },
             ),
         })
