@@ -1,28 +1,28 @@
 [workspace]
 members = [
-    "crates/gears-cli",
-    "crates/gears-cli-core",
-    "crates/gears-cli-derive",
+    "crates/cargo-gears",
+    "crates/cargo-gears-core",
+    "crates/cargo-gears-macros",
 ]
 resolver = "3"
 
 [workspace.package]
 version = "0.0.1"
 license-file = "LICENSE"
-authors = ["Gears"]
+authors = ["Constructor Fabric"]
 repository = "https://github.com/constructorfabric/cf-cli"
 description = "Command-line interface for Gears"
 edition = "2024"
 readme = "README.md"
 
 [workspace.dependencies]
-gears-cli-derive = { path = "crates/gears-cli-derive" }
-gears-cli-core = { path = "crates/gears-cli-core" }
+cargo-gears-macros = { path = "crates/cargo-gears-macros" }
+cargo-gears-core = { path = "crates/cargo-gears-core" }
 
 anyhow = { version = "1.0" }
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.6", features = ["derive"] }
 
-cargo-generate = { version = "0.23.8" }
+cargo-generate = { version = "0.23.11" }
 cargo_metadata = { version = "0.23.1" }
 
 dylint = "6.0.1"
@@ -32,7 +32,7 @@ serde-saphyr = { version = "0.0.27" }
 serde_json = { version = "1.0" }
 
 toml = { version = "1.1.2", features = ["serde"] }
-toml_edit = "0.25.10"
+toml_edit = "0.25.12"
 
 notify = { version = "8.2", features = ["serde"] }
 reqwest = { version = "0.13", features = ["json"] }
