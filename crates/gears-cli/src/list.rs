@@ -1,5 +1,5 @@
 use crate::common::{OutputFormat, Registry, WorkspacePath};
-use clap::{Args, Subcommand};
+use clap::{ArgAction, Args, Subcommand};
 
 #[derive(Args)]
 pub struct ListArgs {
@@ -9,12 +9,8 @@ pub struct ListArgs {
 
 #[derive(Subcommand)]
 pub enum ListCommand {
-    /// List all modules (system + workspace)
+    /// List modules
     Modules(ModulesArgs),
-    /// List workspace-discovered modules
-    LocalModules(LocalModulesArgs),
-    /// List built-in system modules from the registry
-    SystemModules(SystemModulesArgs),
 }
 
 #[derive(Args)]
@@ -24,36 +20,17 @@ pub struct ModulesArgs {
     /// Show all information related to the modules (fetches registry metadata for system modules)
     #[arg(short = 'v', long)]
     verbose: bool,
+    /// Only list built-in system modules from the registry
+    #[arg(long, action = ArgAction::SetTrue)]
+    system: bool,
+    /// Only list workspace-discovered modules
+    #[arg(long, action = ArgAction::SetTrue)]
+    local: bool,
     /// Registry to query for system-crate metadata
     #[arg(long, value_enum, default_value_t = Registry::CratesIo)]
     registry: Registry,
     /// Output format
-    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
-    format: OutputFormat,
-}
-
-#[derive(Args)]
-pub struct LocalModulesArgs {
-    #[command(flatten)]
-    workspace: WorkspacePath,
-    /// Show all information related to the module
-    #[arg(short = 'v', long)]
-    verbose: bool,
-    /// Output format
-    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
-    format: OutputFormat,
-}
-
-#[derive(Args)]
-pub struct SystemModulesArgs {
-    /// Show all information related to the module (fetches registry metadata)
-    #[arg(short = 'v', long)]
-    verbose: bool,
-    /// Registry to query for system-crate metadata
-    #[arg(long, value_enum, default_value_t = Registry::CratesIo)]
-    registry: Registry,
-    /// Output format
-    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Table)]
+    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Json)]
     format: OutputFormat,
 }
 
@@ -75,37 +52,26 @@ impl From<ListCommand> for gears_cli_core::list::ListCommand {
     fn from(command: ListCommand) -> Self {
         match command {
             ListCommand::Modules(args) => Self::Modules(args.into()),
-            ListCommand::LocalModules(args) => Self::LocalModules(args.into()),
-            ListCommand::SystemModules(args) => Self::SystemModules(args.into()),
         }
     }
 }
 
 impl From<ModulesArgs> for gears_cli_core::list::ModulesParams {
     fn from(args: ModulesArgs) -> Self {
+        let output = if args.system || args.local {
+            match (args.system, args.local) {
+                (true, false) => gears_cli_core::list::ModulesOutput::system(),
+                (false, true) => gears_cli_core::list::ModulesOutput::local(),
+                _ => gears_cli_core::list::ModulesOutput::all(),
+            }
+        } else {
+            gears_cli_core::list::ModulesOutput::all()
+        };
+
         Self {
             path: args.workspace.path,
             verbose: args.verbose,
-            registry: args.registry,
-            format: args.format,
-        }
-    }
-}
-
-impl From<LocalModulesArgs> for gears_cli_core::list::LocalModulesParams {
-    fn from(args: LocalModulesArgs) -> Self {
-        Self {
-            path: args.workspace.path,
-            verbose: args.verbose,
-            format: args.format,
-        }
-    }
-}
-
-impl From<SystemModulesArgs> for gears_cli_core::list::SystemModulesParams {
-    fn from(args: SystemModulesArgs) -> Self {
-        Self {
-            verbose: args.verbose,
+            output,
             registry: args.registry,
             format: args.format,
         }

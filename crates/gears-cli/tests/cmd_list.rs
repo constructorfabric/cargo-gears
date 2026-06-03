@@ -23,8 +23,9 @@ fn parses_list_modules_into_core_command() {
                 gears_cli_core::list::ModulesParams {
                     path: None,
                     verbose: true,
+                    output: gears_cli_core::list::ModulesOutput::all(),
                     registry: Registry::CratesIo,
-                    format: OutputFormat::Table,
+                    format: OutputFormat::Json,
                 },
             ),
         })
@@ -32,17 +33,19 @@ fn parses_list_modules_into_core_command() {
 }
 
 #[test]
-fn parses_list_local_modules_into_core_command() {
-    let command = parse_command(&["gears", "ls", "local-modules", "--verbose"]);
+fn parses_list_modules_local_flag_into_core_command() {
+    let command = parse_command(&["gears", "ls", "modules", "--local"]);
 
     assert_eq!(
         command,
         GearsCommand::List(gears_cli_core::list::ListParams {
-            command: gears_cli_core::list::ListCommand::LocalModules(
-                gears_cli_core::list::LocalModulesParams {
+            command: gears_cli_core::list::ListCommand::Modules(
+                gears_cli_core::list::ModulesParams {
                     path: None,
-                    verbose: true,
-                    format: OutputFormat::Table,
+                    verbose: false,
+                    output: gears_cli_core::list::ModulesOutput::local(),
+                    registry: Registry::CratesIo,
+                    format: OutputFormat::Json,
                 },
             ),
         })
@@ -50,11 +53,12 @@ fn parses_list_local_modules_into_core_command() {
 }
 
 #[test]
-fn parses_list_system_modules_into_core_command() {
+fn parses_list_modules_system_flag_into_core_command() {
     let command = parse_command(&[
         "gears",
         "ls",
-        "system-modules",
+        "modules",
+        "--system",
         "--verbose",
         "--registry",
         "crates.io",
@@ -63,11 +67,13 @@ fn parses_list_system_modules_into_core_command() {
     assert_eq!(
         command,
         GearsCommand::List(gears_cli_core::list::ListParams {
-            command: gears_cli_core::list::ListCommand::SystemModules(
-                gears_cli_core::list::SystemModulesParams {
+            command: gears_cli_core::list::ListCommand::Modules(
+                gears_cli_core::list::ModulesParams {
+                    path: None,
                     verbose: true,
+                    output: gears_cli_core::list::ModulesOutput::system(),
                     registry: Registry::CratesIo,
-                    format: OutputFormat::Table,
+                    format: OutputFormat::Json,
                 },
             ),
         })

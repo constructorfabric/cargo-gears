@@ -1,16 +1,10 @@
-mod local_modules;
 mod modules;
-mod system_modules;
 
-pub use local_modules::LocalModulesParams;
-pub use modules::ModulesParams;
-pub use system_modules::SystemModulesParams;
+pub use modules::{ModulesOutput, ModulesParams};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ListCommand {
     Modules(ModulesParams),
-    LocalModules(LocalModulesParams),
-    SystemModules(SystemModulesParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -22,17 +16,83 @@ impl ListParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             ListCommand::Modules(args) => args.run(),
-            ListCommand::LocalModules(args) => args.run(),
-            ListCommand::SystemModules(args) => args.run(),
         }
     }
 }
+
+#[derive(Clone, Copy)]
+pub struct SystemRegistryModule {
+    pub module_name: &'static str,
+    pub crate_name: &'static str,
+}
+
+pub const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
+    SystemRegistryModule {
+        module_name: "credstore",
+        crate_name: "cf-credstore",
+    },
+    SystemRegistryModule {
+        module_name: "file-parser",
+        crate_name: "cf-file-parser",
+    },
+    SystemRegistryModule {
+        module_name: "api-gateway",
+        crate_name: "cf-api-gateway",
+    },
+    SystemRegistryModule {
+        module_name: "authn-resolver",
+        crate_name: "cf-authn-resolver",
+    },
+    SystemRegistryModule {
+        module_name: "static-authn-plugin",
+        crate_name: "cf-static-authn-plugin",
+    },
+    SystemRegistryModule {
+        module_name: "authz-resolver",
+        crate_name: "cf-authz-resolver",
+    },
+    SystemRegistryModule {
+        module_name: "static-authz-plugin",
+        crate_name: "cf-static-authz-plugin",
+    },
+    SystemRegistryModule {
+        module_name: "grpc-hub",
+        crate_name: "cf-grpc-hub",
+    },
+    SystemRegistryModule {
+        module_name: "module-orchestrator",
+        crate_name: "cf-module-orchestrator",
+    },
+    SystemRegistryModule {
+        module_name: "nodes-registry",
+        crate_name: "cf-nodes-registry",
+    },
+    SystemRegistryModule {
+        module_name: "oagw",
+        crate_name: "cf-oagw",
+    },
+    SystemRegistryModule {
+        module_name: "single-tenant-tr-plugin",
+        crate_name: "cf-single-tenant-tr-plugin",
+    },
+    SystemRegistryModule {
+        module_name: "static-tr-plugin",
+        crate_name: "cf-static-tr-plugin",
+    },
+    SystemRegistryModule {
+        module_name: "tenant-resolver",
+        crate_name: "cf-tenant-resolver",
+    },
+    SystemRegistryModule {
+        module_name: "types-registry",
+        crate_name: "cf-types-registry",
+    },
+];
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::common::{OutputFormat, Registry};
-    use crate::config::modules::SYSTEM_REGISTRY_MODULES;
     use crate::module_parser::get_module_name_from_crate;
     use crate::module_parser::test_utils::TempDirExt;
     use tempfile::TempDir;
@@ -140,41 +200,47 @@ mod tests {
     }
 
     #[test]
-    fn list_local_modules_runs_successfully() {
+    fn list_modules_local_runs_successfully() {
         let temp_dir = scaffold_workspace(&[("crate-gamma", "gamma")]);
 
-        let args = LocalModulesParams {
+        let args = ModulesParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
-            format: OutputFormat::Table,
-        };
-
-        args.run().expect("list local-modules should succeed");
-    }
-
-    #[test]
-    fn list_local_modules_verbose_runs_successfully() {
-        let temp_dir = scaffold_workspace(&[("crate-delta", "delta")]);
-
-        let args = LocalModulesParams {
-            path: Some(temp_dir.path().to_path_buf()),
-            verbose: true,
-            format: OutputFormat::Table,
-        };
-
-        args.run()
-            .expect("list local-modules --verbose should succeed");
-    }
-
-    #[test]
-    fn list_system_modules_runs_successfully() {
-        let args = SystemModulesParams {
-            verbose: false,
+            output: ModulesOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
         };
 
-        args.run().expect("list system-modules should succeed");
+        args.run().expect("list modules --local should succeed");
+    }
+
+    #[test]
+    fn list_modules_local_verbose_runs_successfully() {
+        let temp_dir = scaffold_workspace(&[("crate-delta", "delta")]);
+
+        let args = ModulesParams {
+            path: Some(temp_dir.path().to_path_buf()),
+            verbose: true,
+            output: ModulesOutput::local(),
+            registry: Registry::CratesIo,
+            format: OutputFormat::Table,
+        };
+
+        args.run()
+            .expect("list modules --local --verbose should succeed");
+    }
+
+    #[test]
+    fn list_modules_system_runs_successfully() {
+        let args = ModulesParams {
+            path: None,
+            verbose: false,
+            output: ModulesOutput::system(),
+            registry: Registry::CratesIo,
+            format: OutputFormat::Table,
+        };
+
+        args.run().expect("list modules --system should succeed");
     }
 
     #[test]
@@ -192,6 +258,7 @@ mod tests {
         let args = ModulesParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
+            output: ModulesOutput::all(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
         };
