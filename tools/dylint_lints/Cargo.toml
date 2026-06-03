@@ -71,8 +71,9 @@ tokio = { version = "1.44", features = ["macros", "rt"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 utoipa = "5.2"
-modkit-macros = { package = "cyberware-modkit-macros", path = "../../libs/modkit-macros" }
-modkit = { package = "cyberware-modkit", path = "../../libs/modkit" }
+# Uncomment when gears-modkit crates are published to crates.io
+# modkit-macros = { package = "gears-modkit-macros", version = "0.1" }
+# modkit = { package = "gears-modkit", version = "0.1" }
 gts-id = "0.9.0"
 gts = "0.9.0"
 gts-macros = "0.9.0"
