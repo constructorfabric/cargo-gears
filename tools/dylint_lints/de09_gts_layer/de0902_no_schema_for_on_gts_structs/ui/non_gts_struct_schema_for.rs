@@ -1,4 +1,4 @@
-//! Test case: schema_for! on regular (non-GTS) struct should NOT trigger DE0110
+//! Test case: schema_for! on regular (non-GTS) struct should NOT trigger DE0902
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,6 @@ pub struct RegularDto {
 }
 
 fn main() {
-    // Should not trigger DE0110 - schema_for on non-GTS struct
+    // Should not trigger DE0902 - schema_for on non-GTS struct
     let _schema = schemars::schema_for!(RegularDto);
 }

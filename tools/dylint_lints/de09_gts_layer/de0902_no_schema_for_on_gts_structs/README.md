@@ -1,4 +1,4 @@
-# DE0110: No `schema_for!` on GTS Structs
+# DE0902: No `schema_for!` on GTS Structs
 
 ## What it does
 
@@ -20,7 +20,7 @@ use schemars::schema_for;
 #[struct_to_gts_schema(...)]
 pub struct MyPluginSpec { ... }
 
-let schema = schema_for!(MyPluginSpec);  // ❌ Will trigger DE0110
+let schema = schema_for!(MyPluginSpec);  // ❌ Will trigger DE0902
 ```
 
 Use instead:

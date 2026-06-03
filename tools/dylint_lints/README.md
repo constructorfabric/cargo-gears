@@ -10,7 +10,6 @@ These rules are compiled at build time (behind the `dylint-rules` feature of `ge
 - **DE0101** No Serde in Domain
 - **DE0102** No ToSchema in Domain
 - **DE0104** No API DTO in Domain
-- **DE0110** No `schema_for!` on GTS Structs
 
 ### API Layer (DE02xx)
 - **DE0201** DTOs Only in API Rest Folder

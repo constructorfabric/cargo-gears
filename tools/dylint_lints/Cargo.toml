@@ -6,7 +6,7 @@ members = [
     "de01_domain_layer/de0101_no_serde_in_domain",
     "de01_domain_layer/de0102_no_toschema_in_domain",
     "de01_domain_layer/de0104_no_api_dto_in_domain",
-    "de01_domain_layer/de0110_no_schema_for_on_gts_structs",
+    # de0110 removed: duplicate of de0902 (no schema_for on GTS structs)
     "de02_api_layer/de0201_dtos_only_in_api_rest",
     "de02_api_layer/de0202_dtos_not_referenced_outside_api",
     "de02_api_layer/de0203_dtos_must_use_api_dto",
