@@ -36,7 +36,7 @@ dylint = {
     enabled = true,
     skip = [
         "de0101_no_serde_in_contract",
-        "de0110_no_schema_for_on_gts_structs",
+        "de0902_no_schema_for_on_gts_structs",
     ],
 }
 clippy = true # by default
