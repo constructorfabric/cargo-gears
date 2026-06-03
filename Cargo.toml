@@ -16,8 +16,8 @@ edition = "2024"
 readme = "README.md"
 
 [workspace.dependencies]
-cargo-gears-macros = { path = "crates/cargo-gears-macros" }
-cargo-gears-core = { path = "crates/cargo-gears-core" }
+cargo-gears-macros = { path = "crates/cargo-gears-macros", version = "0.0.1" }
+cargo-gears-core = { path = "crates/cargo-gears-core", version = "0.0.1" }
 
 anyhow = { version = "1.0" }
 clap = { version = "4.6", features = ["derive"] }

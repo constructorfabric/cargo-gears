@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
 
 /// Content of SKILL.md embedded at compile time
-const SKILL_MD_CONTENT: &str = include_str!("../../../../SKILL.md");
+const SKILL_MD_CONTENT: &str = include_str!("../../shared/SKILL.md");
 
 /// Content of Dockerfile embedded at compile time
 const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
