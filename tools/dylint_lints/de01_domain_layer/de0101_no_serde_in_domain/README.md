@@ -54,5 +54,5 @@ This lint is configured to **deny** by default.
 
 ### See Also
 
-- [DE0102](../de0102_no_toschema_in_contract) - No ToSchema in Contract
-- [DE0103](../de0103_no_http_types_in_contract) - No HTTP Types in Contract
+- [DE0102](../de0102_no_toschema_in_domain) - No ToSchema in Domain
+- [DE0308](../../de03_domain_layer/de0308_no_http_in_domain) - No HTTP in Domain

@@ -55,5 +55,5 @@ This lint is configured to **deny** by default.
 
 ### See Also
 
-- [DE0101](../de0101_no_serde_in_contract) - No Serde in Contract
-- [DE0103](../de0103_no_http_types_in_contract) - No HTTP Types in Contract
+- [DE0101](../de0101_no_serde_in_domain) - No Serde in Domain
+- [DE0308](../../de03_domain_layer/de0308_no_http_in_domain) - No HTTP in Domain

@@ -9,7 +9,6 @@ These rules are compiled at build time (behind the `dylint-rules` feature of `ge
 ### Domain Layer (DE01xx)
 - **DE0101** No Serde in Domain
 - **DE0102** No ToSchema in Domain
-- **DE0103** No HTTP Types in Domain
 - **DE0104** No API DTO in Domain
 - **DE0110** No `schema_for!` on GTS Structs
 

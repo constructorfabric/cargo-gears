@@ -599,18 +599,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "de0103_no_http_types_in_domain"
-version = "0.1.0"
-dependencies = [
- "axum",
- "clippy_utils",
- "dylint_linting",
- "dylint_testing",
- "http",
- "lint_utils",
-]
-
-[[package]]
 name = "de0104_no_api_dto_in_domain"
 version = "0.1.0"
 dependencies = [

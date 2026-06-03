@@ -5,7 +5,6 @@ members = [
     "lint_utils",
     "de01_domain_layer/de0101_no_serde_in_domain",
     "de01_domain_layer/de0102_no_toschema_in_domain",
-    "de01_domain_layer/de0103_no_http_types_in_domain",
     "de01_domain_layer/de0104_no_api_dto_in_domain",
     "de01_domain_layer/de0110_no_schema_for_on_gts_structs",
     "de02_api_layer/de0201_dtos_only_in_api_rest",
@@ -41,7 +40,8 @@ authors = ["Cyber Fabric"]
 # This workspace contains dylint linter crates for Cyber Ware architecture enforcement
 #
 # Current linters:
-# - DE0101-DE0104: Domain layer validation (serde, toschema, http types, api_dto)
+# - DE0101-DE0104: Domain layer validation (serde, toschema, api_dto)
+# - DE0103 removed: redundant with DE0308 (no HTTP in domain)
 # - DE0201-DE0204: API layer validation (DTOs location, references, derives)
 # - DE0503-DE0504: Client layer validation (naming conventions, versioning)
 # - DE0801-DE0803: REST API conventions (endpoints, odata, snake_case)
