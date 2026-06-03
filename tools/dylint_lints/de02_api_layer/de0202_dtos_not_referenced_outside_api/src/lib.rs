@@ -9,7 +9,7 @@ use rustc_lint::{LateContext, LateLintPass, LintContext};
 dylint_linting::declare_late_lint! {
     /// DE0202: DTOs not referenced outside API
     ///
-    /// DTO types must not be imported by contract, domain, or infra modules.
+    /// DTO types must not be imported by contract (SDK), domain, or infra modules.
     /// DTOs are API layer implementation details.
     pub DE0202_DTOS_NOT_REFERENCED_OUTSIDE_API,
     Deny,
@@ -23,7 +23,7 @@ impl<'tcx> LateLintPass<'tcx> for De0202DtosNotReferencedOutsideApi {
             return;
         };
 
-        // Check if we're in a forbidden module (contract, domain, infra)
+        // Check if we're in a forbidden module (contract/SDK, domain, infra)
         let sm = cx.sess().source_map();
         let span = cx.tcx.def_span(item.owner_id.def_id);
 
@@ -65,7 +65,7 @@ impl<'tcx> LateLintPass<'tcx> for De0202DtosNotReferencedOutsideApi {
                         module_type, last
                     ));
                     diag.help(
-                        "DTOs are API layer details; use contract models or domain types instead",
+                        "DTOs are API layer details; use domain types instead",
                     );
                 });
             }
