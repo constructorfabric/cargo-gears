@@ -6,45 +6,72 @@ These rules are compiled at build time (behind the `dylint-rules` feature of `ge
 
 ## Available Lints
 
-### Domain Layer (DE01xx)
-- **DE0101** No Serde in Domain
-- **DE0102** No ToSchema in Domain
-- **DE0104** No API DTO in Domain
+### DE01xx — Domain Layer
 
-### API Layer (DE02xx)
-- **DE0201** DTOs Only in API Rest Folder
-- **DE0202** DTOs Not Referenced Outside API
-- **DE0203** DTOs Must Use API DTO
-- **DE0204** DTOs Must Have ToSchema Derive
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE0101 | No Serde in Domain | Structs/enums in `/domain/` must not derive `Serialize`/`Deserialize` |
+| DE0102 | No ToSchema in Domain | Structs/enums in `/domain/` must not derive `utoipa::ToSchema` |
+| DE0104 | No API DTO in Domain | Structs/enums in `/domain/` must not use the `api_dto` macro |
 
-### Domain Layer (DE03xx)
-- **DE0301** No Infra in Domain
-- **DE0308** No HTTP Types in Domain
+### DE02xx — API Layer
 
-### Client Layer (DE05xx)
-- **DE0503** Plugin Client Suffix
-- **DE0504** Client Versioning
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE0201 | DTOs Only in API Rest | Types with `*Dto` suffix must live in `*/api/rest/*.rs` |
+| DE0202 | DTOs Not Outside API | Contract, domain, and infra modules must not import DTO types |
+| DE0203 | DTOs Must Use `api_dto` | DTO types in `api/rest` must use `#[modkit_macros::api_dto(...)]` |
+| DE0204 | DTOs Must Have ToSchema | DTO types must derive `utoipa::ToSchema` for OpenAPI docs |
 
-### Security (DE07xx)
-- **DE0706** No Direct SQLx
-- **DE0707** Drop Zeroize (sensitive types)
+### DE03xx — Domain Layer (infra / HTTP boundaries)
 
-### REST Conventions (DE08xx)
-- **DE0801** API Endpoint Must Have Version
-- **DE0802** Use OData Extension Methods
-- **DE0803** API Snake Case
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE0301 | No Infra in Domain | Domain modules must not import infra crates (`modkit_db`, `sea_orm`, etc.) |
+| DE0308 | No HTTP in Domain | Domain modules must not reference `http`, `axum`, or `hyper` types |
 
-### GTS (DE09xx)
-- **DE0901** GTS String Pattern Validator
-- **DE0902** No `schema_for!` on GTS Structs
+### DE05xx — Client Layer
 
-### Testing (DE11xx)
-- **DE1101** Tests in Separate Files
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE0503 | Plugin Client Suffix | Plugin client traits in `*-sdk` crates must use `*Client` suffix |
+| DE0504 | Client Versioning | Client/PluginClient traits must have version suffixes (`V1`, `V2`, ...) |
 
-### Common Patterns (DE13xx)
-- **DE1301** No Print/Debug Macros
-- **DE1302** No `.to_string()` in Error From impls
-- **DE1303** No Primitive Type Aliases
+### DE07xx — Security
+
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE0706 | No Direct SQLx | Direct `sqlx` usage is forbidden; use Sea-ORM / SecORM abstractions |
+| DE0707 | Drop Zeroize | Manual byte-zeroing in `Drop` impls must use `zeroize` or `secrecy` |
+
+### DE08xx — REST API Conventions
+
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE0801 | API Endpoint Version | Endpoints must follow `/{service}/v{N}/{resource}` (kebab-case) |
+| DE0802 | Use OData Ext | OData query params must use `OperationBuilderODataExt` methods |
+| DE0803 | API Snake Case | API DTOs must use `snake_case` in serde `rename_all`/`rename` attrs |
+
+### DE09xx — GTS Layer
+
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE0901 | GTS String Pattern | *(disabled — hardcoded vendor allowlist, needs configuration)* |
+| DE0902 | No `schema_for!` on GTS | GTS structs must use `gts_schema_with_refs_as_string()`, not `schema_for!` |
+
+### DE11xx — Testing
+
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE1101 | Tests in Separate Files | Inline test blocks must be extracted to `*_tests.rs` companion files |
+
+### DE13xx — Common Patterns
+
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE1301 | No Print Macros | `println!`/`eprintln!`/`dbg!` forbidden in production code |
+| DE1302 | No `.to_string()` in From | Error `From` impls must not call `.to_string()` (use `.into()`) |
+| DE1303 | No Primitive Type Alias | `pub type X = Uuid` etc. must be newtypes for type safety |
 
 ## Project Structure
 
