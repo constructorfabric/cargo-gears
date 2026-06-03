@@ -67,8 +67,8 @@ pedantic = "warn"
 
 [workspace.dependencies]
 clippy_utils = { git = "https://github.com/rust-lang/rust-clippy", rev = "54482290b5f32e6c6b57cc9e0a17153f432b0036" }
-dylint_linting = "=5.0.0"
-dylint_testing = "=5.0.0"
+dylint_linting = "6.0.1"
+dylint_testing = "6.0.1"
 # NOTE: Keep gts version in sync with /Cargo.toml workspace dependencies
 gts = "0.9.0"
 gts-id = "0.9.0"
