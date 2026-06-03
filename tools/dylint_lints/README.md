@@ -16,12 +16,10 @@ These rules are compiled at build time (behind the `dylint-rules` feature of `ge
 - **DE0202** DTOs Not Referenced Outside API
 - **DE0203** DTOs Must Use API DTO
 - **DE0204** DTOs Must Have ToSchema Derive
-- **DE0205** Operation Builder Must Have Tag and Summary
 
 ### Domain Layer (DE03xx)
 - **DE0301** No Infra in Domain
 - **DE0308** No HTTP Types in Domain
-- **DE0309** Must Have Domain Model
 
 ### Client Layer (DE05xx)
 - **DE0503** Plugin Client Suffix

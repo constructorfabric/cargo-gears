@@ -59,5 +59,4 @@ This lint is configured to **deny** by default.
 ## See Also
 
 - [Newtype pattern](https://doc.rust-lang.org/rust-by-example/generics/new_types.html)
-- [DE0309](../../de03_domain_layer/de0309_must_have_domain_model) - Must Have Domain Model
 - [Module layout and SDK pattern](../../../../docs/modkit_unified_system/02_module_layout_and_sdk_pattern.md)
