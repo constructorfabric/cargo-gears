@@ -21,6 +21,11 @@ use ensure_toolchain_installed_shared::{
 };
 
 #[cfg(feature = "dylint-rules")]
+const LINTS_PACKAGE_NAME: &str = "cargo-gears-lints";
+#[cfg(feature = "dylint-rules")]
+const LINTS_PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[cfg(feature = "dylint-rules")]
 fn build_dylint_rules() -> anyhow::Result<()> {
     use std::env;
     use std::fmt::Write as _;
@@ -186,20 +191,75 @@ fn main() -> anyhow::Result<()> {
 
 #[cfg(feature = "dylint-rules")]
 fn lints_dir() -> anyhow::Result<PathBuf> {
+    if let Some(lints_dir) = sibling_lints_dir()? {
+        return Ok(lints_dir);
+    }
+
+    registry_lints_dir()
+}
+
+#[cfg(feature = "dylint-rules")]
+fn sibling_lints_dir() -> anyhow::Result<Option<PathBuf>> {
     let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?);
     let lints_dir = manifest_dir
         .parent()
         .context("could not find crates directory from CARGO_MANIFEST_DIR")?
-        .join("cargo-gears-lints");
+        .join(LINTS_PACKAGE_NAME);
 
-    if !lints_dir.join("Cargo.toml").is_file() {
-        bail!(
-            "dylint package manifest not found at: {}",
-            lints_dir.display()
-        );
-    }
+    Ok(lints_dir.join("Cargo.toml").is_file().then_some(lints_dir))
+}
 
-    Ok(lints_dir)
+#[cfg(feature = "dylint-rules")]
+fn registry_lints_dir() -> anyhow::Result<PathBuf> {
+    let temp_dir =
+        tempfile::tempdir().context("could not create temp dir for lint package resolution")?;
+    let manifest_path = temp_dir.path().join("Cargo.toml");
+    let src_dir = temp_dir.path().join("src");
+
+    fs::create_dir(&src_dir)
+        .context("could not create temp source dir for lint package resolver")?;
+    fs::write(src_dir.join("lib.rs"), "")
+        .context("could not write temp source for lint package resolver")?;
+    fs::write(
+        &manifest_path,
+        format!(
+            r#"[package]
+name = "cargo-gears-lints-resolver"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+{LINTS_PACKAGE_NAME} = "={LINTS_PACKAGE_VERSION}"
+"#
+        ),
+    )
+    .context("could not write temp manifest for lint package resolver")?;
+
+    let metadata = cargo_metadata::MetadataCommand::new()
+        .manifest_path(&manifest_path)
+        .exec()
+        .with_context(|| {
+            format!(
+                "failed to resolve `{LINTS_PACKAGE_NAME}` version `{LINTS_PACKAGE_VERSION}` \
+                 from the Cargo registry"
+            )
+        })?;
+
+    metadata
+        .packages
+        .iter()
+        .find(|package| {
+            package.name.as_str() == LINTS_PACKAGE_NAME
+                && package.version.to_string() == LINTS_PACKAGE_VERSION
+        })
+        .and_then(|package| package.manifest_path.parent())
+        .map(|path| path.as_std_path().to_path_buf())
+        .with_context(|| {
+            format!(
+                "could not find `{LINTS_PACKAGE_NAME}` version `{LINTS_PACKAGE_VERSION}` \
+                 in Cargo metadata"
+            )
+        })
 }
 
 #[cfg(feature = "dylint-rules")]

@@ -2,7 +2,7 @@
 
 Custom [dylint](https://github.com/trailofbits/dylint) linters enforcing architectural patterns, layer separation, and REST API conventions.
 
-These rules are compiled at build time (behind the `dylint-rules` feature of `cargo-gears-core`) and embedded into the CLI binary. At runtime, `cargo gears lint --dylint` extracts and runs them against the target workspace.
+These rules are compiled by `cargo-gears-core`'s build script when the CLI is built with `dylint-rules`. During local development, the build uses the sibling `crates/cargo-gears-lints` path; in installed builds, it resolves this package from the Cargo registry at the CLI version. The resulting Dylint library is embedded into the CLI.
 
 ## Available Lints
 

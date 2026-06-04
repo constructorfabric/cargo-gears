@@ -896,7 +896,8 @@ Arguments:
 - **[`--fmt`]** Runs `cargo fmt --check --all`; if passed by itself, it runs only formatting checks
 - **[`--clippy`]** Runs workspace Clippy checks; if passed by itself, it runs only Clippy
 - **[`--strict`]** Turns Clippy warnings into errors; valid only when Clippy is selected explicitly or through `--all`
-- **[`--dylint`]** Runs embedded Dylint rules against the workspace rooted at the current or selected directory
+- **[`--dylint`]** Runs the embedded `cargo-gears-lints` Dylint rules against the workspace rooted at the current or selected
+  directory
 
 Behavior:
 
@@ -914,8 +915,8 @@ Behavior:
   another workspace without manually changing directories
 - **[manifest dylint skips]** Manifest `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints, so
   listed rules are ignored for that lint run
-- **[toolchain bootstrap]** Before running Dylint, the CLI ensures the toolchains required by the embedded lint dylibs
-  are installed
+- **[toolchain bootstrap]** The build script ensures the lint package toolchain and components are installed when
+  compiling embedded rules. Before running Dylint, the CLI ensures the embedded dylib toolchain is installed.
 
 Examples:
 

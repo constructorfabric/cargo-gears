@@ -45,7 +45,10 @@ Fmt currently uses:
 cargo fmt --check --all
 ```
 
-Dylint runs embedded custom rules when the binary is built with `dylint-rules`.
+Dylint runs the embedded `cargo-gears-lints` rules when the binary is built with `dylint-rules`.
+During the `cargo-gears-core` build, local development uses the sibling `crates/cargo-gears-lints` package; installed
+builds resolve the same-version `cargo-gears-lints` package from the registry. The compiled Dylint library is embedded
+into the CLI and reused at `cargo gears lint --dylint` runtime.
 
 ### Proposed Modes
 
