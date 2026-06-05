@@ -18,6 +18,7 @@ dylint_linting::declare_pre_expansion_lint! {
     /// - eprintln!
     /// - print!
     /// - eprint!
+    #[doc = include_str!("../../docs/de13_common_patterns/de1301_no_print_macros/README.md")]
     pub DE1301_NO_PRINT_MACROS,
     Deny,
     "print/debug macros are forbidden in production code (DE1301)"

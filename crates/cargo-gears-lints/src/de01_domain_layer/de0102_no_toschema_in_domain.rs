@@ -42,6 +42,7 @@ dylint_linting::declare_pre_expansion_lint! {
     ///     pub struct ProductDto { pub id: String }
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de01_domain_layer/de0102_no_toschema_in_domain/README.md")]
     pub DE0102_NO_TOSCHEMA_IN_CONTRACT,
     Deny,
     "domain models should not have ToSchema derive (DE0102)"

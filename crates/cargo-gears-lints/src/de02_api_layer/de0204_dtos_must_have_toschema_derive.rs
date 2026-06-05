@@ -33,6 +33,7 @@ dylint_linting::declare_pre_expansion_lint! {
     ///     pub id: String,
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de02_api_layer/de0204_dtos_must_have_toschema_derive/README.md")]
     pub DE0204_DTOS_MUST_HAVE_TOSCHEMA_DERIVE,
     Deny,
     "DTO types must derive ToSchema for OpenAPI documentation (DE0204)"

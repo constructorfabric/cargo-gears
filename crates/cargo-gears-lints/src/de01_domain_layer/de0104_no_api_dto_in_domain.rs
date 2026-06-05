@@ -40,6 +40,7 @@ dylint_linting::declare_pre_expansion_lint! {
     ///     pub struct UserDto { pub id: String }
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de01_domain_layer/de0104_no_api_dto_in_domain/README.md")]
     pub DE0104_NO_API_DTO_IN_CONTRACT,
     Deny,
     "domain models should not use api_dto macro (DE0104)"

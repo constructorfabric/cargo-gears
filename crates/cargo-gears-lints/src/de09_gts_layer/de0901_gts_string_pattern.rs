@@ -1,8 +1,8 @@
 extern crate rustc_ast;
 extern crate rustc_span;
 
-use gts::{GtsIdSegment, GtsOps};
 use crate::lint_utils::{filename_str, is_temp_path};
+use gts::{GtsIdSegment, GtsOps};
 use rustc_ast::token::LitKind;
 use rustc_ast::{AttrKind, Attribute, Expr, ExprKind, Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
@@ -21,10 +21,12 @@ fn default_allowed_vendors() -> Vec<String> {
 }
 
 fn default_test_allowed_vendors() -> Vec<String> {
-    ["cf", "vendor", "example", "fabrikam", "contoso", "acme", "globex"]
-        .iter()
-        .map(|&s| s.to_owned())
-        .collect()
+    [
+        "cf", "vendor", "example", "fabrikam", "contoso", "acme", "globex",
+    ]
+    .iter()
+    .map(|&s| s.to_owned())
+    .collect()
 }
 
 #[derive(serde::Deserialize)]
@@ -70,6 +72,7 @@ dylint_linting::impl_pre_expansion_lint! {
     /// 3. GTS-looking string literals - must be valid GTS entity id
     ///
     /// Uses `GtsOps::parse_id()` from the GTS library for validation.
+    #[doc = include_str!("../../docs/de09_gts_layer/de0901_gts_string_pattern/README.md")]
     pub DE0901_GTS_STRING_PATTERN,
     Deny,
     "invalid GTS string pattern (DE0901)",

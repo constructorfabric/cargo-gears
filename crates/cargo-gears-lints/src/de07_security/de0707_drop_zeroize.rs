@@ -78,6 +78,7 @@ dylint_linting::declare_late_lint! {
     /// The helper call itself escapes the lint, but the underlying zeroing is still
     /// at risk: LLVM may inline `secure_erase` and then eliminate the dead store.
     /// Use `zeroize` or `secrecy` in all cases to ensure the compiler fence is in place.
+    #[doc = include_str!("../../docs/de07_security/de0707_drop_zeroize/README.md")]
     pub DE0707_DROP_ZEROIZE,
     Deny,
     "manual byte-zeroing in Drop may be optimized away; use `secrecy::SecretBox` or the `zeroize` crate (DE0707)"

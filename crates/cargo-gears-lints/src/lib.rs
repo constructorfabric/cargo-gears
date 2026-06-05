@@ -138,9 +138,8 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     lint_store.register_early_pass(|| {
         Box::new(de05_client_layer::de0504_client_versioning::De0504ClientVersioning)
     });
-    lint_store.register_early_pass(|| {
-        Box::new(de07_security::de0706_no_direct_sqlx::De0706NoDirectSqlx)
-    });
+    lint_store
+        .register_early_pass(|| Box::new(de07_security::de0706_no_direct_sqlx::De0706NoDirectSqlx));
     lint_store.register_early_pass(|| {
         Box::new(de13_common_patterns::de1303_no_primitive_type_alias::De1303NoPrimitiveTypeAlias)
     });
@@ -153,9 +152,8 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     lint_store.register_late_pass(|_| {
         Box::new(de12_documentation::de1201_docs_rs_all_features::De1201DocsRsAllFeatures::new())
     });
-    lint_store.register_late_pass(|_| {
-        Box::new(de07_security::de0707_drop_zeroize::De0707DropZeroize)
-    });
+    lint_store
+        .register_late_pass(|_| Box::new(de07_security::de0707_drop_zeroize::De0707DropZeroize));
     lint_store.register_late_pass(|_| {
         Box::new(de08_rest_api_conventions::de0801_api_endpoint_version::De0801ApiEndpointVersion)
     });
@@ -163,9 +161,7 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         Box::new(de08_rest_api_conventions::de0802_use_odata_ext::De0802UseOdataExt)
     });
     lint_store.register_late_pass(|_| {
-        Box::new(
-            de09_gts_layer::de0902_no_schema_for_on_gts_structs::De0902NoSchemaForOnGtsStructs,
-        )
+        Box::new(de09_gts_layer::de0902_no_schema_for_on_gts_structs::De0902NoSchemaForOnGtsStructs)
     });
     lint_store.register_late_pass(|_| {
         Box::new(de13_common_patterns::de1302_error_from_to_string::De1302ErrorFromToString)

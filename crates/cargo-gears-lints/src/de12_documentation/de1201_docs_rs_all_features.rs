@@ -53,6 +53,7 @@ dylint_linting::impl_late_lint! {
     /// - Skips crates with `publish = false`.
     /// - Skips crate names listed in `[de1201_docs_rs_all_features].excluded_crates`.
     /// - Skips crate names listed in `DE1201_DOCS_RS_ALL_FEATURES_EXCLUDED_CRATES`.
+    #[doc = include_str!("../../docs/de12_documentation/de1201_docs_rs_all_features/README.md")]
     pub DE1201_DOCS_RS_ALL_FEATURES,
     Warn,
     "publishable crates must set package.metadata.docs.rs.all-features = true (DE1201)",

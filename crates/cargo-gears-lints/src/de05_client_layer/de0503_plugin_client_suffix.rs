@@ -40,6 +40,7 @@ dylint_linting::declare_early_lint! {
     ///     async fn get_data(&self) -> Result<Data, Error>;
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de05_client_layer/de0503_plugin_client_suffix/README.md")]
     pub DE0503_PLUGIN_CLIENT_SUFFIX,
     Deny,
     "plugin client traits should use *PluginClient suffix, not *Api or *PluginApi (DE0503)"

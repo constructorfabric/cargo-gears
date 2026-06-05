@@ -8,6 +8,7 @@ dylint_linting::declare_late_lint! {
     ///
     /// DTO types must not be imported by contract (SDK), domain, or infra modules.
     /// DTOs are API layer implementation details.
+    #[doc = include_str!("../../docs/de02_api_layer/de0202_dtos_not_referenced_outside_api/README.md")]
     pub DE0202_DTOS_NOT_REFERENCED_OUTSIDE_API,
     Deny,
     "DTO types should not be imported outside of api layer (DE0202)"

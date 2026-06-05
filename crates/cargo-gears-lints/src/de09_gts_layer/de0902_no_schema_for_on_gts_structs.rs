@@ -41,6 +41,7 @@ dylint_linting::declare_late_lint! {
     ///
     /// let schema = MyPluginSpec::gts_schema_with_refs_as_string();
     /// ```
+    #[doc = include_str!("../../docs/de09_gts_layer/de0902_no_schema_for_on_gts_structs/README.md")]
     pub DE0902_NO_SCHEMA_FOR_ON_GTS_STRUCTS,
     Deny,
     "GTS structs must use gts_schema_with_refs_as_string() instead of schema_for!() (DE0902)"

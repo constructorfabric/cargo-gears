@@ -73,6 +73,7 @@ dylint_linting::declare_late_lint! {
     ///     Database(#[from] DatabaseError),
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de13_common_patterns/de1302_error_from_to_string/README.md")]
     pub DE1302_ERROR_FROM_TO_STRING,
     Deny,
     "calling .to_string() in From<XxxError> impl destroys the error chain (DE1302)"

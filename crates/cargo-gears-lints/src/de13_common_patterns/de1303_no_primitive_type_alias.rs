@@ -42,6 +42,7 @@ dylint_linting::declare_early_lint! {
     /// pub struct GtsId(String);
     /// pub struct Port(u16);
     /// ```
+    #[doc = include_str!("../../docs/de13_common_patterns/de1303_no_primitive_type_alias/README.md")]
     pub DE1303_NO_PRIMITIVE_TYPE_ALIAS,
     Deny,
     "pub type X = primitive is a transparent alias; use a newtype for type safety (DE1303)"
