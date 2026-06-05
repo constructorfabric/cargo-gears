@@ -59,6 +59,12 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 | DE0901 | GTS String Pattern | *(disabled — hardcoded vendor allowlist, needs configuration)* |
 | DE0902 | No `schema_for!` on GTS | GTS structs must use `gts_schema_with_refs_as_string()`, not `schema_for!` |
 
+### DE12xx — Documentation
+
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE1201 | Docs.rs All Features | Publishable crates must set `package.metadata.docs.rs.all-features = true` |
+
 ### DE11xx — Testing
 
 | Rule | Name | What it enforces |
