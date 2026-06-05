@@ -1,0 +1,476 @@
+[package]
+name = "cargo-gears-lints"
+version = "0.0.1"
+edition = "2024"
+license = "Apache-2.0"
+authors = ["Constructor Fabric"]
+description = "Dylint lint collection for cargo-gears architectural rules"
+readme = "README.md"
+repository = "https://github.com/constructorfabric/cf-cli"
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints.rust]
+unsafe_code = "allow"
+unused_extern_crates = "warn"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
+
+[dependencies]
+clippy_utils = "=0.1.95"
+dylint_linting = { version = "6.0.1", features = ["constituent"] }
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+anyhow = "1.0"
+async-trait = "0.1"
+axum = "0.8"
+dylint_testing = "6.0.1"
+gts = "0.9.0"
+gts-id = "0.9.0"
+gts-macros = "0.9.0"
+http = "1.0"
+schemars = { version = "1.2", features = ["derive"] }
+sea-orm = "1.0"
+serde_json = "1.0"
+sqlx = "0.8"
+thiserror = "2.0"
+tokio = { version = "1.44", features = ["macros", "rt"] }
+utoipa = "5.2"
+uuid = "1.0"
+
+[package.metadata.rust-analyzer]
+rustc_private = true
+
+[workspace]
+
+[[example]]
+name = "de0101_no_serde_in_domain-serialize"
+path = "tests/ui/de0101_no_serde_in_domain/serialize.rs"
+
+[[example]]
+name = "de0101_no_serde_in_domain-no_serde_derive"
+path = "tests/ui/de0101_no_serde_in_domain/no_serde_derive.rs"
+
+[[example]]
+name = "de0101_no_serde_in_domain-serialize_deserialize"
+path = "tests/ui/de0101_no_serde_in_domain/serialize_deserialize.rs"
+
+[[example]]
+name = "de0101_no_serde_in_domain-deserialize"
+path = "tests/ui/de0101_no_serde_in_domain/deserialize.rs"
+
+[[example]]
+name = "de0101_no_serde_in_domain-qualified_paths"
+path = "tests/ui/de0101_no_serde_in_domain/qualified_paths.rs"
+
+[[example]]
+name = "de0102_no_toschema_in_domain-toschema"
+path = "tests/ui/de0102_no_toschema_in_domain/toschema.rs"
+
+[[example]]
+name = "de0102_no_toschema_in_domain-no_toschema_derive"
+path = "tests/ui/de0102_no_toschema_in_domain/no_toschema_derive.rs"
+
+[[example]]
+name = "de0102_no_toschema_in_domain-mixed_derives"
+path = "tests/ui/de0102_no_toschema_in_domain/mixed_derives.rs"
+
+[[example]]
+name = "de0104_no_api_dto_in_domain-with_api_dto"
+path = "tests/ui/de0104_no_api_dto_in_domain/with_api_dto.rs"
+
+[[example]]
+name = "de0104_no_api_dto_in_domain-without_api_dto"
+path = "tests/ui/de0104_no_api_dto_in_domain/without_api_dto.rs"
+
+[[example]]
+name = "de0201_dtos_only_in_api_rest-dto_in_domain"
+path = "tests/ui/de0201_dtos_only_in_api_rest/dto_in_domain.rs"
+
+[[example]]
+name = "de0201_dtos_only_in_api_rest-dto_in_api_rest"
+path = "tests/ui/de0201_dtos_only_in_api_rest/dto_in_api_rest.rs"
+
+[[example]]
+name = "de0202_dtos_not_referenced_outside_api-import_dto_in_contract"
+path = "tests/ui/de0202_dtos_not_referenced_outside_api/import_dto_in_contract.rs"
+
+[[example]]
+name = "de0202_dtos_not_referenced_outside_api-import_dto_in_domain"
+path = "tests/ui/de0202_dtos_not_referenced_outside_api/import_dto_in_domain.rs"
+
+[[example]]
+name = "de0202_dtos_not_referenced_outside_api-import_dto_in_api"
+path = "tests/ui/de0202_dtos_not_referenced_outside_api/import_dto_in_api.rs"
+
+[[example]]
+name = "de0203_dtos_must_use_api_dto-missing_api_dto"
+path = "tests/ui/de0203_dtos_must_use_api_dto/missing_api_dto.rs"
+
+[[example]]
+name = "de0204_dtos_must_have_toschema_derive-missing_toschema"
+path = "tests/ui/de0204_dtos_must_have_toschema_derive/missing_toschema.rs"
+
+[[example]]
+name = "de0204_dtos_must_have_toschema_derive-has_toschema"
+path = "tests/ui/de0204_dtos_must_have_toschema_derive/has_toschema.rs"
+
+[[example]]
+name = "de0301_no_infra_in_domain-bad_infra_import"
+path = "tests/ui/de0301_no_infra_in_domain/bad_infra_import.rs"
+
+[[example]]
+name = "de0301_no_infra_in_domain-good_domain_0301"
+path = "tests/ui/de0301_no_infra_in_domain/good_domain_0301.rs"
+
+[[example]]
+name = "de0301_no_infra_in_domain-mixed_imports_0301"
+path = "tests/ui/de0301_no_infra_in_domain/mixed_imports_0301.rs"
+
+[[example]]
+name = "de0308_no_http_in_domain-bad_http_import"
+path = "tests/ui/de0308_no_http_in_domain/bad_http_import.rs"
+
+[[example]]
+name = "de0308_no_http_in_domain-good_domain_0308"
+path = "tests/ui/de0308_no_http_in_domain/good_domain_0308.rs"
+
+[[example]]
+name = "de0308_no_http_in_domain-bad_http_type_in_struct"
+path = "tests/ui/de0308_no_http_in_domain/bad_http_type_in_struct.rs"
+
+[[example]]
+name = "de0308_no_http_in_domain-nested_generic_http_type"
+path = "tests/ui/de0308_no_http_in_domain/nested_generic_http_type.rs"
+
+[[example]]
+name = "de0308_no_http_in_domain-trait_bounds_http"
+path = "tests/ui/de0308_no_http_in_domain/trait_bounds_http.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-plugin_api_bad-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/plugin_api_bad.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-plugin_client_good-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/plugin_client_good.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-generic_parameters_api-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/generic_parameters_api.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-generic_parameters_good-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/generic_parameters_good.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-versioned_api-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/versioned_api.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-plugin_client_v1_good-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/plugin_client_v1_good.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-malformed_versioned_api-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/malformed_versioned_api.rs"
+
+[[example]]
+name = "de0503_plugin_client_suffix-client_api_bad-sdk"
+path = "tests/ui/de0503_plugin_client_suffix/client_api_bad.rs"
+
+[[example]]
+name = "de0504_client_versioning-non_system_missing_version-sdk"
+path = "tests/ui/de0504_client_versioning/non_system_missing_version.rs"
+
+[[example]]
+name = "de0504_client_versioning-non_system_versioned_good-sdk"
+path = "tests/ui/de0504_client_versioning/non_system_versioned_good.rs"
+
+[[example]]
+name = "de0504_client_versioning-invalid_version_suffix-sdk"
+path = "tests/ui/de0504_client_versioning/invalid_version_suffix.rs"
+
+[[example]]
+name = "de0504_client_versioning-generic_parameters-sdk"
+path = "tests/ui/de0504_client_versioning/generic_parameters.rs"
+
+[[example]]
+name = "de0504_client_versioning-non_client_traits_good-sdk"
+path = "tests/ui/de0504_client_versioning/non_client_traits_good.rs"
+
+[[example]]
+name = "de0706_no_direct_sqlx-bad_direct_sqlx"
+path = "tests/ui/de0706_no_direct_sqlx/bad_direct_sqlx.rs"
+
+[[example]]
+name = "de0706_no_direct_sqlx-bad_sqlx_types"
+path = "tests/ui/de0706_no_direct_sqlx/bad_sqlx_types.rs"
+
+[[example]]
+name = "de0706_no_direct_sqlx-good_sea_orm"
+path = "tests/ui/de0706_no_direct_sqlx/good_sea_orm.rs"
+
+[[example]]
+name = "de0707_drop_zeroize-bad_drop_zeroing"
+path = "tests/ui/de0707_drop_zeroize/bad_drop_zeroing.rs"
+
+[[example]]
+name = "de0707_drop_zeroize-good_no_zeroing"
+path = "tests/ui/de0707_drop_zeroize/good_no_zeroing.rs"
+
+[[example]]
+name = "de0801_api_endpoint_version-valid_endpoints"
+path = "tests/ui/de0801_api_endpoint_version/valid_endpoints.rs"
+
+[[example]]
+name = "de0801_api_endpoint_version-invalid_endpoints"
+path = "tests/ui/de0801_api_endpoint_version/invalid_endpoints.rs"
+
+[[example]]
+name = "de0802_use_odata_ext-valid_odata"
+path = "tests/ui/de0802_use_odata_ext/valid_odata.rs"
+
+[[example]]
+name = "de0802_use_odata_ext-invalid_odata"
+path = "tests/ui/de0802_use_odata_ext/invalid_odata.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass"
+path = "tests/ui/de0803_api_snake_case/pass.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_camel_case"
+path = "tests/ui/de0803_api_snake_case/fail_camel_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_lowercase"
+path = "tests/ui/de0803_api_snake_case/fail_lowercase.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_pascal_case"
+path = "tests/ui/de0803_api_snake_case/fail_pascal_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_uppercase"
+path = "tests/ui/de0803_api_snake_case/fail_uppercase.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_screaming_snake_case"
+path = "tests/ui/de0803_api_snake_case/fail_screaming_snake_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_kebab_case"
+path = "tests/ui/de0803_api_snake_case/fail_kebab_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_screaming_kebab_case"
+path = "tests/ui/de0803_api_snake_case/fail_screaming_kebab_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass_outside_api"
+path = "tests/ui/de0803_api_snake_case/pass_outside_api.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_camel_case"
+path = "tests/ui/de0803_api_snake_case/fail_field_camel_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_pascal_case"
+path = "tests/ui/de0803_api_snake_case/fail_field_pascal_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_kebab_case"
+path = "tests/ui/de0803_api_snake_case/fail_field_kebab_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_uppercase"
+path = "tests/ui/de0803_api_snake_case/fail_field_uppercase.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_screaming_snake_case"
+path = "tests/ui/de0803_api_snake_case/fail_field_screaming_snake_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_screaming_kebab_case"
+path = "tests/ui/de0803_api_snake_case/fail_field_screaming_kebab_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass_field_snake_case"
+path = "tests/ui/de0803_api_snake_case/pass_field_snake_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass_field_lowercase"
+path = "tests/ui/de0803_api_snake_case/pass_field_lowercase.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_name_camel_case"
+path = "tests/ui/de0803_api_snake_case/fail_field_name_camel_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass_field_name_with_snake_rename"
+path = "tests/ui/de0803_api_snake_case/pass_field_name_with_snake_rename.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_rename_all_nested_camel_case"
+path = "tests/ui/de0803_api_snake_case/fail_rename_all_nested_camel_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass_rename_all_nested_snake_case"
+path = "tests/ui/de0803_api_snake_case/pass_rename_all_nested_snake_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_field_rename_nested_camel_case"
+path = "tests/ui/de0803_api_snake_case/fail_field_rename_nested_camel_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass_field_rename_nested_snake_case"
+path = "tests/ui/de0803_api_snake_case/pass_field_rename_nested_snake_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_enum_variant_rename_camel_case"
+path = "tests/ui/de0803_api_snake_case/fail_enum_variant_rename_camel_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-pass_enum_variant_rename_snake_case"
+path = "tests/ui/de0803_api_snake_case/pass_enum_variant_rename_snake_case.rs"
+
+[[example]]
+name = "de0803_api_snake_case-fail_enum_variant_rename_nested_pascal_case"
+path = "tests/ui/de0803_api_snake_case/fail_enum_variant_rename_nested_pascal_case.rs"
+
+[[example]]
+name = "de0902_no_schema_for_on_gts_structs-gts_struct_schema_for"
+path = "tests/ui/de0902_no_schema_for_on_gts_structs/gts_struct_schema_for.rs"
+
+[[example]]
+name = "de0902_no_schema_for_on_gts_structs-non_gts_struct_schema_for"
+path = "tests/ui/de0902_no_schema_for_on_gts_structs/non_gts_struct_schema_for.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-resource_group_inline_case"
+path = "tests/ui/de1101_tests_in_separate_files/resource_group_inline_case.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-resource_group_out_of_line_test_module"
+path = "tests/ui/de1101_tests_in_separate_files/resource_group_out_of_line_test_module.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-resource_group_separate_test_file_tests"
+path = "tests/ui/de1101_tests_in_separate_files/resource_group_separate_test_file_tests.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-other_module_inline_case"
+path = "tests/ui/de1101_tests_in_separate_files/other_module_inline_case.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-resource_group_cfg_not_test"
+path = "tests/ui/de1101_tests_in_separate_files/resource_group_cfg_not_test.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-naming_correct_case"
+path = "tests/ui/de1101_tests_in_separate_files/naming_correct_case.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-naming_wrong_module"
+path = "tests/ui/de1101_tests_in_separate_files/naming_wrong_module.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-naming_path_forbidden"
+path = "tests/ui/de1101_tests_in_separate_files/naming_path_forbidden.rs"
+
+[[example]]
+name = "de1101_tests_in_separate_files-naming_path_correct"
+path = "tests/ui/de1101_tests_in_separate_files/naming_path_correct.rs"
+
+[[example]]
+name = "de1301_no_print_macros-forbidden_macros"
+path = "tests/ui/de1301_no_print_macros/forbidden_macros.rs"
+crate-type = ["lib"]
+
+[[example]]
+name = "de1301_no_print_macros-allowed"
+path = "tests/ui/de1301_no_print_macros/allowed.rs"
+
+[[example]]
+name = "de1301_no_print_macros-allowed_in_apps"
+path = "tests/ui/de1301_no_print_macros/allowed_in_apps.rs"
+
+[[example]]
+name = "de1301_no_print_macros-allowed_in_build_rs"
+path = "tests/ui/de1301_no_print_macros/allowed_in_build_rs.rs"
+
+[[example]]
+name = "de1301_no_print_macros-allowed_in_proc_macro"
+path = "tests/ui/de1301_no_print_macros/allowed_in_proc_macro.rs"
+crate-type = ["proc-macro"]
+
+[[example]]
+name = "de1301_no_print_macros-allowed_in_proc_macro_impl_method"
+path = "tests/ui/de1301_no_print_macros/allowed_in_proc_macro_impl_method.rs"
+crate-type = ["proc-macro"]
+
+[[example]]
+name = "de1301_no_print_macros-forbidden_public_in_proc_macro"
+path = "tests/ui/de1301_no_print_macros/forbidden_public_in_proc_macro.rs"
+crate-type = ["proc-macro"]
+
+[[example]]
+name = "de1301_no_print_macros-allowed_in_main"
+path = "tests/ui/de1301_no_print_macros/allowed_in_main.rs"
+
+[[example]]
+name = "de1301_no_print_macros-allowed_in_tests"
+path = "tests/ui/de1301_no_print_macros/allowed_in_tests.rs"
+
+[[example]]
+name = "de1301_no_print_macros-allowed_in_cfg_test_impl"
+path = "tests/ui/de1301_no_print_macros/allowed_in_cfg_test_impl.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-bad_from_to_string"
+path = "tests/ui/de1302_error_from_to_string/bad_from_to_string.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-bad_ufcs_to_string"
+path = "tests/ui/de1302_error_from_to_string/bad_ufcs_to_string.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-bad_closure_to_string"
+path = "tests/ui/de1302_error_from_to_string/bad_closure_to_string.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-bad_tryfrom_to_string"
+path = "tests/ui/de1302_error_from_to_string/bad_tryfrom_to_string.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-bad_tryfrom_assoc_error"
+path = "tests/ui/de1302_error_from_to_string/bad_tryfrom_assoc_error.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-bad_macro_rules"
+path = "tests/ui/de1302_error_from_to_string/bad_macro_rules.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-good_from_preserve"
+path = "tests/ui/de1302_error_from_to_string/good_from_preserve.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-good_unrelated_error"
+path = "tests/ui/de1302_error_from_to_string/good_unrelated_error.rs"
+
+[[example]]
+name = "de1302_error_from_to_string-good_from_u32"
+path = "tests/ui/de1302_error_from_to_string/good_from_u32.rs"
+
+[[example]]
+name = "de1303_no_primitive_type_alias-bad_uuid_type_alias"
+path = "tests/ui/de1303_no_primitive_type_alias/bad_uuid_type_alias.rs"
+
+[[example]]
+name = "de1303_no_primitive_type_alias-good_uuid_newtype"
+path = "tests/ui/de1303_no_primitive_type_alias/good_uuid_newtype.rs"
