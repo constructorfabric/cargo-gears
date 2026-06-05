@@ -1,5 +1,5 @@
 error: test code must be moved to a separate test file (DE1101)
-  --> $DIR/large_inline_test_block.rs:5:1
+  --> $DIR/large_inline_test_block.rs:4:1
    |
 LL | / mod tests {
 LL | |     #[test]
