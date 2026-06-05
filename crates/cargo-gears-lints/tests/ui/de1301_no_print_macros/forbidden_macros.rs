@@ -12,7 +12,4 @@ pub fn not_main() {
 
     // Should trigger DE1301 - Print macros
     eprint!("hello");
-
-    // Should trigger DE1301 - Print macros
-    dbg!(42);
 }

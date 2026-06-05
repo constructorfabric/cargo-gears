@@ -75,7 +75,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 
 | Rule | Name | What it enforces |
 |------|------|------------------|
-| DE1301 | No Print Macros | `println!`/`eprintln!`/`dbg!` forbidden in production code |
+| DE1301 | No Print Macros | `println!`/`eprintln!`/`print!`/`eprint!` forbidden in production code |
 | DE1302 | No `.to_string()` in From | Error `From` impls must not call `.to_string()` (use `.into()`) |
 | DE1303 | No Primitive Type Alias | `pub type X = Uuid` etc. must be newtypes for type safety |
 
