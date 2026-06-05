@@ -15,6 +15,7 @@ dylint_linting::declare_pre_expansion_lint! {
     /// - Field-level `#[serde(rename = "...")]` attributes
     ///
     /// Only snake_case is allowed for API consistency per DNA guidelines.
+    #[doc = include_str!("../../docs/de08_rest_api_conventions/de0803_api_snake_case/README.md")]
     pub DE0803_API_SNAKE_CASE,
     Deny,
     "API DTOs must use snake_case in serde rename attributes (DE0803)"

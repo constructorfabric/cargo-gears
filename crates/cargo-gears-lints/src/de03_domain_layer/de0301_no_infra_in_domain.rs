@@ -42,6 +42,7 @@ dylint_linting::declare_early_lint! {
     ///     }
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de03_domain_layer/de0301_no_infra_in_domain/README.md")]
     pub DE0301_NO_INFRA_IN_DOMAIN,
     Deny,
     "domain modules should not import infrastructure dependencies (DE0301)"

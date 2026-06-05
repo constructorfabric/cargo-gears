@@ -97,6 +97,7 @@ dylint_linting::impl_pre_expansion_lint! {
     /// - test module reference must resolve to `{source_stem}_tests.rs`
     /// - if `#[path = "..."]` is used, its value must be `{source_stem}_tests.rs`
     /// - if no `#[path]`, the module name must be `{source_stem}_tests`
+    #[doc = include_str!("../../docs/de11_testing/de1101_tests_in_separate_files/README.md")]
     pub DE1101_TESTS_IN_SEPARATE_FILES,
     Deny,
     "tests must live in separate files, not inline in production files (DE1101)",

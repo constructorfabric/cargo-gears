@@ -7,6 +7,7 @@ dylint_linting::declare_early_lint! {
     /// DE0201: DTOs Only in API Rest Folder
     ///
     /// Types with DTO suffixes must be defined only in `*/api/rest/*.rs` files.
+    #[doc = include_str!("../../docs/de02_api_layer/de0201_dtos_only_in_api_rest/README.md")]
     pub DE0201_DTOS_ONLY_IN_API_REST,
     Deny,
     "DTO types should only be defined in */api/rest/* files (DE0201)"

@@ -40,6 +40,7 @@ dylint_linting::declare_early_lint! {
     ///     }
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de03_domain_layer/de0308_no_http_in_domain/README.md")]
     pub DE0308_NO_HTTP_IN_DOMAIN,
     Deny,
     "domain modules should not reference HTTP types or status codes (DE0308)"

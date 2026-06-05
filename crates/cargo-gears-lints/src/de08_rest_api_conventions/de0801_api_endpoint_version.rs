@@ -40,6 +40,7 @@ dylint_linting::declare_late_lint! {
     /// // Good - with sub-resources
     /// OperationBuilder::post("/my-service/v2/users/{id}/profile")
     /// ```
+    #[doc = include_str!("../../docs/de08_rest_api_conventions/de0801_api_endpoint_version/README.md")]
     pub DE0801_API_ENDPOINT_VERSION,
     Deny,
     "API endpoints must follow /{service-name}/v{N}/{resource} format (DE0801)"

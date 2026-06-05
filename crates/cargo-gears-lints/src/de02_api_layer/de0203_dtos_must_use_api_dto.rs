@@ -31,6 +31,7 @@ dylint_linting::declare_pre_expansion_lint! {
     ///     pub id: String,
     /// }
     /// ```
+    #[doc = include_str!("../../docs/de02_api_layer/de0203_dtos_must_use_api_dto/README.md")]
     pub DE0203_DTOS_MUST_USE_API_DTO,
     Deny,
     "DTO types must use the api_dto macro (DE0203)"
