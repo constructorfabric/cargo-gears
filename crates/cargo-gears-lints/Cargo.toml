@@ -20,9 +20,11 @@ all = "warn"
 pedantic = "warn"
 
 [dependencies]
+cargo_metadata = "0.23.1"
 clippy_utils = "=0.1.95"
 dylint_linting = { version = "6.0.1", features = ["constituent"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [dev-dependencies]
 anyhow = "1.0"

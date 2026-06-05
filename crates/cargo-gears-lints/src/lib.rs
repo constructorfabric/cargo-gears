@@ -50,6 +50,10 @@ mod de11_testing {
     pub(crate) mod de1101_tests_in_separate_files;
 }
 
+mod de12_documentation {
+    pub(crate) mod de1201_docs_rs_all_features;
+}
+
 mod de13_common_patterns {
     pub(crate) mod de1301_no_print_macros;
     pub(crate) mod de1302_error_from_to_string;
@@ -81,6 +85,7 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         de08_rest_api_conventions::de0803_api_snake_case::DE0803_API_SNAKE_CASE,
         de09_gts_layer::de0902_no_schema_for_on_gts_structs::DE0902_NO_SCHEMA_FOR_ON_GTS_STRUCTS,
         de11_testing::de1101_tests_in_separate_files::DE1101_TESTS_IN_SEPARATE_FILES,
+        de12_documentation::de1201_docs_rs_all_features::DE1201_DOCS_RS_ALL_FEATURES,
         de13_common_patterns::de1301_no_print_macros::DE1301_NO_PRINT_MACROS,
         de13_common_patterns::de1302_error_from_to_string::DE1302_ERROR_FROM_TO_STRING,
         de13_common_patterns::de1303_no_primitive_type_alias::DE1303_NO_PRIMITIVE_TYPE_ALIAS,
@@ -139,6 +144,9 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         Box::new(
             de02_api_layer::de0202_dtos_not_referenced_outside_api::De0202DtosNotReferencedOutsideApi,
         )
+    });
+    lint_store.register_late_pass(|_| {
+        Box::new(de12_documentation::de1201_docs_rs_all_features::De1201DocsRsAllFeatures::new())
     });
     lint_store.register_late_pass(|_| {
         Box::new(de07_security::de0707_drop_zeroize::De0707DropZeroize)
