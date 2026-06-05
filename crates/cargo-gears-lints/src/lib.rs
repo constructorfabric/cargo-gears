@@ -43,6 +43,7 @@ mod de08_rest_api_conventions {
 }
 
 mod de09_gts_layer {
+    pub(crate) mod de0901_gts_string_pattern;
     pub(crate) mod de0902_no_schema_for_on_gts_structs;
 }
 
@@ -83,6 +84,7 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         de08_rest_api_conventions::de0801_api_endpoint_version::DE0801_API_ENDPOINT_VERSION,
         de08_rest_api_conventions::de0802_use_odata_ext::DE0802_USE_ODATA_EXT,
         de08_rest_api_conventions::de0803_api_snake_case::DE0803_API_SNAKE_CASE,
+        de09_gts_layer::de0901_gts_string_pattern::DE0901_GTS_STRING_PATTERN,
         de09_gts_layer::de0902_no_schema_for_on_gts_structs::DE0902_NO_SCHEMA_FOR_ON_GTS_STRUCTS,
         de11_testing::de1101_tests_in_separate_files::DE1101_TESTS_IN_SEPARATE_FILES,
         de12_documentation::de1201_docs_rs_all_features::DE1201_DOCS_RS_ALL_FEATURES,
@@ -113,6 +115,9 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     });
     lint_store.register_pre_expansion_pass(|| {
         Box::new(de11_testing::de1101_tests_in_separate_files::De1101TestsInSeparateFiles::new())
+    });
+    lint_store.register_pre_expansion_pass(|| {
+        Box::new(de09_gts_layer::de0901_gts_string_pattern::De0901GtsStringPattern::new())
     });
     lint_store.register_pre_expansion_pass(|| {
         Box::new(de13_common_patterns::de1301_no_print_macros::De1301NoPrintMacros)

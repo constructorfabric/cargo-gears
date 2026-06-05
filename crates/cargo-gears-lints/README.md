@@ -56,7 +56,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 
 | Rule | Name | What it enforces |
 |------|------|------------------|
-| DE0901 | GTS String Pattern | *(disabled — hardcoded vendor allowlist, needs configuration)* |
+| DE0901 | GTS String Pattern | GTS identifiers must be valid; vendor allowlist configurable via `dylint.toml` |
 | DE0902 | No `schema_for!` on GTS | GTS structs must use `gts_schema_with_refs_as_string()`, not `schema_for!` |
 
 ### DE12xx — Documentation
