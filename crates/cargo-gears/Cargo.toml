@@ -5,10 +5,9 @@ edition.workspace = true
 license-file.workspace = true
 authors.workspace = true
 repository.workspace = true
-description.workspace = true
+description = "Command-line interface for Gears rust"
 readme.workspace = true
 publish = true
-autobins = true
 
 [[bin]]
 name = "cargo-gears"
