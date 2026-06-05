@@ -69,6 +69,19 @@ const SRR_PATTERN: &str = "gts.cf.core.srr.resource.v1~*";
 //  → rename to `SRR_PATTERN_WILDCARD` or use a non-wildcard value
 ```
 
+## Configuration
+
+The allowed vendor names are configurable via `dylint.toml`:
+
+```toml
+[de0901_gts_string_pattern]
+allowed_vendors = ["cf", "mycompany"]
+test_allowed_vendors = ["cf", "mycompany", "vendor", "example", "acme"]
+```
+
+- **`allowed_vendors`** — vendors allowed in production code (default: `["cf"]`)
+- **`test_allowed_vendors`** — vendors allowed in `#[cfg(test)]` and UI tests (default: `["cf", "vendor", "example", "fabrikam", "contoso", "acme", "globex"]`)
+
 ## Example
 
 ```rust

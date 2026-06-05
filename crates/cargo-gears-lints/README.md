@@ -56,8 +56,14 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 
 | Rule | Name | What it enforces |
 |------|------|------------------|
-| DE0901 | GTS String Pattern | *(disabled — hardcoded vendor allowlist, needs configuration)* |
+| DE0901 | GTS String Pattern | GTS identifiers must be valid; vendor allowlist configurable via `dylint.toml` |
 | DE0902 | No `schema_for!` on GTS | GTS structs must use `gts_schema_with_refs_as_string()`, not `schema_for!` |
+
+### DE12xx — Documentation
+
+| Rule | Name | What it enforces |
+|------|------|------------------|
+| DE1201 | Docs.rs All Features | Publishable crates must set `package.metadata.docs.rs.all-features = true` |
 
 ### DE11xx — Testing
 
@@ -69,7 +75,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 
 | Rule | Name | What it enforces |
 |------|------|------------------|
-| DE1301 | No Print Macros | `println!`/`eprintln!`/`dbg!` forbidden in production code |
+| DE1301 | No Print Macros | `println!`/`eprintln!`/`print!`/`eprint!` forbidden in production code |
 | DE1302 | No `.to_string()` in From | Error `From` impls must not call `.to_string()` (use `.into()`) |
 | DE1303 | No Primitive Type Alias | `pub type X = Uuid` etc. must be newtypes for type safety |
 

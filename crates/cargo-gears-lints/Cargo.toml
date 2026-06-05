@@ -20,9 +20,12 @@ all = "warn"
 pedantic = "warn"
 
 [dependencies]
+cargo_metadata = "0.23.1"
 clippy_utils = "=0.1.95"
 dylint_linting = { version = "6.0.1", features = ["constituent"] }
+gts = "0.9.0"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [dev-dependencies]
 anyhow = "1.0"
@@ -342,6 +345,18 @@ path = "tests/ui/de0803_api_snake_case/pass_enum_variant_rename_snake_case.rs"
 [[example]]
 name = "de0803_api_snake_case-fail_enum_variant_rename_nested_pascal_case"
 path = "tests/ui/de0803_api_snake_case/fail_enum_variant_rename_nested_pascal_case.rs"
+
+[[example]]
+name = "de0901_gts_string_pattern-invalid_cases"
+path = "tests/ui/de0901_gts_string_pattern/invalid_cases.rs"
+
+[[example]]
+name = "de0901_gts_string_pattern-valid_use_cases"
+path = "tests/ui/de0901_gts_string_pattern/valid_use_cases.rs"
+
+[[example]]
+name = "de0901_gts_string_pattern-permission_strings"
+path = "tests/ui/de0901_gts_string_pattern/permission_strings.rs"
 
 [[example]]
 name = "de0902_no_schema_for_on_gts_structs-gts_struct_schema_for"

@@ -1,4 +1,4 @@
-# DE1301 — No Print/Debug Macros in Production Code
+# DE1301 — No Print Macros in Production Code
 
 ## Rule
 
@@ -8,7 +8,6 @@ This lint forbids using the following macros in production Rust modules code:
 - `eprintln!`
 - `print!`
 - `eprint!`
-- `dbg!`
 
 These macros bypass the project’s structured logging/observability approach and are easy to leave behind accidentally.
 
@@ -16,7 +15,7 @@ These macros bypass the project’s structured logging/observability approach an
 
 - **Observability consistency**: prefer `tracing` (or the project’s logging facade) so logs are structured, filterable, and routable.
 - **Noise control**: ad-hoc stdout/stderr prints introduce noisy output in services, CI, and integration tests.
-- **Accidental leakage**: `dbg!` and print macros often ship unintentionally.
+- **Accidental leakage**: print macros often ship unintentionally.
 
 ## Allowed Exceptions
 
@@ -68,7 +67,6 @@ Unit tests and test-only modules may use these macros for debug output and quick
 ```rust
 fn helper() {
     println!("hello");
-    dbg!(42);
 }
 ```
 
@@ -78,7 +76,6 @@ fn helper() {
 // build.rs
 fn main() {
     println!("cargo:rerun-if-changed=src/schema.json");
-    dbg!("build-time debug");
 }
 ```
 

@@ -39,6 +39,10 @@ This directory gathers the per-lint documentation for `cargo-gears-lints`.
 - [DE0901 - GTS String Pattern](de09_gts_layer/de0901_gts_string_pattern/README.md)
 - [DE0902 - No Schema For On GTS Structs](de09_gts_layer/de0902_no_schema_for_on_gts_structs/README.md)
 
+## DE12xx - Documentation
+
+- [DE1201 - Docs.rs All Features](de12_documentation/de1201_docs_rs_all_features/README.md)
+
 ## DE11xx - Testing
 
 - [DE1101 - Tests in Separate Files](de11_testing/de1101_tests_in_separate_files/README.md)

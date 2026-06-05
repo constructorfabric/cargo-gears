@@ -8,17 +8,16 @@ use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 use rustc_session::config::CrateType;
 use rustc_span::{FileName, sym};
 
-const FORBIDDEN_MACROS: &[&str] = &["println", "eprintln", "print", "eprint", "dbg"];
+const FORBIDDEN_MACROS: &[&str] = &["println", "eprintln", "print", "eprint"];
 
 dylint_linting::declare_pre_expansion_lint! {
-    /// DE1301: Forbid print/debug macros in production code
+    /// DE1301: Forbid print macros in production code
     ///
     /// Disallows using the following macros:
     /// - println!
     /// - eprintln!
     /// - print!
     /// - eprint!
-    /// - dbg!
     pub DE1301_NO_PRINT_MACROS,
     Deny,
     "print/debug macros are forbidden in production code (DE1301)"

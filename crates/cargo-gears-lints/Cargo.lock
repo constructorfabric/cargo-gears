@@ -405,6 +405,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "axum",
+ "cargo_metadata",
  "clippy_utils",
  "dylint_linting",
  "dylint_testing",
