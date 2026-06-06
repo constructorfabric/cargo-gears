@@ -176,4 +176,96 @@ mod tests {
     fn ui_examples() {
         dylint_testing::ui_test_examples(LIBRARY_NAME);
     }
+
+    /// Lint code, comment pattern, and UI test subdirectory for each lint that uses
+    /// "Should trigger" / "Should not trigger" annotations.
+    const ANNOTATION_CHECKS: &[(&str, &str, &str)] = &[
+        ("DE0101", "Serde in domain", "de0101_no_serde_in_domain"),
+        (
+            "DE0102",
+            "ToSchema in domain",
+            "de0102_no_toschema_in_domain",
+        ),
+        ("DE0104", "api_dto in domain", "de0104_no_api_dto_in_domain"),
+        (
+            "DE0201",
+            "DTOs only in api/rest",
+            "de0201_dtos_only_in_api_rest",
+        ),
+        (
+            "DE0202",
+            "DTOs not referenced outside api",
+            "de0202_dtos_not_referenced_outside_api",
+        ),
+        (
+            "DE0203",
+            "DTOs must use api_dto",
+            "de0203_dtos_must_use_api_dto",
+        ),
+        (
+            "DE0204",
+            "DTOs must have ToSchema derive",
+            "de0204_dtos_must_have_toschema_derive",
+        ),
+        ("DE0301", "infra in domain", "de0301_no_infra_in_domain"),
+        ("DE0308", "HTTP in domain", "de0308_no_http_in_domain"),
+        (
+            "DE0503",
+            "plugin client traits should use",
+            "de0503_plugin_client_suffix",
+        ),
+        ("DE0504", "Client trait", "de0504_client_versioning"),
+        ("DE0706", "sqlx", "de0706_no_direct_sqlx"),
+        ("DE0707", "manual zeroing", "de0707_drop_zeroize"),
+        (
+            "DE0801",
+            "API endpoint version",
+            "de0801_api_endpoint_version",
+        ),
+        ("DE0802", "use OData ext", "de0802_use_odata_ext"),
+        (
+            "DE0803",
+            "DTO fields must not use non-snake_case in serde rename/rename_all",
+            "de0803_api_snake_case",
+        ),
+        ("DE0901", "invalid GTS", "de0901_gts_string_pattern"),
+        (
+            "DE0902",
+            "schema_for on GTS struct",
+            "de0902_no_schema_for_on_gts_structs",
+        ),
+        (
+            "DE1101",
+            "tests must be in separate files",
+            "de1101_tests_in_separate_files",
+        ),
+        ("DE1301", "Print macros", "de1301_no_print_macros"),
+        ("DE1302", "to_string", "de1302_error_from_to_string"),
+        (
+            "DE1303",
+            "transparent alias",
+            "de1303_no_primitive_type_alias",
+        ),
+    ];
+
+    #[test]
+    fn comment_annotations_match_stderr() {
+        let ui_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("ui");
+
+        for &(lint_code, comment_pattern, subdir) in ANNOTATION_CHECKS {
+            let ui_dir = ui_root.join(subdir);
+            assert!(
+                ui_dir.is_dir(),
+                "UI test directory not found: {}",
+                ui_dir.display()
+            );
+            crate::lint_utils::test_comment_annotations_match_stderr(
+                &ui_dir,
+                lint_code,
+                comment_pattern,
+            );
+        }
+    }
 }

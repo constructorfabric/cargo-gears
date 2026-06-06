@@ -72,10 +72,11 @@ The current CLI surface is centered on Gears workspace setup, configuration, cod
 
 ### Configuration management
 
-- `ls modules` inspects available system and workspace modules
 - `config mod add` and `config mod rm` manage module entries in the YAML config
 - `config mod db add|edit|rm` manages module-level database settings
 - `config db add|edit|rm` manages shared database server definitions
+
+- `ls modules` inspects available system and workspace modules
 
 You need to provide the path to the configuration file with the `-c` flag. `-c config/quickstart.yml`
 
