@@ -635,11 +635,19 @@ pub fn test_comment_annotations_match_stderr(
             }
         }
 
-        // Parse stderr file to find which lines have errors
+        // Parse stderr file to find which lines have errors for this specific lint.
+        // In the single-crate model, multiple lints fire on the same file, so we
+        // only consider errors whose preceding `error:` line contains `(DExxxx)`.
         let mut error_lines = HashSet::new();
-        for line in stderr_content.lines() {
-            // Look for lines like "  --> $DIR/file.rs:5:1"
-            if line.contains("-->")
+        let stderr_lines: Vec<&str> = stderr_content.lines().collect();
+        let lint_tag = format!("({})", lint_code);
+        let mut current_error_is_ours = false;
+        for line in &stderr_lines {
+            if line.starts_with("error:") || line.starts_with("warning:") {
+                current_error_is_ours = line.contains(&lint_tag);
+            }
+            if current_error_is_ours
+                && line.contains("-->")
                 && line.contains(".rs:")
                 && let Some(pos) = line.rfind(".rs:")
             {
