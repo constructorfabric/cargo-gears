@@ -1,0 +1,33 @@
+error: Client trait `ThrPluginClient` in non-system module must have a version suffix (DE0504)
+  --> $DIR/plugin_client_good.rs:7:1
+   |
+LL | / pub trait ThrPluginClient: Send + Sync {
+LL | |     async fn get_root_tenant(&self) -> Result<(), ()>;
+LL | | }
+   | |_^
+   |
+   = help: rename trait to `ThrPluginClientV1` to indicate API version
+   = note: `#[deny(de0504_client_versioning)]` on by default
+
+error: Client trait `OagwPluginClient` in non-system module must have a version suffix (DE0504)
+  --> $DIR/plugin_client_good.rs:13:1
+   |
+LL | / pub trait OagwPluginClient: Send + Sync {
+LL | |     async fn execute(&self) -> Result<(), ()>;
+LL | | }
+   | |_^
+   |
+   = help: rename trait to `OagwPluginClientV1` to indicate API version
+
+error: Client trait `TenantResolverClient` in non-system module must have a version suffix (DE0504)
+  --> $DIR/plugin_client_good.rs:19:1
+   |
+LL | / pub trait TenantResolverClient: Send + Sync {
+LL | |     async fn list_tenants(&self) -> Result<(), ()>;
+LL | | }
+   | |_^
+   |
+   = help: rename trait to `TenantResolverClientV1` to indicate API version
+
+error: aborting due to 3 previous errors
+

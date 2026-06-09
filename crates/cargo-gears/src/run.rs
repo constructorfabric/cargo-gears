@@ -1,0 +1,29 @@
+use crate::common::BuildRunArgs;
+use clap::{ArgAction, Args};
+
+#[derive(Args)]
+pub struct RunArgs {
+    /// Watch for changes
+    #[arg(short = 'w', long, action = ArgAction::SetTrue, conflicts_with = "no_watch")]
+    watch: bool,
+    /// Do not watch for changes
+    #[arg(long = "no-watch", action = ArgAction::SetTrue, conflicts_with = "watch")]
+    no_watch: bool,
+    #[command(flatten)]
+    br_args: BuildRunArgs,
+}
+
+impl RunArgs {
+    pub fn run(self) -> anyhow::Result<()> {
+        cargo_gears_core::run::RunParams::from(self).run()
+    }
+}
+
+impl From<RunArgs> for cargo_gears_core::run::RunParams {
+    fn from(args: RunArgs) -> Self {
+        Self {
+            watch: crate::common::ordered_bool(args.watch, args.no_watch),
+            br_args: args.br_args.into(),
+        }
+    }
+}

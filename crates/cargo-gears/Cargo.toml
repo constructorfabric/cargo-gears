@@ -1,0 +1,33 @@
+[package]
+name = "cargo-gears"
+version.workspace = true
+edition.workspace = true
+license-file.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Command-line interface for Gears rust"
+readme.workspace = true
+publish = true
+
+[[bin]]
+name = "cargo-gears"
+path = "src/main.rs"
+
+[[test]]
+name = "manifest_schema"
+path = "../../design/v1/manifest_schema.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+cargo-gears-core = { workspace = true, features = ["clap", "dylint-rules"] }
+semver = { workspace = true }
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+cargo-gears-core = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tempfile.workspace = true
+toml.workspace = true
