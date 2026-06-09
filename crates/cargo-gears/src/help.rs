@@ -142,7 +142,8 @@ pub enum Topic {
     #[value(name = "clienthub")]
     ClientHub,
     Database,
-    Errors,
+    #[value(name = "rest-errors")]
+    RestErrors,
     Fips,
     #[value(name = "gear-layout")]
     GearLayout,
@@ -175,7 +176,7 @@ impl From<Topic> for cargo_gears_core::help::Topic {
             Topic::Cli => Self::Cli,
             Topic::ClientHub => Self::ClientHub,
             Topic::Database => Self::Database,
-            Topic::Errors => Self::Errors,
+            Topic::RestErrors => Self::RestErrors,
             Topic::Fips => Self::Fips,
             Topic::GearLayout => Self::GearLayout,
             Topic::GearRefs => Self::GearRefs,

@@ -159,14 +159,14 @@ fn parses_help_topic_database() {
 }
 
 #[test]
-fn parses_help_topic_errors() {
-    let command = parse_command(&["gears", "help", "topic", "errors"]);
+fn parses_help_topic_rest_errors() {
+    let command = parse_command(&["gears", "help", "topic", "rest-errors"]);
 
     assert_eq!(
         command,
         GearsCommand::Help(HelpParams {
             command: HelpCommand::Topic(TopicParams {
-                topic: Topic::Errors,
+                topic: Topic::RestErrors,
             }),
         })
     );

@@ -49,5 +49,5 @@ Key rules:
   - Handlers should complete within ~30s; longer work returns 202 Accepted
 
 See also:
-  cargo gears help topic errors
+  cargo gears help topic rest-errors
   cargo gears help topic security

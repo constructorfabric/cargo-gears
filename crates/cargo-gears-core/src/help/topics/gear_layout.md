@@ -55,4 +55,4 @@ Data type naming matrix:
 See also:
   cargo gears help topic architecture
   cargo gears help topic security
-  cargo gears help topic errors
+  cargo gears help topic rest-errors
