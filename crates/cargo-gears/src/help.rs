@@ -137,13 +137,27 @@ pub struct TopicArgs {
 
 #[derive(Clone, Copy, ValueEnum)]
 pub enum Topic {
-    Manifest,
-    #[value(name = "module-refs")]
-    ModuleRefs,
+    Architecture,
+    Cli,
+    #[value(name = "clienthub")]
+    ClientHub,
+    Database,
+    Errors,
+    Fips,
+    #[value(name = "gears-catalog")]
+    GearsCatalog,
     #[value(name = "generated-server")]
     GeneratedServer,
-    Fips,
+    Lifecycle,
+    Manifest,
+    #[value(name = "module-layout")]
+    ModuleLayout,
+    #[value(name = "module-refs")]
+    ModuleRefs,
     Otel,
+    #[value(name = "rest-api")]
+    RestApi,
+    Security,
 }
 
 impl From<TopicArgs> for cargo_gears_core::help::TopicParams {
@@ -157,11 +171,21 @@ impl From<TopicArgs> for cargo_gears_core::help::TopicParams {
 impl From<Topic> for cargo_gears_core::help::Topic {
     fn from(topic: Topic) -> Self {
         match topic {
-            Topic::Manifest => Self::Manifest,
-            Topic::ModuleRefs => Self::ModuleRefs,
-            Topic::GeneratedServer => Self::GeneratedServer,
+            Topic::Architecture => Self::Architecture,
+            Topic::Cli => Self::Cli,
+            Topic::ClientHub => Self::ClientHub,
+            Topic::Database => Self::Database,
+            Topic::Errors => Self::Errors,
             Topic::Fips => Self::Fips,
+            Topic::GearsCatalog => Self::GearsCatalog,
+            Topic::GeneratedServer => Self::GeneratedServer,
+            Topic::Lifecycle => Self::Lifecycle,
+            Topic::Manifest => Self::Manifest,
+            Topic::ModuleLayout => Self::ModuleLayout,
+            Topic::ModuleRefs => Self::ModuleRefs,
             Topic::Otel => Self::Otel,
+            Topic::RestApi => Self::RestApi,
+            Topic::Security => Self::Security,
         }
     }
 }

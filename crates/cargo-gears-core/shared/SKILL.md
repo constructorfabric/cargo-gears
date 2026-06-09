@@ -600,16 +600,30 @@ cargo gears help topic <TOPIC>
 
 Available topics:
 
-- **[`manifest`]** Overview of `Gears.toml` and manifest-driven workflows
-- **[`module-refs`]** How local and remote modules are referenced
-- **[`generated-server`]** How the ephemeral generated server project works
+- **[`architecture`]** Framework architecture, three-tier hierarchy, and principles
+- **[`cli`]** CLI reference, guidelines, and command overview
+- **[`clienthub`]** Typed ClientHub, plugins, and GTS
+- **[`database`]** SecureConn, transactions, migrations, and repository pattern
+- **[`errors`]** RFC-9457 Problem error handling
 - **[`fips`]** FIPS mode activation and usage
+- **[`gears-catalog`]** Module categories and dependency rules
+- **[`generated-server`]** How the ephemeral generated server project works
+- **[`lifecycle`]** Module lifecycle, cancellation, and background tasks
+- **[`manifest`]** Overview of `Gears.toml` and manifest-driven workflows
+- **[`module-layout`]** Module directory structure and SDK pattern
+- **[`module-refs`]** How local and remote modules are referenced
 - **[`otel`]** OpenTelemetry activation and runtime configuration
+- **[`rest-api`]** OperationBuilder, OpenAPI, SSE, and OData
+- **[`security`]** AuthN, AuthZ, SecureConn, and AccessScope
 
 Examples:
 
 ```bash
-cargo gears help topic manifest
+cargo gears help topic architecture
+```
+
+```bash
+cargo gears help topic module-layout
 ```
 
 ```bash
