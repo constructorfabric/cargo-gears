@@ -1,7 +1,7 @@
-Topic: Module Lifecycle
+Topic: Gear Lifecycle
 
 The platform defines an explicit lifecycle with ordered phases and
-dependency-aware teardown. Modules integrate through capabilities.
+dependency-aware teardown. Gears integrate through capabilities.
 
 Lifecycle phases (executed by HostRuntime):
   pre_init -> DB migrations -> init -> post_init
@@ -11,13 +11,13 @@ Lifecycle phases (executed by HostRuntime):
   - post_init is a barrier: begins only after all init hooks complete
   - Shutdown runs in reverse dependency order with a graceful deadline
 
-Module lifecycle declaration:
-  #[toolkit::module(
-      name = "my-module",
+Gear lifecycle declaration:
+  #[toolkit::gear(
+      name = "my-gear",
       capabilities = [db, rest, stateful],
       lifecycle(entry = "serve", stop_timeout = "30s", await_ready)
   )]
-  pub struct MyModule { ... }
+  pub struct MyGear { ... }
 
 Lifecycle entry method:
   async fn serve(
@@ -27,7 +27,7 @@ Lifecycle entry method:
   ) -> anyhow::Result<()> {
       // Setup resources
       let listener = TcpListener::bind("0.0.0.0:8080").await?;
-      ready.notify();  // signal that module is ready
+      ready.notify();  // signal that gear is ready
 
       // Run until cancelled
       axum::serve(listener, app)
@@ -37,7 +37,7 @@ Lifecycle entry method:
   }
 
 CancellationToken patterns:
-  // Root token propagates to all modules automatically
+  // Root token propagates to all gears automatically
   // Create child tokens for background tasks
   let child = cancel.child_token();
   tokio::spawn(async move {
@@ -62,4 +62,4 @@ Key rules:
 
 See also:
   cargo gears help topic architecture
-  cargo gears help topic module-layout
+  cargo gears help topic gear-layout

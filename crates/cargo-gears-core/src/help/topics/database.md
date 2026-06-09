@@ -1,6 +1,6 @@
 Topic: Database Patterns
 
-Gears use SecureConn for all database access, with module-owned migrations
+Gears use SecureConn for all database access, with gear-owned migrations
 and a repository pattern based on SeaORM.
 
 Executors:
@@ -53,12 +53,12 @@ Scoped mutations:
   conn.update_with_ctx::<Entity>(&scope, id, active_model).await?;
 
 Migrations (raw SQL allowed ONLY here):
-  impl DatabaseCapability for MyModule {
+  impl DatabaseCapability for MyGear {
       fn migrations(&self) -> Vec<Box<dyn MigrationTrait>> {
           migrations::Migrator::migrations()
       }
   }
-  // Each module gets its own migration history table
+  // Each gear gets its own migration history table
 
 Key rules:
   - No plain SQL in handlers/services/repos, only in migrations
@@ -70,4 +70,4 @@ Key rules:
 
 See also:
   cargo gears help topic security
-  cargo gears help topic module-layout
+  cargo gears help topic gear-layout

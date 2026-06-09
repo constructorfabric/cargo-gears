@@ -7,13 +7,13 @@ generation inputs in one file.
 Key concepts:
   - One manifest per workspace, usually at the workspace root
   - Apps group environments: apps.<app>.<env>
-  - Each environment declares its config path, modules, and policies
+  - Each environment declares its config path, gears, and policies
   - The manifest controls the generated-dir, build profile, watch mode, etc.
 
 Workflow:
   1. Write Gears.toml with your apps and environments
   2. Run: cargo gears build --app myapp --env dev
-  3. The CLI resolves the manifest, discovers modules, and generates the server
+  3. The CLI resolves the manifest, discovers gears, and generates the server
   4. Use --dry-run to inspect the generated structure without building
 
 Commands that use the manifest:

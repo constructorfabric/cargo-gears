@@ -144,16 +144,16 @@ pub enum Topic {
     Database,
     Errors,
     Fips,
+    #[value(name = "gear-layout")]
+    GearLayout,
+    #[value(name = "gear-refs")]
+    GearRefs,
     #[value(name = "gears-catalog")]
     GearsCatalog,
     #[value(name = "generated-server")]
     GeneratedServer,
     Lifecycle,
     Manifest,
-    #[value(name = "module-layout")]
-    ModuleLayout,
-    #[value(name = "module-refs")]
-    ModuleRefs,
     Otel,
     #[value(name = "rest-api")]
     RestApi,
@@ -177,12 +177,12 @@ impl From<Topic> for cargo_gears_core::help::Topic {
             Topic::Database => Self::Database,
             Topic::Errors => Self::Errors,
             Topic::Fips => Self::Fips,
+            Topic::GearLayout => Self::GearLayout,
+            Topic::GearRefs => Self::GearRefs,
             Topic::GearsCatalog => Self::GearsCatalog,
             Topic::GeneratedServer => Self::GeneratedServer,
             Topic::Lifecycle => Self::Lifecycle,
             Topic::Manifest => Self::Manifest,
-            Topic::ModuleLayout => Self::ModuleLayout,
-            Topic::ModuleRefs => Self::ModuleRefs,
             Topic::Otel => Self::Otel,
             Topic::RestApi => Self::RestApi,
             Topic::Security => Self::Security,

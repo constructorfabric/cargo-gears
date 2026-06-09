@@ -5,7 +5,7 @@ Errors flow through three layers: Domain -> SDK -> REST Problem.
 
 Error flow:
   DomainError (business logic, in domain/error.rs)
-    -> From impl -> <Module>Error (SDK, transport-agnostic)
+    -> From impl -> <Gear>Error (SDK, transport-agnostic)
     -> From impl -> Problem (RFC-9457, implements IntoResponse)
     -> ApiResult<T> (handler return type)
 

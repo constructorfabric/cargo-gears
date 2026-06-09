@@ -8,27 +8,27 @@ General guidelines for LLMs:
   - When adding dependencies use `cargo add`, do not edit Cargo.toml manually
   - When linting, use `cargo gears lint`, not cargo check/clippy/fmt directly
   - Always verify that the application runs successfully after modifying code
-  - Prefer system modules over implementing custom ones (check available
-    modules with `cargo gears ls modules --system`)
-  - Do not create modules from scratch; use `cargo gears generate module`
-  - Pay attention to the "deps" section of system modules
+  - Prefer system gears over implementing custom ones (check available
+    gears with `cargo gears ls modules --system`)
+  - Do not create gears from scratch; use `cargo gears generate module`
+  - Pay attention to the "deps" section of system gears
 
 Invocation: cargo gears <command>
 
 Command tree:
   generate workspace  Initialize a Gears workspace from a template
-  generate module     Generate a module from a template (background-worker,
+  generate module     Generate a gear from a template (background-worker,
                       api-db-handler, api-gateway)
   generate config     Generate a runtime YAML config (dev, prod, db)
   new                 Alias for generate workspace
-  config mod add/rm   Add or remove a module in the YAML config
-  config mod db       Manage module-level database config
+  config mod add/rm   Add or remove a gear in the YAML config
+  config mod db       Manage gear-level database config
   config db           Manage global database server config
-  src                 Resolve Rust source for crate/module/item queries
+  src                 Resolve Rust source for crate/gear/item queries
   help schema         Print schema for manifest, config, or module formats
   help topic          Print operational documentation for a topic
   lint                Run workspace linting (fmt, clippy, dylint)
-  ls modules          List system and workspace modules
+  ls modules          List system and workspace gears
   manifest validate   Validate Gears.toml
   manifest ls         List app/environment pairs
   test                Run manifest-driven tests (cargo test or nextest)
@@ -58,16 +58,16 @@ For detailed command documentation:
 
 Available help topics:
   architecture      Framework architecture and principles
-  module-layout     Module directory structure and SDK pattern
+  gear-layout       Gear directory structure and SDK pattern
   security          AuthN, AuthZ, SecureConn, AccessScope
   rest-api          OperationBuilder, OpenAPI, SSE, OData
   clienthub         Typed ClientHub, plugins, GTS
   errors            RFC-9457 Problem error handling
   database          SecureConn, transactions, migrations
-  lifecycle         Module lifecycle, cancellation, background tasks
-  gears-catalog     Module categories and dependency rules
+  lifecycle         Gear lifecycle, cancellation, background tasks
+  gears-catalog     Gear categories and dependency rules
   manifest          Gears.toml and manifest-driven workflows
-  module-refs       How local and remote modules are referenced
+  gear-refs         How local and remote gears are referenced
   generated-server  How the generated server project works
   fips              FIPS mode activation and usage
   otel              OpenTelemetry activation and configuration

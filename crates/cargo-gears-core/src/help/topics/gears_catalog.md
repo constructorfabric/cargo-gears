@@ -1,15 +1,15 @@
-Topic: Gears Catalog (Module Categories)
+Topic: Gears Catalog (Gear Categories)
 
-Gears modules are organized into categories. Each module encapsulates
-business logic and exposes versioned contracts via SDK traits, REST, or gRPC.
+Gears are organized into categories. Each gear encapsulates business logic
+and exposes versioned contracts via SDK traits, REST, or gRPC.
 
-Module categories:
+Gear categories:
   API Ingress           Single public entry point for external traffic.
                         API gateway handles routing, auth, rate limiting,
                         versioned REST surface, and OpenAPI publication.
 
   Business Logic        User-facing SaaS capabilities built on ToolKit.
-                        Compose GenAI, Serverless, and Core modules into
+                        Compose GenAI, Serverless, and Core gears into
                         domain-specific workflows.
 
   Gen AI                Foundational generative AI: chat engine, LLM gateway,
@@ -17,7 +17,7 @@ Module categories:
                         scheduling, MCP integration.
 
   Serverless            Functions, workflows, runtimes, durable state,
-                        settings, and cluster coordination modules.
+                        settings, and cluster coordination gears.
 
   Core Functionality    Shared platform capabilities: audit, usage collection,
                         jobs, registries, file handling, quotas,
@@ -33,9 +33,9 @@ Module categories:
 
 Dependency rules:
   - All external HTTP traffic goes through api-gateway
-  - Business modules MAY depend on GenAI, Serverless, Core modules
-  - GenAI modules MAY depend on Serverless and Core modules
-  - Only integration/adapter modules talk to external components
+  - Business gears MAY depend on GenAI, Serverless, Core gears
+  - GenAI gears MAY depend on Serverless and Core gears
+  - Only integration/adapter gears talk to external components
   - No cross-category sideways deps except through SDK contracts
   - No circular dependencies allowed
   - In-process calls must propagate SecurityContext
@@ -48,11 +48,10 @@ Extension points:
 Repository structure:
   libs/              ToolKit libraries (substrate)
   gears/system/      System gears (control plane)
-  gears/             Service modules (business logic)
-  modules/           Additional service modules
-  apps/              Executable applications composing modules
+  gears/             Service gears (business logic)
+  apps/              Executable applications composing gears
 
-Use `cargo gears ls modules` to list available system and local modules.
+Use `cargo gears ls modules` to list available system and local gears.
 
 See also:
   cargo gears help topic architecture

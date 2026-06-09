@@ -1,11 +1,11 @@
 Topic: Security (AuthN, AuthZ, SecureConn)
 
-Gears enforce a secure-by-default data path. Module developers get
+Gears enforce a secure-by-default data path. Gear developers get
 tenant-scoped, authorized database access without implementing security.
 
 Security data flow:
   Request -> API Gateway (AuthN) -> SecurityContext
-    -> Module Handler (PEP)
+    -> Gear Handler (PEP)
     -> PolicyEnforcer -> AuthZ Resolver (PDP) -> AccessScope
     -> SecureConn (automatic WHERE clauses) -> Database
 
@@ -13,13 +13,13 @@ Three components:
   1. AuthN Resolver    Validates tokens, produces SecurityContext
                        (subject_id, tenant_id, token_scopes)
   2. AuthZ Resolver    Evaluates policies, returns decision + constraints
-  3. Module (PEP)      Calls PolicyEnforcer, passes AccessScope to SecureConn
+  3. Gear (PEP)        Calls PolicyEnforcer, passes AccessScope to SecureConn
 
 Route auth posture (compile-time enforced):
-  OperationBuilder::get("/my-module/v1/items")
+  OperationBuilder::get("/my-gear/v1/items")
       .authenticated()                        // protected route
       .require_license_features::<License>([]) // license gate
-  OperationBuilder::get("/my-module/v1/health")
+  OperationBuilder::get("/my-gear/v1/health")
       .public()                               // no token required
 
 PolicyEnforcer usage:
@@ -46,7 +46,7 @@ CRUD patterns:
   UPDATE: prefetch, PDP call, scoped write (TOCTOU-safe via WHERE clause)
 
 Key rules:
-  - Modules never parse tokens or construct AccessScope manually
+  - Gears never parse tokens or construct AccessScope manually
   - No raw DB connections; use SecureConn everywhere
   - Fail-closed: denied PDP, unreachable PDP, or missing constraints -> 403
   - tenant_id is immutable in updates

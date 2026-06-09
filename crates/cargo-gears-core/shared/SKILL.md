@@ -606,12 +606,12 @@ Available topics:
 - **[`database`]** SecureConn, transactions, migrations, and repository pattern
 - **[`errors`]** RFC-9457 Problem error handling
 - **[`fips`]** FIPS mode activation and usage
-- **[`gears-catalog`]** Module categories and dependency rules
+- **[`gear-layout`]** Gear directory structure and SDK pattern
+- **[`gear-refs`]** How local and remote gears are referenced
+- **[`gears-catalog`]** Gear categories and dependency rules
 - **[`generated-server`]** How the ephemeral generated server project works
-- **[`lifecycle`]** Module lifecycle, cancellation, and background tasks
+- **[`lifecycle`]** Gear lifecycle, cancellation, and background tasks
 - **[`manifest`]** Overview of `Gears.toml` and manifest-driven workflows
-- **[`module-layout`]** Module directory structure and SDK pattern
-- **[`module-refs`]** How local and remote modules are referenced
 - **[`otel`]** OpenTelemetry activation and runtime configuration
 - **[`rest-api`]** OperationBuilder, OpenAPI, SSE, and OData
 - **[`security`]** AuthN, AuthZ, SecureConn, and AccessScope
@@ -623,7 +623,7 @@ cargo gears help topic architecture
 ```
 
 ```bash
-cargo gears help topic module-layout
+cargo gears help topic gear-layout
 ```
 
 ```bash

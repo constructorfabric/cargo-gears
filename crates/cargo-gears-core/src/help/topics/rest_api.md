@@ -4,8 +4,8 @@ ToolKit provides type-safe route registration via OperationBuilder,
 integrated with OpenAPI, auth, errors, SSE, and OData.
 
 Basic pattern:
-  OperationBuilder::get("/my-module/v1/items")
-      .operation_id("my_module.list_items")
+  OperationBuilder::get("/my-gear/v1/items")
+      .operation_id("my_gear.list_items")
       .authenticated()
       .require_license_features::<License>([])
       .handler(handlers::list_items)
@@ -41,11 +41,11 @@ Handler conventions:
   - Use created_json(), no_content() helpers from toolkit::api::prelude
 
 Key rules:
-  - Modules do NOT own the HTTP server; api-gateway owns the Axum router
+  - Gears do NOT own the HTTP server; api-gateway owns the Axum router
   - Attach service ONCE after all routes: router.layer(Extension(service))
   - Follow operation_id convention: <crate>.<resource>.<action>
   - All 4xx/5xx errors must be RFC-9457 Problem responses
-  - Do not add transport middleware at module level (CORS, timeouts, etc.)
+  - Do not add transport middleware at gear level (CORS, timeouts, etc.)
   - Handlers should complete within ~30s; longer work returns 202 Accepted
 
 See also:

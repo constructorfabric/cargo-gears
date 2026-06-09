@@ -241,28 +241,28 @@ fn parses_help_topic_manifest() {
 }
 
 #[test]
-fn parses_help_topic_module_layout() {
-    let command = parse_command(&["gears", "help", "topic", "module-layout"]);
+fn parses_help_topic_gear_layout() {
+    let command = parse_command(&["gears", "help", "topic", "gear-layout"]);
 
     assert_eq!(
         command,
         GearsCommand::Help(HelpParams {
             command: HelpCommand::Topic(TopicParams {
-                topic: Topic::ModuleLayout,
+                topic: Topic::GearLayout,
             }),
         })
     );
 }
 
 #[test]
-fn parses_help_topic_module_refs() {
-    let command = parse_command(&["gears", "help", "topic", "module-refs"]);
+fn parses_help_topic_gear_refs() {
+    let command = parse_command(&["gears", "help", "topic", "gear-refs"]);
 
     assert_eq!(
         command,
         GearsCommand::Help(HelpParams {
             command: HelpCommand::Topic(TopicParams {
-                topic: Topic::ModuleRefs,
+                topic: Topic::GearRefs,
             }),
         })
     );

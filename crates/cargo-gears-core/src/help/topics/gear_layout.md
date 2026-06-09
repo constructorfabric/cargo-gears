@@ -1,20 +1,20 @@
-Topic: Module Layout and SDK Pattern
+Topic: Gear Layout and SDK Pattern
 
-Every module follows a DDD-light layout with an SDK crate and an
-implementation crate. Module names MUST be kebab-case.
+Every gear follows a DDD-light layout with an SDK crate and an
+implementation crate. Gear names MUST be kebab-case.
 
 Canonical directory structure:
-  modules/<name>/
+  gears/<name>/
     <name>-sdk/                   Public API for consumers
       src/
         lib.rs                    Re-exports main types
         api.rs                    ClientHub trait(s) with SecurityContext
         models.rs                 Transport-agnostic domain models
         errors.rs                 Transport-agnostic errors
-    <name>/                       Module implementation
+    <name>/                       Gear implementation
       src/
-        lib.rs                    Re-exports SDK types + module struct
-        module.rs                 #[toolkit::module(...)] + capabilities
+        lib.rs                    Re-exports SDK types + gear struct
+        gear.rs                   #[toolkit::gear(...)] + capabilities
         config.rs                 Typed config (optional)
         api/rest/
           dto.rs                  REST DTOs (serde/utoipa/ODataFilterable)
@@ -29,14 +29,14 @@ Canonical directory structure:
           mapper.rs               Entity <-> SDK model conversions
           migrations/              SeaORM migrations (raw SQL allowed here)
 
-Module registration:
-  #[toolkit::module(
-      name = "my-module",
+Gear registration:
+  #[toolkit::gear(
+      name = "my-gear",
       deps = ["foo", "bar"],
       capabilities = [db, rest],
-      client = my_module_sdk::MyModuleApi,
+      client = my_gear_sdk::MyGearApi,
   )]
-  pub struct MyModule { ... }
+  pub struct MyGear { ... }
 
 Key rules:
   - SDK trait methods take &SecurityContext as first param
