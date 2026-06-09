@@ -4,30 +4,31 @@ Every gear follows a DDD-light layout with an SDK crate and an
 implementation crate. Gear names MUST be kebab-case.
 
 Canonical directory structure:
-  gears/<name>/
-    <name>-sdk/                   Public API for consumers
+  modules/<name>/
+    Cargo.toml                    Gear implementation crate
+    src/
+      lib.rs                      Re-exports SDK types + gear struct
+      gear.rs                     #[toolkit::gear(...)] + capabilities
+      config.rs                   Typed config (optional)
+      api/rest/
+        dto.rs                    REST DTOs (serde/utoipa/ODataFilterable)
+        handlers.rs               Axum handlers
+        routes.rs                 OperationBuilder route registration
+      domain/
+        service.rs                Business logic
+        error.rs                  DomainError enum
+        local_client.rs           SDK trait impl for in-process calls
+      infra/storage/
+        entity.rs                 SeaORM entities with #[derive(Scopable)]
+        mapper.rs                 Entity <-> SDK model conversions
+        migrations/               SeaORM migrations (raw SQL allowed here)
+    sdk/                          Public API for consumers
+      Cargo.toml
       src/
         lib.rs                    Re-exports main types
         api.rs                    ClientHub trait(s) with SecurityContext
         models.rs                 Transport-agnostic domain models
         errors.rs                 Transport-agnostic errors
-    <name>/                       Gear implementation
-      src/
-        lib.rs                    Re-exports SDK types + gear struct
-        gear.rs                   #[toolkit::gear(...)] + capabilities
-        config.rs                 Typed config (optional)
-        api/rest/
-          dto.rs                  REST DTOs (serde/utoipa/ODataFilterable)
-          handlers.rs             Axum handlers
-          routes.rs               OperationBuilder route registration
-        domain/
-          service.rs              Business logic
-          error.rs                DomainError enum
-          local_client.rs         SDK trait impl for in-process calls
-        infra/storage/
-          entity.rs               SeaORM entities with #[derive(Scopable)]
-          mapper.rs               Entity <-> SDK model conversions
-          migrations/              SeaORM migrations (raw SQL allowed here)
 
 Gear registration:
   #[toolkit::gear(
