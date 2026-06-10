@@ -179,7 +179,7 @@ build-dir = "../../target"
 
 const CARGO_SERVER_MAIN: &str = r#"
 use anyhow::{Context, Result};
-use gears_toolkit::bootstrap::{AppConfig, /* run_migrate, */ run_server};
+use toolkit::bootstrap::{AppConfig, /* run_migrate, */ run_server};
 {{dependencies}}
 
 #[tokio::main]
@@ -281,15 +281,15 @@ fn merge_module_metadata(
 static FEATURES: LazyLock<HashMap<String, Vec<String>>> = LazyLock::new(|| {
     let mut res = HashMap::with_capacity(2);
     res.insert("default".to_owned(), vec![]);
-    res.insert("otel".to_owned(), vec!["gears_toolkit/otel".to_owned()]);
-    res.insert("fips".to_owned(), vec!["gears_toolkit/fips".to_owned()]);
+    res.insert("otel".to_owned(), vec!["toolkit/otel".to_owned()]);
+    res.insert("fips".to_owned(), vec!["toolkit/fips".to_owned()]);
     res
 });
 
 static CARGO_DEPS: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     let mut res = HashMap::with_capacity(5);
-    res.insert("cf-gears-toolkit".to_owned(), "gears_toolkit".to_owned());
-    res.insert("gears_toolkit".to_owned(), "gears_toolkit".to_owned()); // just in case there's a renamed
+    res.insert("cf-gears-toolkit".to_owned(), "toolkit".to_owned());
+    res.insert("toolkit".to_owned(), "toolkit".to_owned()); // just in case there's a renamed
     res.insert("anyhow".to_owned(), "anyhow".to_owned());
     res.insert("tokio".to_owned(), "tokio".to_owned());
     res
@@ -298,11 +298,11 @@ static CARGO_DEPS: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
 fn create_required_deps() -> anyhow::Result<CargoTomlDependencies> {
     let workspace_path = workspace_root()?;
     let mut deps = get_dependencies(&workspace_path, &CARGO_DEPS)?;
-    if let Some(gears_toolkit) = deps.get_mut("gears_toolkit") {
-        gears_toolkit.features.insert("bootstrap".to_owned());
+    if let Some(toolkit) = deps.get_mut("toolkit") {
+        toolkit.features.insert("bootstrap".to_owned());
     } else {
         deps.insert(
-            "gears_toolkit".to_owned(),
+            "toolkit".to_owned(),
             CargoTomlDependency {
                 package: Some("cf-gears-toolkit".to_owned()),
                 features: BTreeSet::from(["bootstrap".to_owned()]),
@@ -715,7 +715,7 @@ path = "src/lib.rs"
 
         write_package(&temp_dir, "crates/anyhow", "anyhow");
         write_package(&temp_dir, "crates/tokio", "tokio");
-        write_package(&temp_dir, "crates/gears-toolkit", "cf-gears-toolkit");
+        write_package(&temp_dir, "crates/toolkit", "cf-gears-toolkit");
         write_package(&temp_dir, "crates/local-module", "local-module");
         temp_dir.write(
             "Cargo.toml",
@@ -723,7 +723,7 @@ path = "src/lib.rs"
 members = [
     "crates/anyhow",
     "crates/tokio",
-    "crates/gears-toolkit",
+    "crates/toolkit",
     "crates/local-module",
 ]
 resolver = "3"

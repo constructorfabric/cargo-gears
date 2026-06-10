@@ -256,9 +256,9 @@ async fn main() -> Result<()> {
     let config_path = std::env::args().nth(1)
         .map(std::path::PathBuf::from)
         .context("first argument must be the configuration path")?;
-    let config = gears_toolkit::bootstrap::AppConfig::load_or_default(Some(&config_path))?;
+    let config = toolkit::bootstrap::AppConfig::load_or_default(Some(&config_path))?;
 
-    gears_toolkit::bootstrap::run_server(config).await
+    toolkit::bootstrap::run_server(config).await
 }
 ```
 ### .cargo/config.toml

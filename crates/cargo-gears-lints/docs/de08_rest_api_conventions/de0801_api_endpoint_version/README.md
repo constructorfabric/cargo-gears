@@ -43,7 +43,7 @@ Without this structure:
 
 ```rust
 // ❌ Bad - various violations
-use gears_toolkit::api::OperationBuilder;
+use toolkit::api::OperationBuilder;
 
 // Missing service name and version
 OperationBuilder::get("/users");
@@ -68,7 +68,7 @@ Use instead:
 
 ```rust
 // ✅ Good - correct format
-use gears_toolkit::api::OperationBuilder;
+use toolkit::api::OperationBuilder;
 
 // Basic endpoint
 OperationBuilder::get("/my-service/v1/users")

@@ -1346,7 +1346,7 @@ mod tests {
             edition = "2024"
 
             [lib]
-            name = "gears_toolkit"
+            name = "toolkit"
             path = "src/lib.rs"
 
             [dependencies]
@@ -1395,8 +1395,8 @@ mod tests {
                 .map(|mapping| format!("{} -> {}", mapping.library_name, mapping.package_name))
                 .collect::<Vec<_>>(),
             vec![
-                "gears_toolkit -> cf-gears-toolkit".to_owned(),
                 "gears_toolkit_macros -> cf-gears-toolkit-macros".to_owned(),
+                "toolkit -> cf-gears-toolkit".to_owned(),
             ]
         );
     }
