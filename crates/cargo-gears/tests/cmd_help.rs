@@ -85,7 +85,7 @@ fn parses_help_src_with_all_flags() {
         "--version",
         "1.0.0",
         "--clean",
-        "cf-modkit",
+        "cf-gears-toolkit",
     ]);
 
     assert_eq!(
@@ -98,7 +98,7 @@ fn parses_help_src_with_all_flags() {
                 libs: true,
                 version: Some(semver::Version::new(1, 0, 0)),
                 clean: true,
-                query: Some("cf-modkit".to_owned()),
+                query: Some("cf-gears-toolkit".to_owned()),
             }),
         })
     );

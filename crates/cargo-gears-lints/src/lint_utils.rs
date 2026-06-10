@@ -281,7 +281,7 @@ pub fn is_serde_trait(segments: &[&str], trait_name: &str) -> bool {
     }
 }
 
-/// Check if an item has the `#[modkit_macros::api_dto(...)]` attribute.
+/// Check if an item has the `#[gears_toolkit_macros::api_dto(...)]` attribute.
 ///
 /// The `api_dto` macro automatically adds:
 /// - `#[derive(serde::Serialize)]` (if `response` is specified)
@@ -292,7 +292,7 @@ pub fn is_serde_trait(segments: &[&str], trait_name: &str) -> bool {
 /// Lints checking for these derives/attributes should skip items with this attribute.
 pub fn has_api_dto_attribute(item: &rustc_ast::Item) -> bool {
     for attr in &item.attrs {
-        // Check for modkit_macros::api_dto or just api_dto
+        // Check for gears_toolkit_macros::api_dto or just api_dto
         if let rustc_ast::AttrKind::Normal(attr_item) = &attr.kind {
             let path = &attr_item.item.path;
             let segments: Vec<&str> = path
@@ -301,7 +301,7 @@ pub fn has_api_dto_attribute(item: &rustc_ast::Item) -> bool {
                 .map(|s| s.ident.name.as_str())
                 .collect();
 
-            // Match: api_dto, modkit_macros::api_dto
+            // Match: api_dto, gears_toolkit_macros::api_dto
             if segments.last() == Some(&"api_dto") {
                 return true;
             }

@@ -20,7 +20,7 @@ pub(super) struct RunLoop {
     project_name: String,
     manifest_path: PathBuf,
     watch_policy: WatchPolicy,
-    dependencies: Option<crate::module_parser::CargoTomlDependencies>,
+    dependencies: Option<crate::gears::CargoTomlDependencies>,
 }
 
 pub(super) static OTEL: AtomicBool = AtomicBool::new(false);
@@ -49,7 +49,7 @@ impl RunLoop {
 
     pub(super) fn with_dependencies(
         mut self,
-        dependencies: crate::module_parser::CargoTomlDependencies,
+        dependencies: crate::gears::CargoTomlDependencies,
     ) -> Self {
         self.dependencies = Some(dependencies);
         self

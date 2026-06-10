@@ -1,5 +1,5 @@
 use crate::common;
-use crate::module_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
+use crate::gears::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
 use anyhow::{Context, bail};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
@@ -309,7 +309,7 @@ fn resolve_dependencies(
     let local_modules = modules
         .iter()
         .any(|module| matches!(module, ModuleRef::Local(_)))
-        .then(|| crate::module_parser::get_module_name_from_crate(Some(workspace_root)))
+        .then(|| crate::gears::get_module_name_from_crate(Some(workspace_root)))
         .transpose()?
         .unwrap_or_default();
     let mut dependencies = CargoTomlDependencies::new();
@@ -694,7 +694,7 @@ const fn default_true() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::module_parser::test_utils::TempDirExt;
+    use crate::gears::test_utils::TempDirExt;
     use tempfile::TempDir;
 
     #[test]

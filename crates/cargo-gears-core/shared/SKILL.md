@@ -4,7 +4,7 @@ description: cli reference to help with the development of constructor fabric ge
   the framework from its initialization, adding/removing modules, modifying configuration files,
   build and/or run project, lint the project and managing applications through its manifest.
   
-  Always load this skill whenever you detect Gears.toml or you locate a reference to gears, cargo-gears, modkit, 
+  Always load this skill whenever you detect Gears.toml or you locate a reference to gears, cargo-gears, gears-toolkit, 
   modules, plugins or packages that include the prefix cf- in its name.
 ---
 
@@ -36,7 +36,7 @@ cargo gears generate workspace /tmp/my-app
 This CLI is a tool for automating gears development, a Rust framework. You can get more information about it in:
 
 - Gears repository main: https://github.com/constructorfabric/cyberware-rust
-- Modkit libraries(the ones that leverage this CLI tool) are located
+- Gears libraries(the ones that leverage this CLI tool) are located
   in https://github.com/constructorfabric/cyberware-rust/tree/main/libs
 - More documentation of the project will be located in https://github.com/constructorfabric/cyberware-rust/tree/main/docs
 
@@ -481,15 +481,15 @@ Arguments:
 
 Supported query examples:
 
-- **[`cf-modkit`]**
+- **[`cf-gears-toolkit`]**
 - **[`tokio::sync`]**
-- **[`cf-modkit::gts::plugin::BaseModkitPluginV1`]**
-- **[`cf-modkit::gts::schemas::get_core_gts_schemas`]**
+- **[`cf-gears-toolkit::gts::plugin::BaseGearsPluginV1`]**
+- **[`cf-gears-toolkit::gts::schemas::get_core_gts_schemas`]**
 
 Behavior:
 
 - **[query requirement]** A query is required unless `--clean` is passed by itself
-- **[package-only libs mode]** `--libs` requires a package-only query such as `cf-modkit`
+- **[package-only libs mode]** `--libs` requires a package-only query such as `cf-gears-toolkit`
 - **[local resolution first]** Tries workspace metadata before hitting the network
 - **[cache-first registry fallback]** Reuses cached crate sources before downloading from the registry
 - **[crates.io fallback]** Downloads and extracts crate source if local resolution and cache lookup both fail
@@ -497,7 +497,7 @@ Behavior:
 - **[recursive re-export resolution]** Follows re-exports across `crate`, `self`, `super`, and dependency boundaries
   until it reaches the final source
 - **[library mapping output]** `--libs` prints the Rust source-code library name on the left and the Cargo package
-  name on the right, including renamed dependencies like `modkit_macros -> cf-modkit-macros`
+  name on the right, including renamed dependencies like `gears_toolkit_macros -> cf-gears-toolkit-macros`
 - **[cache location]** Registry sources are cached under the OS temp directory in `gears-docs-cache/<registry>/` (legacy name)
 - **[cache cleaning]** `--clean` removes the selected registry cache before resolution
 - **[source output]** Prints the resolved Rust source to stdout
@@ -507,11 +507,11 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears src -p /tmp/cf-demo cf-modkit
+cargo gears src -p /tmp/cf-demo cf-gears-toolkit
 ```
 
 ```bash
-cargo gears src cf-modkit::module
+cargo gears src cf-gears-toolkit::module
 ```
 
 ```bash
@@ -519,7 +519,7 @@ cargo gears src --verbose tokio::sync
 ```
 
 ```bash
-cargo gears src --libs cf-modkit
+cargo gears src --libs cf-gears-toolkit
 ```
 
 ```bash

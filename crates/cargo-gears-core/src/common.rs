@@ -1,6 +1,6 @@
 use crate::app_config::AppConfig;
 use crate::config::validate_name;
-use crate::module_parser::{
+use crate::gears::{
     CargoToml, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata, Package,
     get_dependencies, get_module_name_from_crate,
 };
@@ -179,7 +179,7 @@ build-dir = "../../target"
 
 const CARGO_SERVER_MAIN: &str = r#"
 use anyhow::{Context, Result};
-use modkit::bootstrap::{AppConfig, /* run_migrate, */ run_server};
+use gears_toolkit::bootstrap::{AppConfig, /* run_migrate, */ run_server};
 {{dependencies}}
 
 #[tokio::main]
@@ -281,15 +281,15 @@ fn merge_module_metadata(
 static FEATURES: LazyLock<HashMap<String, Vec<String>>> = LazyLock::new(|| {
     let mut res = HashMap::with_capacity(2);
     res.insert("default".to_owned(), vec![]);
-    res.insert("otel".to_owned(), vec!["modkit/otel".to_owned()]);
-    res.insert("fips".to_owned(), vec!["modkit/fips".to_owned()]);
+    res.insert("otel".to_owned(), vec!["gears_toolkit/otel".to_owned()]);
+    res.insert("fips".to_owned(), vec!["gears_toolkit/fips".to_owned()]);
     res
 });
 
 static CARGO_DEPS: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     let mut res = HashMap::with_capacity(5);
-    res.insert("cf-modkit".to_owned(), "modkit".to_owned());
-    res.insert("modkit".to_owned(), "modkit".to_owned()); // just in case there's a renamed
+    res.insert("cf-gears-toolkit".to_owned(), "gears_toolkit".to_owned());
+    res.insert("gears_toolkit".to_owned(), "gears_toolkit".to_owned()); // just in case there's a renamed
     res.insert("anyhow".to_owned(), "anyhow".to_owned());
     res.insert("tokio".to_owned(), "tokio".to_owned());
     res
@@ -298,13 +298,13 @@ static CARGO_DEPS: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
 fn create_required_deps() -> anyhow::Result<CargoTomlDependencies> {
     let workspace_path = workspace_root()?;
     let mut deps = get_dependencies(&workspace_path, &CARGO_DEPS)?;
-    if let Some(modkit) = deps.get_mut("modkit") {
-        modkit.features.insert("bootstrap".to_owned());
+    if let Some(gears_toolkit) = deps.get_mut("gears_toolkit") {
+        gears_toolkit.features.insert("bootstrap".to_owned());
     } else {
         deps.insert(
-            "modkit".to_owned(),
+            "gears_toolkit".to_owned(),
             CargoTomlDependency {
-                package: Some("cf-modkit".to_owned()),
+                package: Some("cf-gears-toolkit".to_owned()),
                 features: BTreeSet::from(["bootstrap".to_owned()]),
                 ..Default::default()
             },
@@ -518,13 +518,13 @@ mod tests {
         make_absolute_paths_relative, merge_module_metadata, prepare_cargo_server_main,
         resolve_generated_project_name,
     };
+    use crate::gears::{
+        Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata,
+        test_utils::TempDirExt,
+    };
     use crate::manifest::{
         BuildPolicy, BuildProfile, LintPolicy, ManifestSelection, ResolvedManifest, RunPolicy,
         TestPolicy,
-    };
-    use crate::module_parser::{
-        Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata,
-        test_utils::TempDirExt,
     };
     use std::path::{Path, PathBuf};
     use tempfile::TempDir;
@@ -715,7 +715,7 @@ path = "src/lib.rs"
 
         write_package(&temp_dir, "crates/anyhow", "anyhow");
         write_package(&temp_dir, "crates/tokio", "tokio");
-        write_package(&temp_dir, "crates/modkit", "cf-modkit");
+        write_package(&temp_dir, "crates/gears-toolkit", "cf-gears-toolkit");
         write_package(&temp_dir, "crates/local-module", "local-module");
         temp_dir.write(
             "Cargo.toml",
@@ -723,7 +723,7 @@ path = "src/lib.rs"
 members = [
     "crates/anyhow",
     "crates/tokio",
-    "crates/modkit",
+    "crates/gears-toolkit",
     "crates/local-module",
 ]
 resolver = "3"

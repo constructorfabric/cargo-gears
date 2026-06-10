@@ -60,7 +60,7 @@ pub enum DomainError {
 ```rust
 // ✅ Good - API layer handles HTTP mapping
 // File: src/api/rest/error.rs
-use modkit::api::problem::Problem;
+use gears_toolkit::api::problem::Problem;
 use crate::domain::error::DomainError;
 
 impl From<DomainError> for Problem {

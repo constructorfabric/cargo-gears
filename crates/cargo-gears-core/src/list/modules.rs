@@ -1,10 +1,10 @@
 use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule};
 use crate::common::{OutputFormat, Registry};
-use crate::manifest::{Manifest, ModuleRef};
-use crate::module_parser::{
+use crate::gears::{
     Capability, ConfigModule, ConfigModuleMetadata, get_module_name_from_crate,
     parse_module_rs_source,
 };
+use crate::manifest::{Manifest, ModuleRef};
 use anyhow::{Context, bail};
 use flate2::read::GzDecoder;
 use reqwest::Client;

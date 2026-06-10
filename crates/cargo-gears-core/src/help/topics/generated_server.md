@@ -10,7 +10,7 @@ Location:
 Generated files:
   Cargo.toml           Declares dependencies on all selected gears
   .cargo/config.toml   Points target-dir back to workspace target/
-  src/main.rs          Bootstraps the modkit server with all gears
+  src/main.rs          Bootstraps the gears-toolkit server with all gears
 
 The generated server reads its runtime config from the GEARS_CONFIG
 environment variable, which the CLI sets automatically during build/run.

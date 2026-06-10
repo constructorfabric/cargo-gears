@@ -1,5 +1,5 @@
+use crate::gears::CargoTomlDependencies;
 use crate::manifest::WatchPolicy;
-use crate::module_parser::CargoTomlDependencies;
 use anyhow::Context;
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 use std::collections::HashSet;
@@ -282,7 +282,7 @@ impl WatchRoot {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::module_parser::CargoTomlDependency;
+    use crate::gears::CargoTomlDependency;
     use std::fs;
     use tempfile::TempDir;
 

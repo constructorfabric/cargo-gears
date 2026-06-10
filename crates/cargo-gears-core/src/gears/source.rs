@@ -388,7 +388,7 @@ fn find_use_target(tree: &UseTree, matched_name: &str, prefix: &[String]) -> Opt
 #[cfg(test)]
 mod tests {
     use super::{extract_reexport_target, resolve_rust_path};
-    use crate::module_parser::test_utils::TempDirExt;
+    use crate::gears::test_utils::TempDirExt;
     use tempfile::TempDir;
 
     #[test]

@@ -1,4 +1,4 @@
-use crate::module_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
+use crate::gears::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
 use anyhow::bail;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};

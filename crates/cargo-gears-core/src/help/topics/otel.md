@@ -5,7 +5,7 @@ the generated server.
 
 How it works:
   - The CLI passes -F otel to cargo build/run, enabling the otel Cargo feature
-  - The modkit framework's otel feature activates tracing and metrics exporters
+  - The gears-toolkit framework's otel feature activates tracing and metrics exporters
   - Runtime configuration is in the config YAML under the opentelemetry section
 
 Activation:

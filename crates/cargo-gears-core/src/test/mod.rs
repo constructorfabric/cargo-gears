@@ -256,8 +256,8 @@ fn run_custom_command(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gears::CargoTomlDependencies;
     use crate::manifest::{BuildPolicy, LintPolicy, RunPolicy, TestPolicy};
-    use crate::module_parser::CargoTomlDependencies;
     use std::collections::BTreeMap;
 
     fn resolved(test: TestPolicy) -> ResolvedManifest {

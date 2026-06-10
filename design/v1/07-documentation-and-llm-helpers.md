@@ -74,7 +74,7 @@ possible, so documentation does not drift.
 Command:
 
 ```text
-cargo gears help docs cf-modkit::bootstrap::run_server
+cargo gears help docs cf-gears-toolkit::bootstrap::run_server
 ```
 
 ## Other Information

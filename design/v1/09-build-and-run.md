@@ -222,13 +222,13 @@ version = "0.1.0"
 
 [features]
 default = []
-otel = ["cf-modkit/otel"]
-fips = ["cf-modkit/fips"]
+otel = ["cf-gears-toolkit/otel"]
+fips = ["cf-gears-toolkit/fips"]
 
 [dependencies]
 anyhow = "..." # Same version as the workspace, otherwise 1 by default
 tokio = "..." # Same version as the workspace, otherwise 1 by default
-cf-modkit = "..." # Same version as the workspace plus the bootstrap feature
+cf-gears-toolkit = "..." # Same version as the workspace plus the bootstrap feature
 # module dependencies generated based on the manifest
 # {{dependencies}}
 
@@ -256,9 +256,9 @@ async fn main() -> Result<()> {
     let config_path = std::env::args().nth(1)
         .map(std::path::PathBuf::from)
         .context("first argument must be the configuration path")?;
-    let config = modkit::bootstrap::AppConfig::load_or_default(Some(&config_path))?;
+    let config = gears_toolkit::bootstrap::AppConfig::load_or_default(Some(&config_path))?;
 
-    modkit::bootstrap::run_server(config).await
+    gears_toolkit::bootstrap::run_server(config).await
 }
 ```
 ### .cargo/config.toml

@@ -1,5 +1,5 @@
 use crate::common::Registry;
-use crate::module_parser::{
+use crate::gears::{
     LibraryMapping, ResolvedMetadataPath, extract_reexport_target,
     list_library_mappings_from_metadata, resolve_source_from_metadata,
 };
@@ -30,10 +30,10 @@ pub struct SourceParams {
     pub version: Option<Version>,
     /// Remove the source cache for the selected registry before resolving
     pub clean: bool,
-    /// Rust path to resolve(start always by `package_name`), for example `cf-modkit` it will resolve the lib.rs
+    /// Rust path to resolve(start always by `package_name`), for example `cf-gears-toolkit` it will resolve the lib.rs
     /// You can resolve modules `tokio::sync` to resolve the source code from the sync module from tokio crate
-    /// You can also resolve by function name, for example `cf-modkit::gts::plugin::BaseModkitPluginV1`
-    /// Also resolve by function name, for instance `cf-modkit::gts::schemas::get_core_gts_schemas`
+    /// You can also resolve by function name, for example `cf-gears-toolkit::gts::plugin::BaseGearsPluginV1`
+    /// Also resolve by function name, for instance `cf-gears-toolkit::gts::schemas::get_core_gts_schemas`
     pub query: Option<String>,
 }
 
@@ -136,7 +136,7 @@ fn list_library_mappings(
 fn package_only_query(query: &str) -> anyhow::Result<String> {
     let segments = split_query_segments(query)?;
     if segments.len() != 1 {
-        bail!("--libs requires a package-only query such as 'cf-modkit'");
+        bail!("--libs requires a package-only query such as 'cf-gears-toolkit'");
     }
 
     Ok(segments[0].clone())
@@ -1014,8 +1014,8 @@ mod tests {
         should_retry_registry_request,
     };
     use crate::common::Registry;
-    use crate::module_parser::resolve_source_from_metadata;
-    use crate::module_parser::test_utils::TempDirExt;
+    use crate::gears::resolve_source_from_metadata;
+    use crate::gears::test_utils::TempDirExt;
     use reqwest::{Method, StatusCode};
     use std::collections::HashSet;
     use std::path::Path;
@@ -1028,7 +1028,7 @@ mod tests {
             "Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit"
+            name = "cf-gears-toolkit"
             version = "0.5.4"
             edition = "2024"
             "#,
@@ -1043,17 +1043,17 @@ mod tests {
             "src/gts/mod.rs",
             r"
             pub mod plugin;
-            pub use plugin::BaseModkitPluginV1;
+            pub use plugin::BaseGearsPluginV1;
             ",
         );
         project.write(
             "src/gts/plugin.rs",
             r"
-            pub struct BaseModkitPluginV1;
+            pub struct BaseGearsPluginV1;
             ",
         );
 
-        let query = "cf-modkit::gts::BaseModkitPluginV1";
+        let query = "cf-gears-toolkit::gts::BaseGearsPluginV1";
         let resolved = resolve_source_from_metadata(project.path(), query)
             .expect("metadata query should run")
             .expect("query should resolve");
@@ -1064,7 +1064,7 @@ mod tests {
 
         assert_eq!(
             next_step.query,
-            "cf-modkit::gts::plugin::BaseModkitPluginV1"
+            "cf-gears-toolkit::gts::plugin::BaseGearsPluginV1"
         );
         assert!(next_step.requested_version.is_none());
         assert_eq!(next_step.preferred_path, project.path());
@@ -1077,7 +1077,7 @@ mod tests {
             "Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit"
+            name = "cf-gears-toolkit"
             version = "0.5.4"
             edition = "2024"
             "#,
@@ -1092,13 +1092,13 @@ mod tests {
             "src/gts/mod.rs",
             r"
             pub mod plugin;
-            pub use plugin::BaseModkitPluginV1;
+            pub use plugin::BaseGearsPluginV1;
             ",
         );
         project.write(
             "src/gts/plugin.rs",
             r"
-            pub struct BaseModkitPluginV1;
+            pub struct BaseGearsPluginV1;
             ",
         );
 
@@ -1118,7 +1118,7 @@ mod tests {
         let resolved_query = resolve_query_recursive(
             &resolver,
             project.path(),
-            "cf-modkit::gts::BaseModkitPluginV1",
+            "cf-gears-toolkit::gts::BaseGearsPluginV1",
             None,
             &mut visited,
         )
@@ -1127,7 +1127,7 @@ mod tests {
         assert!(
             resolved_query
                 .source
-                .contains("pub struct BaseModkitPluginV1;")
+                .contains("pub struct BaseGearsPluginV1;")
         );
         assert!(
             resolved_query
@@ -1143,33 +1143,33 @@ mod tests {
             "Cargo.toml",
             r#"
             [workspace]
-            members = ["cf-modkit", "cf-modkit-macros"]
+            members = ["cf-gears-toolkit", "cf-gears-toolkit-macros"]
             resolver = "3"
 
             [workspace.dependencies]
-            modkit_macros = { package = "cf-modkit-macros", version = "0.5.4" }
+            gears_toolkit_macros = { package = "cf-gears-toolkit-macros", version = "0.5.4" }
             "#,
         );
         project.write(
-            "cf-modkit/Cargo.toml",
+            "cf-gears-toolkit/Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit"
+            name = "cf-gears-toolkit"
             version = "0.5.4"
             edition = "2024"
 
             [dependencies]
-            modkit_macros = { workspace = true }
+            gears_toolkit_macros = { workspace = true }
             "#,
         );
 
-        let dependencies =
-            parse_dependencies(&project.path().join("cf-modkit")).expect("dependencies parse");
+        let dependencies = parse_dependencies(&project.path().join("cf-gears-toolkit"))
+            .expect("dependencies parse");
         let dep = dependencies
-            .get("modkit_macros")
+            .get("gears_toolkit_macros")
             .expect("workspace dependency should be present");
 
-        assert_eq!(dep.package_name, "cf-modkit-macros");
+        assert_eq!(dep.package_name, "cf-gears-toolkit-macros");
         assert_eq!(
             dep.version.as_ref().map(ToString::to_string).as_deref(),
             Some("0.5.4")
@@ -1183,20 +1183,20 @@ mod tests {
             "Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit"
+            name = "cf-gears-toolkit"
             version = "0.5.4"
             edition = "2024"
 
             [dependencies]
-            cf-modkit-macros = "0.5.4"
+            cf-gears-toolkit-macros = "0.5.4"
             "#,
         );
 
         let dependencies = parse_dependencies(project.path()).expect("dependencies parse");
-        let dep = find_dependency_spec(&dependencies, "cf_modkit_macros")
+        let dep = find_dependency_spec(&dependencies, "cf_gears_toolkit_macros")
             .expect("hyphenated dependency should match underscore crate name");
 
-        assert_eq!(dep.package_name, "cf-modkit-macros");
+        assert_eq!(dep.package_name, "cf-gears-toolkit-macros");
     }
 
     #[test]
@@ -1231,42 +1231,42 @@ mod tests {
             "Cargo.toml",
             r#"
             [workspace]
-            members = ["cf-modkit", "cf-modkit-macros"]
+            members = ["cf-gears-toolkit", "cf-gears-toolkit-macros"]
             resolver = "3"
 
             [workspace.dependencies]
-            modkit_macros = { package = "cf-modkit-macros", path = "cf-modkit-macros" }
+            gears_toolkit_macros = { package = "cf-gears-toolkit-macros", path = "cf-gears-toolkit-macros" }
             "#,
         );
         project.write(
-            "cf-modkit/Cargo.toml",
+            "cf-gears-toolkit/Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit"
+            name = "cf-gears-toolkit"
             version = "0.5.4"
             edition = "2024"
 
             [dependencies]
-            modkit_macros = { workspace = true }
+            gears_toolkit_macros = { workspace = true }
             "#,
         );
         project.write(
-            "cf-modkit/src/lib.rs",
+            "cf-gears-toolkit/src/lib.rs",
             r"
-            pub use modkit_macros::module;
+            pub use gears_toolkit_macros::module;
             ",
         );
         project.write(
-            "cf-modkit-macros/Cargo.toml",
+            "cf-gears-toolkit-macros/Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit-macros"
+            name = "cf-gears-toolkit-macros"
             version = "0.5.4"
             edition = "2024"
             "#,
         );
         project.write(
-            "cf-modkit-macros/src/lib.rs",
+            "cf-gears-toolkit-macros/src/lib.rs",
             r"
             pub fn module() {}
             ",
@@ -1287,19 +1287,19 @@ mod tests {
 
         let resolved_query = resolve_query_recursive(
             &resolver,
-            &project.path().join("cf-modkit"),
-            "cf-modkit::module",
+            &project.path().join("cf-gears-toolkit"),
+            "cf-gears-toolkit::module",
             None,
             &mut visited,
         )
         .expect("recursive resolution should succeed");
 
-        assert_eq!(resolved_query.package_name, "cf-modkit-macros");
+        assert_eq!(resolved_query.package_name, "cf-gears-toolkit-macros");
         assert!(resolved_query.source.contains("pub fn module() {}"));
         assert!(
             resolved_query
                 .source_path
-                .ends_with(Path::new("cf-modkit-macros/src/lib.rs"))
+                .ends_with(Path::new("cf-gears-toolkit-macros/src/lib.rs"))
         );
     }
 
@@ -1310,13 +1310,13 @@ mod tests {
             "Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit"
+            name = "cf-gears-toolkit"
             version = "0.5.4"
             edition = "2024"
             "#,
         );
 
-        let error = list_library_mappings(Some(project.path()), "cf-modkit::module")
+        let error = list_library_mappings(Some(project.path()), "cf-gears-toolkit::module")
             .expect_err("non-package query should fail");
 
         assert!(
@@ -1333,37 +1333,37 @@ mod tests {
             "Cargo.toml",
             r#"
             [workspace]
-            members = ["cf-modkit", "cf-modkit-macros"]
+            members = ["cf-gears-toolkit", "cf-gears-toolkit-macros"]
             resolver = "3"
             "#,
         );
         project.write(
-            "cf-modkit/Cargo.toml",
+            "cf-gears-toolkit/Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit"
+            name = "cf-gears-toolkit"
             version = "0.5.4"
             edition = "2024"
 
             [lib]
-            name = "modkit"
+            name = "gears_toolkit"
             path = "src/lib.rs"
 
             [dependencies]
-            modkit_macros = { package = "cf-modkit-macros", path = "../cf-modkit-macros" }
+            gears_toolkit_macros = { package = "cf-gears-toolkit-macros", path = "../cf-gears-toolkit-macros" }
             "#,
         );
         project.write(
-            "cf-modkit/src/lib.rs",
+            "cf-gears-toolkit/src/lib.rs",
             r"
-            pub use modkit_macros::module;
+            pub use gears_toolkit_macros::module;
             ",
         );
         project.write(
-            "cf-modkit-macros/Cargo.toml",
+            "cf-gears-toolkit-macros/Cargo.toml",
             r#"
             [package]
-            name = "cf-modkit-macros"
+            name = "cf-gears-toolkit-macros"
             version = "0.5.4"
             edition = "2024"
 
@@ -1372,7 +1372,7 @@ mod tests {
             "#,
         );
         project.write(
-            "cf-modkit-macros/src/lib.rs",
+            "cf-gears-toolkit-macros/src/lib.rs",
             r"
             use proc_macro::TokenStream;
 
@@ -1383,8 +1383,11 @@ mod tests {
             ",
         );
 
-        let mappings = list_library_mappings(Some(&project.path().join("cf-modkit")), "cf-modkit")
-            .expect("mappings should resolve");
+        let mappings = list_library_mappings(
+            Some(&project.path().join("cf-gears-toolkit")),
+            "cf-gears-toolkit",
+        )
+        .expect("mappings should resolve");
 
         assert_eq!(
             mappings
@@ -1392,8 +1395,8 @@ mod tests {
                 .map(|mapping| format!("{} -> {}", mapping.library_name, mapping.package_name))
                 .collect::<Vec<_>>(),
             vec![
-                "modkit -> cf-modkit".to_owned(),
-                "modkit_macros -> cf-modkit-macros".to_owned(),
+                "gears_toolkit -> cf-gears-toolkit".to_owned(),
+                "gears_toolkit_macros -> cf-gears-toolkit-macros".to_owned(),
             ]
         );
     }

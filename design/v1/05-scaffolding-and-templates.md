@@ -103,7 +103,7 @@ architecture and expected inputs, and only the files needed for that scaffold.
 Family directories such as `Modules/` may also define `sub_templates` so the CLI
 can discover the built-in names without hardcoding them.
 
-Module templates should preserve the ModKit module layout described in
+Module templates should preserve the Gears module layout described in
 [02_module_layout_and_sdk_pattern.md](https://github.com/constructorfabric/gears-rust/blob/main/docs/modkit_unified_system/02_module_layout_and_sdk_pattern.md).
 The generated module lives under `modules/<name>/` and may contain both an
 implementation crate and an SDK crate:
@@ -120,7 +120,7 @@ modules/<name>/
 |       `-- errors.rs
 `-- src/
     |-- lib.rs
-    |-- module.rs                 # ModKit registration and lifecycle
+    |-- module.rs                 # Gears registration and lifecycle
     |-- config.rs                 # typed runtime config
     |-- api/                      # HTTP/gRPC/interface adapters
     |-- domain/                   # business logic and ports
@@ -134,7 +134,7 @@ The template code should keep layer boundaries explicit:
   services instead of carrying business logic.
 - `src/domain/` contains internal business logic, ports, and local client adapters.
 - `src/infra/` contains concrete persistence, HTTP, system, and other adapter implementations.
-- `src/module.rs` is the ModKit wiring point: module attributes, lifecycle
+- `src/module.rs` is the Gears wiring point: module attributes, lifecycle
   methods, capability registration, and `ClientHub` registration.
 
 Generated names should use kebab-case for module folders and crate names. Rust

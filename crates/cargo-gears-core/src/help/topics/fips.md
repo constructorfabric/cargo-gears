@@ -5,7 +5,7 @@ cryptography in the generated server.
 
 How it works:
   - The CLI passes -F fips to cargo build/run, enabling the fips Cargo feature
-  - The modkit framework's fips feature activates FIPS-compliant TLS and crypto
+  - The gears-toolkit framework's fips feature activates FIPS-compliant TLS and crypto
 
 Activation:
   CLI flag:      --fips / --no-fips

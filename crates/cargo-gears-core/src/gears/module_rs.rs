@@ -48,7 +48,7 @@ pub fn parse_module_rs_source(content: &str) -> anyhow::Result<ParsedModule> {
     let ast = syn::parse_file(content)?;
     for item in ast.items {
         if let Item::Struct(struct_item) = item
-            && let Some(module_info) = parse_modkit_module_attribute(&struct_item.attrs)?
+            && let Some(module_info) = parse_gears_module_attribute(&struct_item.attrs)?
         {
             return Ok(ParsedModule {
                 name: module_info.name,
@@ -67,21 +67,21 @@ struct ModuleInfo {
     capabilities: Vec<Capability>,
 }
 
-fn parse_modkit_module_attribute(attrs: &[Attribute]) -> anyhow::Result<Option<ModuleInfo>> {
+fn parse_gears_module_attribute(attrs: &[Attribute]) -> anyhow::Result<Option<ModuleInfo>> {
     for attr in attrs {
-        if is_modkit_module_path(attr) {
+        if is_gears_module_path(attr) {
             return parse_module_args(attr).map(Some);
         }
     }
     Ok(None)
 }
 
-fn is_modkit_module_path(attr: &Attribute) -> bool {
+fn is_gears_module_path(attr: &Attribute) -> bool {
     let path = attr.path();
     let segments: Vec<_> = path.segments.iter().map(|s| s.ident.to_string()).collect();
 
     (segments.len() == 1 && segments[0] == "module")
-        || (segments.len() == 2 && segments[0] == "modkit" && segments[1] == "module")
+        || (segments.len() == 2 && segments[0] == "gears_toolkit" && segments[1] == "module")
 }
 
 fn parse_module_args(attr: &Attribute) -> anyhow::Result<ModuleInfo> {
@@ -197,12 +197,12 @@ fn consume_unknown_meta(input: ParseStream<'_>) -> syn::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::parse_module_rs_source;
-    use crate::module_parser::Capability;
+    use crate::gears::Capability;
 
     #[test]
     fn parses_module_with_lifecycle_meta() {
         let content = r#"
-            #[modkit::module(
+            #[gears_toolkit::module(
                 name = "grpc-hub",
                 capabilities = [stateful, system, grpc_hub],
                 lifecycle(entry = "serve", await_ready)

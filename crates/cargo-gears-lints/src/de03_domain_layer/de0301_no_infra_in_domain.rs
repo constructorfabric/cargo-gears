@@ -56,7 +56,7 @@ const INFRA_PATTERNS: &[&str] = &[
     // Database frameworks (direct access forbidden)
     "sea_orm",
     "sqlx",
-    // ModKit infrastructure crates (should not leak into domain)
+    // Gears infrastructure crates (should not leak into domain)
     "modkit_db",
     "modkit_db_macros",
     "modkit_transport_grpc",
