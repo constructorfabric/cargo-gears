@@ -551,16 +551,16 @@ fn extract_gears_module(crate_archive: &[u8]) -> anyhow::Result<ParsedModule> {
     bail!("crate archive does not contain a gears module annotation in src/")
 }
 
-/// Returns `true` if the archive entry is a `.rs` file directly under `src/`.
+/// Returns `true` if the archive entry is a `.rs` file under `src/` at any depth.
 ///
-/// Archive entries look like `<crate-version>/src/<file>.rs`.
-/// We check that the file has a `.rs` extension and its immediate parent is `src`.
+/// Archive entries look like `<crate-version>/src/<file>.rs` or
+/// `<crate-version>/src/subdir/<file>.rs`.
+/// We check that the file has a `.rs` extension and has `src` as an ancestor.
 fn is_src_rs_entry(path: &Path) -> bool {
     path.extension().is_some_and(|ext| ext == "rs")
         && path
-            .parent()
-            .and_then(|p| p.file_name())
-            .is_some_and(|dir| dir == "src")
+            .ancestors()
+            .any(|a| a.file_name().is_some_and(|name| name == "src"))
 }
 
 #[cfg(test)]
@@ -643,13 +643,12 @@ mod tests {
     }
 
     #[test]
-    fn is_src_rs_entry_rejects_nested_rs_files() {
-        assert!(!is_src_rs_entry(Path::new(
-            "crate-0.1.0/src/api/handler.rs"
-        )));
-        assert!(!is_src_rs_entry(Path::new(
+    fn is_src_rs_entry_matches_nested_rs_files() {
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/api/handler.rs")));
+        assert!(is_src_rs_entry(Path::new(
             "crate-0.1.0/src/domain/model.rs"
         )));
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/a/b/c/deep.rs")));
     }
 
     #[test]

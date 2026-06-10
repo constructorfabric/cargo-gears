@@ -41,24 +41,37 @@ pub fn retrieve_gears_module(
     Ok((parsed_module.name, config_module))
 }
 
-/// Scans all `.rs` files directly under `src/` for a gears module annotation.
+/// Recursively scans all `.rs` files under `src/` for a gears module annotation.
 fn find_gears_module_in_src(src: &Path) -> anyhow::Result<ParsedModule> {
-    let entries = fs::read_dir(src)
-        .with_context(|| format!("can't read source directory {}", src.display()))?;
+    if let Some(parsed) = scan_dir_for_gears_module(src)? {
+        return Ok(parsed);
+    }
+    bail!("no gears module annotation found in {}", src.display())
+}
+
+/// Recursively walks `dir`, trying to parse each `.rs` file for a gears module
+/// annotation. Returns the first match, or `None` if no annotated struct is found.
+fn scan_dir_for_gears_module(dir: &Path) -> anyhow::Result<Option<ParsedModule>> {
+    let entries = fs::read_dir(dir)
+        .with_context(|| format!("can't read source directory {}", dir.display()))?;
 
     for entry in entries {
         let path = entry?.path();
-        if path.extension().is_some_and(|ext| ext == "rs") {
+        if path.is_dir() {
+            if let Some(parsed) = scan_dir_for_gears_module(&path)? {
+                return Ok(Some(parsed));
+            }
+        } else if path.extension().is_some_and(|ext| ext == "rs") {
             let Ok(content) = fs::read_to_string(&path) else {
                 continue;
             };
             if let Ok(parsed) = parse_module_rs_source(&content) {
-                return Ok(parsed);
+                return Ok(Some(parsed));
             }
         }
     }
 
-    bail!("no gears module annotation found in {}", src.display())
+    Ok(None)
 }
 
 pub fn parse_module_rs_source(content: &str) -> anyhow::Result<ParsedModule> {
