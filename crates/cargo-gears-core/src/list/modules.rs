@@ -553,12 +553,14 @@ fn extract_gears_module(crate_archive: &[u8]) -> anyhow::Result<ParsedModule> {
 
 /// Returns `true` if the archive entry is a `.rs` file directly under `src/`.
 ///
-/// Archive paths look like `crate-name-0.1.0/src/file.rs`.
+/// Archive entries look like `<crate-version>/src/<file>.rs`.
+/// We check that the file has a `.rs` extension and its immediate parent is `src`.
 fn is_src_rs_entry(path: &Path) -> bool {
-    let components: Vec<_> = path.components().collect();
-    components.len() == 3
-        && components[1].as_os_str() == "src"
-        && path.extension().is_some_and(|ext| ext == "rs")
+    path.extension().is_some_and(|ext| ext == "rs")
+        && path
+            .parent()
+            .and_then(|p| p.file_name())
+            .is_some_and(|dir| dir == "src")
 }
 
 #[cfg(test)]
