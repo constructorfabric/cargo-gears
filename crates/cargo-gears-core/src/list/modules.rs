@@ -1,8 +1,8 @@
 use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule};
 use crate::common::{OutputFormat, Registry};
 use crate::gears_parser::{
-    Capability, ConfigModule, ConfigModuleMetadata, ParsedModule, get_module_name_from_crate,
-    parse_module_rs_source,
+    Capability, ConfigModule, ConfigModuleMetadata, NotFoundError, ParsedModule,
+    get_module_name_from_crate, parse_module_rs_source,
 };
 use crate::manifest::{Manifest, ModuleRef};
 use anyhow::{Context, bail};
@@ -529,14 +529,21 @@ fn extract_gears_module(crate_archive: &[u8]) -> anyhow::Result<ParsedModule> {
         let mut entry = entry.context("failed to read crate archive entry")?;
         let path = entry
             .path()
-            .context("failed to read crate archive entry path")?;
+            .context("failed to read crate archive entry path")?
+            .into_owned();
         if is_src_rs_entry(&path) {
             let mut content = String::new();
             entry
                 .read_to_string(&mut content)
                 .context("failed to read .rs file from crate archive")?;
-            if let Ok(parsed) = parse_module_rs_source(&content) {
-                return Ok(parsed);
+            match parse_module_rs_source(&content) {
+                Ok(parsed) => return Ok(parsed),
+                Err(e) if e.is::<NotFoundError>() => {}
+                Err(e) => {
+                    return Err(e).with_context(|| {
+                        format!("failed to parse {} from crate archive", path.display())
+                    });
+                }
             }
         }
     }

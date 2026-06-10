@@ -75,7 +75,7 @@ pub fn parse_module_rs_source(content: &str) -> anyhow::Result<ParsedModule> {
         }
     }
 
-    Err(anyhow::anyhow!("no module found"))
+    Err(super::source::NotFoundError("no module found".into()).into())
 }
 
 struct ModuleInfo {
