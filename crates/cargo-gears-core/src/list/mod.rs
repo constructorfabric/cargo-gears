@@ -93,8 +93,8 @@ pub const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
 mod tests {
     use super::*;
     use crate::common::{OutputFormat, Registry};
-    use crate::gears::get_module_name_from_crate;
-    use crate::gears::test_utils::TempDirExt;
+    use crate::gears_parser::get_module_name_from_crate;
+    use crate::gears_parser::test_utils::TempDirExt;
     use tempfile::TempDir;
 
     /// Scaffolds a temporary Cargo workspace with the given module crates.

@@ -214,7 +214,7 @@ fn consume_unknown_meta(input: ParseStream<'_>) -> syn::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::parse_module_rs_source;
-    use crate::gears::Capability;
+    use crate::gears_parser::Capability;
 
     #[test]
     fn parses_module_with_lifecycle_meta() {

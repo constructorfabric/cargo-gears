@@ -1,5 +1,5 @@
 use crate::common::Registry;
-use crate::gears::{
+use crate::gears_parser::{
     LibraryMapping, ResolvedMetadataPath, extract_reexport_target,
     list_library_mappings_from_metadata, resolve_source_from_metadata,
 };
@@ -1014,8 +1014,8 @@ mod tests {
         should_retry_registry_request,
     };
     use crate::common::Registry;
-    use crate::gears::resolve_source_from_metadata;
-    use crate::gears::test_utils::TempDirExt;
+    use crate::gears_parser::resolve_source_from_metadata;
+    use crate::gears_parser::test_utils::TempDirExt;
     use reqwest::{Method, StatusCode};
     use std::collections::HashSet;
     use std::path::Path;

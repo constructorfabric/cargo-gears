@@ -5,7 +5,7 @@ pub mod build;
 pub mod common;
 pub mod config;
 pub mod deploy;
-pub mod gears;
+pub mod gears_parser;
 pub mod generate;
 pub mod help;
 pub mod lint;

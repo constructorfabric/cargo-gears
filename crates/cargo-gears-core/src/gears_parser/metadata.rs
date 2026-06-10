@@ -301,7 +301,7 @@ mod tests {
     use super::{
         get_dependencies, list_library_mappings_from_metadata, resolve_source_from_metadata,
     };
-    use crate::gears::test_utils::TempDirExt;
+    use crate::gears_parser::test_utils::TempDirExt;
     use std::collections::{BTreeSet, HashMap};
     use tempfile::TempDir;
 

@@ -1,6 +1,6 @@
 use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule};
 use crate::common::{OutputFormat, Registry};
-use crate::gears::{
+use crate::gears_parser::{
     Capability, ConfigModule, ConfigModuleMetadata, ParsedModule, get_module_name_from_crate,
     parse_module_rs_source,
 };

@@ -256,7 +256,7 @@ fn run_custom_command(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gears::CargoTomlDependencies;
+    use crate::gears_parser::CargoTomlDependencies;
     use crate::manifest::{BuildPolicy, LintPolicy, RunPolicy, TestPolicy};
     use std::collections::BTreeMap;
 

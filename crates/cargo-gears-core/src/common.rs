@@ -1,6 +1,6 @@
 use crate::app_config::AppConfig;
 use crate::config::validate_name;
-use crate::gears::{
+use crate::gears_parser::{
     CargoToml, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata, Package,
     get_dependencies, get_module_name_from_crate,
 };
@@ -518,7 +518,7 @@ mod tests {
         make_absolute_paths_relative, merge_module_metadata, prepare_cargo_server_main,
         resolve_generated_project_name,
     };
-    use crate::gears::{
+    use crate::gears_parser::{
         Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata,
         test_utils::TempDirExt,
     };
