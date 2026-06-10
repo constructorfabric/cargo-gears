@@ -630,6 +630,35 @@ mod tests {
     }
 
     #[test]
+    fn is_src_rs_entry_matches_rs_file_under_src() {
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/module.rs")));
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/lib.rs")));
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/gear.rs")));
+    }
+
+    #[test]
+    fn is_src_rs_entry_rejects_non_rs_files() {
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/src/Cargo.toml")));
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/src/README.md")));
+    }
+
+    #[test]
+    fn is_src_rs_entry_rejects_nested_rs_files() {
+        assert!(!is_src_rs_entry(Path::new(
+            "crate-0.1.0/src/api/handler.rs"
+        )));
+        assert!(!is_src_rs_entry(Path::new(
+            "crate-0.1.0/src/domain/model.rs"
+        )));
+    }
+
+    #[test]
+    fn is_src_rs_entry_rejects_rs_outside_src() {
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/tests/test.rs")));
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/benches/bench.rs")));
+    }
+
+    #[test]
     fn local_json_includes_verbose_metadata() {
         let temp_dir = scaffold_workspace(&[("crate-echo", "echo")]);
         let args = ModulesParams {
