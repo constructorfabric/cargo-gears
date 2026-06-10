@@ -996,7 +996,7 @@ Behavior:
   based on whether `Gears.toml` references the system module as a remote module or the workspace has a discovered module
   with the same module name
 - **[config-independent]** Does not require a `-c/--config` file
-- **[workspace scanning]** Local output runs `cargo metadata --no-deps` and discovers crates with a `src/module.rs` target
+- **[workspace scanning]** Local output runs `cargo metadata --no-deps` and discovers crates with a gears module annotation (`#[module(...)]` or `#[gears_toolkit::module(...)]`) in any `src/*.rs` file
 - **[system registry]** System output uses the compiled-in registry, and `--verbose` fetches crate metadata from the
   selected registry
 

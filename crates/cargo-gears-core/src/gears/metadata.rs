@@ -35,7 +35,7 @@ pub fn get_module_name_from_crate(
     for pkg in res.packages {
         for t in &pkg.targets {
             if is_library_target(t) && !t.name.ends_with("sdk") {
-                match super::module_rs::retrieve_module_rs(&pkg, t) {
+                match super::module_rs::retrieve_gears_module(&pkg, t) {
                     Ok(module) => {
                         members.insert(module.0, module.1);
                     }

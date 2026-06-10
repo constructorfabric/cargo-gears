@@ -104,7 +104,7 @@ Some of the work is already done in the codebase, however, it will need a refact
 - [ ] Implement `cargo gears list local-modules`.
 - [ ] Implement `cargo gears list configs`.
 - [ ] Implement `cargo gears list apps`.
-- [ ] Reuse existing module discovery from Cargo metadata and `src/module.rs`.
+- [ ] Reuse existing module discovery from Cargo metadata and gears module annotations in `src/*.rs`.
 - [ ] Add a simple system module registry until remote registry resolution is available.
 - [ ] Include resolved versions, capabilities, dependencies, features, and app/env usage in list output.
 - [ ] Add `cargo gears help schema <manifest|config|module>`.

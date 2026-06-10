@@ -1,8 +1,8 @@
 use super::config::{Capability, ConfigModule, ConfigModuleMetadata};
-use anyhow::Context;
+use anyhow::{Context, bail};
 use cargo_metadata::{Package, Target};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use syn::parse::{Parse, ParseStream};
 use syn::{Attribute, Item, Lit, Meta};
 
@@ -13,7 +13,7 @@ pub struct ParsedModule {
     pub capabilities: Vec<Capability>,
 }
 
-pub fn retrieve_module_rs(
+pub fn retrieve_gears_module(
     package: &Package,
     target: &Target,
 ) -> anyhow::Result<(String, ConfigModule)> {
@@ -21,11 +21,8 @@ pub fn retrieve_module_rs(
     let src = lib_rs
         .parent()
         .with_context(|| format!("no source parent for {}", target.src_path))?;
-    let module_rs = src.join("module.rs");
-    let content = fs::read_to_string(&module_rs)
-        .with_context(|| format!("can't read module from {}", module_rs.display()))?;
-    let parsed_module = parse_module_rs_source(&content)
-        .with_context(|| format!("invalid {}", module_rs.display()))?;
+    let parsed_module = find_gears_module_in_src(src)
+        .with_context(|| format!("no gears module found in {}", src.display()))?;
     let crate_root = PathBuf::from(&package.manifest_path)
         .parent()
         .map(|p| p.display().to_string());
@@ -42,6 +39,26 @@ pub fn retrieve_module_rs(
         },
     };
     Ok((parsed_module.name, config_module))
+}
+
+/// Scans all `.rs` files directly under `src/` for a gears module annotation.
+fn find_gears_module_in_src(src: &Path) -> anyhow::Result<ParsedModule> {
+    let entries = fs::read_dir(src)
+        .with_context(|| format!("can't read source directory {}", src.display()))?;
+
+    for entry in entries {
+        let path = entry?.path();
+        if path.extension().is_some_and(|ext| ext == "rs") {
+            let Ok(content) = fs::read_to_string(&path) else {
+                continue;
+            };
+            if let Ok(parsed) = parse_module_rs_source(&content) {
+                return Ok(parsed);
+            }
+        }
+    }
+
+    bail!("no gears module annotation found in {}", src.display())
 }
 
 pub fn parse_module_rs_source(content: &str) -> anyhow::Result<ParsedModule> {

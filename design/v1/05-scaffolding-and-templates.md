@@ -134,8 +134,10 @@ The template code should keep layer boundaries explicit:
   services instead of carrying business logic.
 - `src/domain/` contains internal business logic, ports, and local client adapters.
 - `src/infra/` contains concrete persistence, HTTP, system, and other adapter implementations.
-- `src/module.rs` is the Gears wiring point: module attributes, lifecycle
-  methods, capability registration, and `ClientHub` registration.
+- The Gears module annotation (`#[module(...)]` / `#[gears_toolkit::module(...)]`)
+  can live in any `src/*.rs` file. It is the Gears wiring point: module
+  attributes, lifecycle methods, capability registration, and `ClientHub`
+  registration.
 
 Generated names should use kebab-case for module folders and crate names. Rust
 identifiers derived from those names should be converted by the generator rather

@@ -167,6 +167,47 @@ mod tests {
     }
 
     #[test]
+    fn local_modules_discovers_annotation_in_any_src_rs_file() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [workspace]
+            members = ["crate-delta"]
+            resolver = "3"
+            "#,
+        );
+        temp_dir.write(
+            "crate-delta/Cargo.toml",
+            r#"
+            [package]
+            name = "crate-delta"
+            version = "0.1.0"
+            edition = "2024"
+
+            [lib]
+            path = "src/lib.rs"
+            "#,
+        );
+        temp_dir.write("crate-delta/src/lib.rs", "pub mod gear;");
+        temp_dir.write(
+            "crate-delta/src/gear.rs",
+            r#"
+            #[module(name = "delta")]
+            pub struct Delta;
+            "#,
+        );
+
+        let modules = get_module_name_from_crate(Some(temp_dir.path()))
+            .expect("module discovery should succeed");
+        assert_eq!(modules.len(), 1);
+        assert!(
+            modules.contains_key("delta"),
+            "should discover 'delta' module in src/gear.rs"
+        );
+    }
+
+    #[test]
     fn local_modules_empty_workspace_finds_none() {
         let temp_dir = TempDir::new().expect("failed to create temp dir");
         temp_dir.write(
@@ -195,7 +236,7 @@ mod tests {
             .expect("module discovery should succeed");
         assert!(
             modules.is_empty(),
-            "workspace without module.rs should find no modules"
+            "workspace without gears module annotation should find no modules"
         );
     }
 
