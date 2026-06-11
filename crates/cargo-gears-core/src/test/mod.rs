@@ -25,12 +25,17 @@ pub struct TestParams {
 }
 
 impl TestParams {
+    /// Effective test runner: CLI override takes precedence, then manifest policy.
+    fn runner(&self, resolved: &ResolvedManifest) -> TestRunner {
+        self.runner.unwrap_or(resolved.test.runner)
+    }
+
     pub fn run(&self) -> anyhow::Result<()> {
         let workspace_path = crate::common::resolve_workspace_path(self.path.as_deref())?;
         let resolved = self.manifest.resolve(&workspace_path)?;
         let plan = TestPlan::new(&resolved, self.module.as_deref());
 
-        let runner = self.runner.unwrap_or(resolved.test.runner);
+        let runner = self.runner(&resolved);
 
         if self.coverage {
             return llvm_cov::run(&plan, runner);
