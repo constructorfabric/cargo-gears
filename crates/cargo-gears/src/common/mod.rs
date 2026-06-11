@@ -77,26 +77,35 @@ pub struct BuildRunArgs {
     pub name: Option<String>,
 }
 
-/// Fully-resolved build parameters after manifest + CLI override merge.
+/// Fully-resolved build/run parameters after manifest + CLI override merge.
 pub struct ResolvedBuildRun {
     pub workspace_root: std::path::PathBuf,
     pub generated_dir: std::path::PathBuf,
     pub generated_name: String,
     pub config_path: std::path::PathBuf,
+    pub manifest_path: std::path::PathBuf,
     pub dependencies: cargo_gears_core::gears_parser::CargoTomlDependencies,
     pub otel: bool,
     pub fips: bool,
     pub release: bool,
     pub clean: bool,
     pub dry_run: bool,
+    pub watch_policy: cargo_gears_core::manifest::WatchPolicy,
 }
 
 impl BuildRunArgs {
-    /// Resolve manifest + CLI overrides into fully-resolved build/run parameters.
-    pub fn resolve(self) -> anyhow::Result<ResolvedBuildRun> {
+    /// Resolve the manifest and merge CLI overrides into final values.
+    ///
+    /// Takes `&self` so it can be called repeatedly (e.g. in a watch loop).
+    pub fn resolve(&self) -> anyhow::Result<ResolvedBuildRun> {
         let workspace_path =
             cargo_gears_core::common::resolve_workspace_path(self.workspace.path.as_deref())?;
-        let resolved = self.manifest.into_selection().resolve(&workspace_path)?;
+        let manifest_selection = cargo_gears_core::manifest::ManifestSelection {
+            manifest: self.manifest.manifest_path.manifest.clone(),
+            app: self.manifest.app.clone(),
+            env: self.manifest.env.clone(),
+        };
+        let resolved = manifest_selection.resolve(&workspace_path)?;
 
         let otel = ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
         let fips = ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
@@ -112,12 +121,14 @@ impl BuildRunArgs {
             generated_dir: resolved.generated_dir,
             generated_name: resolved.generated_name,
             config_path: resolved.config_path,
+            manifest_path: resolved.manifest_path,
             dependencies: resolved.dependencies,
             otel,
             fips,
             release,
             clean,
             dry_run: self.dry_run,
+            watch_policy: resolved.run.watch,
         })
     }
 }
