@@ -1,38 +1,61 @@
-use crate::common::{self, BuildRunParams};
+use crate::common;
+use crate::gears_parser::CargoTomlDependencies;
 use anyhow::{Context, bail};
+use std::path::PathBuf;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct BuildParams {
-    pub build_run_args: BuildRunParams,
+    /// Resolved workspace root path.
+    pub workspace_root: PathBuf,
+    /// Resolved generated output directory.
+    pub generated_dir: PathBuf,
+    /// Resolved generated project name.
+    pub generated_name: String,
+    /// Resolved config file path.
+    pub config_path: PathBuf,
+    /// Resolved workspace dependencies.
+    pub dependencies: CargoTomlDependencies,
+    /// Effective otel flag (CLI override already applied).
+    pub otel: bool,
+    /// Effective FIPS flag.
+    pub fips: bool,
+    /// Effective release flag.
+    pub release: bool,
+    /// Whether to remove Cargo.lock before building.
+    pub clean: bool,
+    /// Print the resolved generation model without building.
+    pub dry_run: bool,
 }
 
 impl BuildParams {
     pub fn run(&self) -> anyhow::Result<()> {
-        let workspace_path = common::resolve_workspace_path(self.build_run_args.path.as_deref())?;
-        let resolved = self.build_run_args.manifest.resolve(&workspace_path)?;
-
-        self.build_run_args.clean_build(&resolved)?;
+        if self.clean {
+            common::remove_from_file_structure(
+                &self.generated_dir,
+                &self.generated_name,
+                "Cargo.lock",
+            )?;
+        }
 
         let generated = common::generate_server_structure(
-            &resolved.workspace_root,
-            &resolved.generated_dir,
-            &resolved.generated_name,
-            &resolved.dependencies,
+            &self.workspace_root,
+            &self.generated_dir,
+            &self.generated_name,
+            &self.dependencies,
         )?;
 
-        if self.build_run_args.dry_run {
+        if self.dry_run {
             return generated.print_json();
         }
 
-        let cargo_dir =
-            common::generated_project_dir(&resolved.generated_dir, &resolved.generated_name);
+        let cargo_dir = common::generated_project_dir(&self.generated_dir, &self.generated_name);
         let status = common::cargo_command(
             "build",
             &cargo_dir,
-            &resolved.config_path,
-            self.build_run_args.otel_enabled(&resolved),
-            self.build_run_args.fips_enabled(&resolved),
-            self.build_run_args.release_build(&resolved),
+            &self.config_path,
+            self.otel,
+            self.fips,
+            self.release,
         )?
         .status()
         .context("failed to run cargo build")?;
@@ -48,7 +71,6 @@ impl BuildParams {
 #[cfg(test)]
 mod tests {
     use super::BuildParams;
-    use crate::common::BuildRunParams;
     use crate::manifest::ManifestSelection;
     use std::fs;
     use std::path::PathBuf;
@@ -77,21 +99,25 @@ name = "demo-server"
         fs::write(temp.path().join("config/app-dev.yml"), "server: {}\n")
             .expect("config should be written");
 
+        let resolved = ManifestSelection {
+            manifest: PathBuf::from("Gears.toml"),
+            app: Some("app".to_owned()),
+            env: Some("dev".to_owned()),
+        }
+        .resolve(temp.path())
+        .expect("manifest should resolve");
+
         BuildParams {
-            build_run_args: BuildRunParams {
-                path: Some(temp.path().to_path_buf()),
-                manifest: ManifestSelection {
-                    manifest: PathBuf::from("Gears.toml"),
-                    app: Some("app".to_owned()),
-                    env: Some("dev".to_owned()),
-                },
-                otel: None,
-                fips: None,
-                release: None,
-                clean: None,
-                dry_run: true,
-                name: None,
-            },
+            workspace_root: resolved.workspace_root,
+            generated_dir: resolved.generated_dir,
+            generated_name: resolved.generated_name,
+            config_path: resolved.config_path,
+            dependencies: resolved.dependencies,
+            otel: false,
+            fips: false,
+            release: false,
+            clean: false,
+            dry_run: true,
         }
         .run()
         .expect("build dry-run should generate server files");

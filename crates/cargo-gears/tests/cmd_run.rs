@@ -1,16 +1,11 @@
 mod common;
 
-use cargo_gears_core::GearsCommand;
-use cargo_gears_core::common::BuildRunParams;
-use cargo_gears_core::manifest::ManifestSelection;
-use std::path::PathBuf;
-
 use clap::error::ErrorKind;
-use common::{assert_parse_error, parse_command};
+use common::{assert_parse_error, parse_cli};
 
 #[test]
-fn parses_run_into_core_command() {
-    let command = parse_command(&[
+fn parses_run_flags() {
+    let cli = parse_cli(&[
         "gears",
         "run",
         "--watch",
@@ -22,26 +17,15 @@ fn parses_run_into_core_command() {
         "--dry-run",
     ]);
 
-    assert_eq!(
-        command,
-        GearsCommand::Run(cargo_gears_core::run::RunParams {
-            watch: Some(true),
-            br_args: BuildRunParams {
-                path: None,
-                manifest: ManifestSelection {
-                    manifest: PathBuf::from("Gears.toml"),
-                    app: Some("app1".to_owned()),
-                    env: Some("dev".to_owned()),
-                },
-                otel: None,
-                fips: None,
-                release: Some(true),
-                clean: None,
-                dry_run: true,
-                name: None,
-            },
-        })
-    );
+    let cargo_gears::Commands::Run(args) = cli.command() else {
+        panic!("expected run command");
+    };
+
+    assert!(args.watch);
+    assert!(args.br_args.release);
+    assert!(args.br_args.dry_run);
+    assert_eq!(args.br_args.manifest.app.as_deref(), Some("app1"));
+    assert_eq!(args.br_args.manifest.env.as_deref(), Some("dev"));
 }
 
 #[test]
@@ -64,7 +48,7 @@ fn rejects_run_positive_and_negative_boolean_pairs() {
 
 #[test]
 fn parses_run_negative_boolean_overrides() {
-    let command = parse_command(&[
+    let cli = parse_cli(&[
         "gears",
         "run",
         "--app",
@@ -78,23 +62,23 @@ fn parses_run_negative_boolean_overrides() {
         "--no-clean",
     ]);
 
-    let GearsCommand::Run(args) = command else {
-        panic!("expected run command")
+    let cargo_gears::Commands::Run(args) = cli.command() else {
+        panic!("expected run command");
     };
 
-    assert_eq!(args.watch, Some(false));
-    assert_eq!(args.br_args.otel, Some(false));
-    assert_eq!(args.br_args.fips, Some(false));
-    assert_eq!(args.br_args.release, Some(false));
-    assert_eq!(args.br_args.clean, Some(false));
+    assert!(args.no_watch);
+    assert!(args.br_args.no_otel);
+    assert!(args.br_args.no_fips);
+    assert!(args.br_args.no_release);
+    assert!(args.br_args.no_clean);
 }
 
 #[test]
 fn parses_run_without_app_and_env() {
-    let command = parse_command(&["gears", "run"]);
+    let cli = parse_cli(&["gears", "run"]);
 
-    let GearsCommand::Run(args) = command else {
-        panic!("expected run command")
+    let cargo_gears::Commands::Run(args) = cli.command() else {
+        panic!("expected run command");
     };
 
     assert_eq!(args.br_args.manifest.app, None);

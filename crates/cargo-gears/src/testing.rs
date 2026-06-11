@@ -20,19 +20,28 @@ pub struct TestArgs {
 }
 
 impl TestArgs {
-    pub fn run(self) -> anyhow::Result<()> {
-        cargo_gears_core::test::TestParams::from(self).run()
-    }
-}
+    /// Resolve manifest + CLI overrides into a fully-resolved `TestParams`.
+    pub fn resolve(self) -> anyhow::Result<cargo_gears_core::test::TestParams> {
+        let workspace_path =
+            cargo_gears_core::common::resolve_workspace_path(self.workspace.path.as_deref())?;
+        let resolved = self.manifest.into_selection().resolve(&workspace_path)?;
 
-impl From<TestArgs> for cargo_gears_core::test::TestParams {
-    fn from(args: TestArgs) -> Self {
-        Self {
-            path: args.workspace.path,
-            manifest: args.manifest.into_selection(),
-            runner: args.runner,
-            module: args.module,
-            coverage: args.coverage,
+        let runner = self.runner.unwrap_or(resolved.test.runner);
+
+        if self.runner.is_some() && resolved.test.custom_command.is_some() {
+            eprintln!("WARN: custom command is specified in manifest, ignoring runner override");
         }
+
+        Ok(cargo_gears_core::test::TestParams {
+            workspace_root: resolved.workspace_root,
+            config_path: resolved.config_path,
+            runner,
+            module: self.module,
+            coverage: self.coverage,
+            custom_command: resolved.test.custom_command,
+            modules: resolved.modules,
+            dependencies: resolved.dependencies,
+            feature_set: resolved.test.feature_set,
+        })
     }
 }

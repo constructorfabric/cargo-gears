@@ -1,15 +1,15 @@
-mod build;
-mod common;
+pub mod build;
+pub mod common;
 mod config;
 mod deploy;
 mod generate;
 mod help;
-mod lint;
+pub mod lint;
 mod list;
 mod manifest;
-mod run;
+pub mod run;
 mod source;
-mod testing;
+pub mod testing;
 mod tools;
 
 #[derive(clap::Parser)]
@@ -55,32 +55,53 @@ pub enum Commands {
 
 impl Cli {
     pub fn run(self) -> anyhow::Result<()> {
-        cargo_gears_core::GearsCommand::from(self).run()
+        match self.command {
+            // Manifest-based commands: resolve CLI overrides, then run core logic.
+            Commands::Lint(lint) => lint.resolve()?.run(),
+            Commands::Test(test) => test.resolve()?.run(),
+            Commands::Build(build) => build.resolve()?.run(),
+            Commands::Run(run) => run.resolve_and_run(),
+            // Non-manifest commands: pass through to core.
+            other => other.into_command().run(),
+        }
+    }
+
+    /// Convert into a `GearsCommand` for non-manifest-based commands.
+    /// Panics if called on a manifest-based command (Build, Run, Test, Lint).
+    #[must_use]
+    pub fn into_command(self) -> cargo_gears_core::GearsCommand {
+        self.command.into_command()
+    }
+
+    /// Access the parsed command variant (for testing).
+    #[must_use]
+    pub const fn command(&self) -> &Commands {
+        &self.command
     }
 }
 
-impl From<Cli> for cargo_gears_core::GearsCommand {
-    fn from(cli: Cli) -> Self {
-        match cli.command {
-            Commands::Generate(generate) => Self::Generate(generate.into()),
-            Commands::New(workspace) => {
-                Self::Generate(cargo_gears_core::generate::GenerateParams {
+impl Commands {
+    fn into_command(self) -> cargo_gears_core::GearsCommand {
+        match self {
+            Self::Generate(generate) => cargo_gears_core::GearsCommand::Generate(generate.into()),
+            Self::New(workspace) => cargo_gears_core::GearsCommand::Generate(
+                cargo_gears_core::generate::GenerateParams {
                     command: cargo_gears_core::generate::GenerateCommand::Workspace(
                         workspace.into(),
                     ),
-                })
+                },
+            ),
+            Self::Config(config) => cargo_gears_core::GearsCommand::Config((*config).into()),
+            Self::Src(src) => cargo_gears_core::GearsCommand::Src(src.into()),
+            Self::Help(help) => help.into(),
+            Self::List(list) => cargo_gears_core::GearsCommand::List(list.into()),
+            Self::Manifest(manifest) => cargo_gears_core::GearsCommand::Manifest(manifest.into()),
+            Self::Tools(tools) => cargo_gears_core::GearsCommand::Tools(tools.into()),
+            Self::Deploy(deploy) => cargo_gears_core::GearsCommand::Deploy(deploy.into()),
+            // Manifest-based commands handled in Cli::run() — unreachable here.
+            Self::Lint(_) | Self::Test(_) | Self::Build(_) | Self::Run(_) => {
+                unreachable!("manifest-based commands are resolved in Cli::run()")
             }
-            Commands::Config(config) => Self::Config((*config).into()),
-            Commands::Src(src) => Self::Src(src.into()),
-            Commands::Help(help) => help.into(),
-            Commands::Lint(lint) => Self::Lint(lint.into()),
-            Commands::List(list) => Self::List(list.into()),
-            Commands::Manifest(manifest) => Self::Manifest(manifest.into()),
-            Commands::Test(test) => Self::Test(test.into()),
-            Commands::Tools(tools) => Self::Tools(tools.into()),
-            Commands::Run(run) => Self::Run(run.into()),
-            Commands::Build(build) => Self::Build(build.into()),
-            Commands::Deploy(deploy) => Self::Deploy(deploy.into()),
         }
     }
 }

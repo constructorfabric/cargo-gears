@@ -1,16 +1,11 @@
 mod common;
 
-use cargo_gears_core::GearsCommand;
-use cargo_gears_core::common::BuildRunParams;
-use cargo_gears_core::manifest::ManifestSelection;
-use std::path::PathBuf;
-
 use clap::error::ErrorKind;
-use common::{assert_parse_error, parse_command};
+use common::{assert_parse_error, parse_cli};
 
 #[test]
-fn parses_build_into_core_command() {
-    let command = parse_command(&[
+fn parses_build_flags() {
+    let cli = parse_cli(&[
         "gears",
         "build",
         "--app",
@@ -26,25 +21,18 @@ fn parses_build_into_core_command() {
         "demo-server",
     ]);
 
-    assert_eq!(
-        command,
-        GearsCommand::Build(cargo_gears_core::build::BuildParams {
-            build_run_args: BuildRunParams {
-                path: None,
-                manifest: ManifestSelection {
-                    manifest: PathBuf::from("Gears.toml"),
-                    app: Some("app1".to_owned()),
-                    env: Some("dev".to_owned()),
-                },
-                otel: Some(true),
-                fips: Some(true),
-                release: Some(true),
-                clean: Some(true),
-                dry_run: true,
-                name: Some("demo-server".to_owned()),
-            },
-        })
-    );
+    let cargo_gears::Commands::Build(args) = cli.command() else {
+        panic!("expected build command");
+    };
+
+    assert!(args.build_run_args.otel);
+    assert!(args.build_run_args.fips);
+    assert!(args.build_run_args.release);
+    assert!(args.build_run_args.clean);
+    assert!(args.build_run_args.dry_run);
+    assert_eq!(args.build_run_args.name.as_deref(), Some("demo-server"));
+    assert_eq!(args.build_run_args.manifest.app.as_deref(), Some("app1"));
+    assert_eq!(args.build_run_args.manifest.env.as_deref(), Some("dev"));
 }
 
 #[test]
@@ -66,7 +54,7 @@ fn rejects_build_positive_and_negative_boolean_pairs() {
 
 #[test]
 fn parses_build_negative_boolean_overrides() {
-    let command = parse_command(&[
+    let cli = parse_cli(&[
         "gears",
         "build",
         "--app",
@@ -79,12 +67,12 @@ fn parses_build_negative_boolean_overrides() {
         "--no-release",
     ]);
 
-    let GearsCommand::Build(args) = command else {
-        panic!("expected build command")
+    let cargo_gears::Commands::Build(args) = cli.command() else {
+        panic!("expected build command");
     };
 
-    assert_eq!(args.build_run_args.otel, Some(false));
-    assert_eq!(args.build_run_args.fips, Some(false));
-    assert_eq!(args.build_run_args.clean, Some(false));
-    assert_eq!(args.build_run_args.release, Some(false));
+    assert!(args.build_run_args.no_otel);
+    assert!(args.build_run_args.no_fips);
+    assert!(args.build_run_args.no_clean);
+    assert!(args.build_run_args.no_release);
 }

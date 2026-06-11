@@ -77,21 +77,52 @@ pub struct BuildRunArgs {
     pub name: Option<String>,
 }
 
-impl From<BuildRunArgs> for cargo_gears_core::common::BuildRunParams {
-    fn from(args: BuildRunArgs) -> Self {
-        Self {
-            path: args.workspace.path,
-            manifest: args.manifest.into_selection(),
-            otel: ordered_bool(args.otel, args.no_otel),
-            fips: ordered_bool(args.fips, args.no_fips),
-            release: ordered_bool(args.release, args.no_release),
-            clean: ordered_bool(args.clean, args.no_clean),
-            dry_run: args.dry_run,
-            name: args.name,
-        }
+/// Fully-resolved build parameters after manifest + CLI override merge.
+pub struct ResolvedBuildRun {
+    pub workspace_root: std::path::PathBuf,
+    pub generated_dir: std::path::PathBuf,
+    pub generated_name: String,
+    pub config_path: std::path::PathBuf,
+    pub dependencies: cargo_gears_core::gears_parser::CargoTomlDependencies,
+    pub otel: bool,
+    pub fips: bool,
+    pub release: bool,
+    pub clean: bool,
+    pub dry_run: bool,
+}
+
+impl BuildRunArgs {
+    /// Resolve manifest + CLI overrides into fully-resolved build/run parameters.
+    pub fn resolve(self) -> anyhow::Result<ResolvedBuildRun> {
+        let workspace_path =
+            cargo_gears_core::common::resolve_workspace_path(self.workspace.path.as_deref())?;
+        let resolved = self.manifest.into_selection().resolve(&workspace_path)?;
+
+        let otel = ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
+        let fips = ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
+        let release = ordered_bool(self.release, self.no_release).unwrap_or(matches!(
+            resolved.build.profile,
+            Some(cargo_gears_core::manifest::BuildProfile::Release)
+        ));
+        let clean = ordered_bool(self.clean, self.no_clean)
+            .unwrap_or_else(|| resolved.build.clean.unwrap_or(release));
+
+        Ok(ResolvedBuildRun {
+            workspace_root: resolved.workspace_root,
+            generated_dir: resolved.generated_dir,
+            generated_name: resolved.generated_name,
+            config_path: resolved.config_path,
+            dependencies: resolved.dependencies,
+            otel,
+            fips,
+            release,
+            clean,
+            dry_run: self.dry_run,
+        })
     }
 }
 
+#[must_use]
 pub const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
     match (positive, negative) {
         (true, false) => Some(true),
@@ -113,6 +144,7 @@ pub struct ManifestTargetArgs {
 }
 
 impl ManifestTargetArgs {
+    #[must_use]
     pub fn into_selection(self) -> cargo_gears_core::manifest::ManifestSelection {
         cargo_gears_core::manifest::ManifestSelection {
             manifest: self.manifest_path.manifest,

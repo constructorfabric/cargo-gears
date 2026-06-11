@@ -5,42 +5,68 @@ use clap::Args;
 pub struct LintArgs {
     /// Run all available lint rules
     #[arg(long)]
-    all: bool,
+    pub all: bool,
     #[command(flatten)]
     pub workspace: WorkspacePath,
     #[command(flatten)]
     pub manifest: ManifestTargetArgs,
     /// Check whether the workspace is formatted with `cargo fmt`.
     #[arg(long)]
-    fmt: bool,
+    pub fmt: bool,
     /// Run recommended clippy rules. Follows Cargo.toml exceptions if present.
     #[arg(long)]
-    clippy: bool,
+    pub clippy: bool,
     /// Strict mode. Throws an error if any lint rule is triggered.
     #[arg(long)]
-    strict: bool,
+    pub strict: bool,
     /// Run extra lint rules made for gears modules.
     #[arg(long)]
-    dylint: bool,
+    pub dylint: bool,
 }
 
 impl LintArgs {
-    pub fn run(self) -> anyhow::Result<()> {
-        cargo_gears_core::lint::LintParams::from(self).run()
+    const fn has_explicit_selection(&self) -> bool {
+        self.all || self.fmt || self.clippy || self.dylint
     }
-}
 
-impl From<LintArgs> for cargo_gears_core::lint::LintParams {
-    fn from(args: LintArgs) -> Self {
-        Self {
-            all: args.all,
-            path: args.workspace.path,
-            manifest: args.manifest.into_selection(),
-            fmt: args.fmt,
-            clippy: args.clippy,
-            strict: args.strict,
-            dylint: args.dylint,
+    /// Resolve manifest + CLI overrides into a fully-resolved `LintParams`.
+    pub fn resolve(self) -> anyhow::Result<cargo_gears_core::lint::LintParams> {
+        let workspace_path =
+            cargo_gears_core::common::resolve_workspace_path(self.workspace.path.as_deref())?;
+
+        let explicit = self.has_explicit_selection();
+        let resolved = self.manifest.into_selection().resolve(&workspace_path)?;
+        let policy = &resolved.lint;
+
+        let (fmt, clippy, dylint) = if explicit {
+            let all = self.all;
+            (self.fmt || all, self.clippy || all, self.dylint || all)
+        } else {
+            (
+                policy.fmt,
+                policy.clippy,
+                policy.dylint.as_ref().is_some_and(|d| d.enabled),
+            )
+        };
+
+        if self.strict && !clippy {
+            anyhow::bail!("`--strict` requires `--clippy` or `--all`");
         }
+
+        let dylint_skip = resolved
+            .lint
+            .dylint
+            .as_ref()
+            .map_or_else(Vec::new, |d| d.skip.clone());
+
+        Ok(cargo_gears_core::lint::LintParams {
+            workspace_root: resolved.workspace_root,
+            fmt,
+            clippy,
+            strict: self.strict,
+            dylint,
+            dylint_skip,
+        })
     }
 }
 

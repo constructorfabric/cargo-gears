@@ -1,36 +1,28 @@
 mod common;
 
 use cargo_gears::Cli;
-use cargo_gears_core::GearsCommand;
-use cargo_gears_core::manifest::ManifestSelection;
 use clap::Parser;
 use std::ffi::OsString;
-use std::path::PathBuf;
 
-use common::parse_command;
+use common::parse_cli;
 
 #[test]
-fn parses_lint_into_core_command() {
-    let command = parse_command(&[
+fn parses_lint_flags() {
+    let cli = parse_cli(&[
         "gears", "lint", "--app", "app1", "--env", "dev", "--fmt", "--strict", "--clippy",
     ]);
 
-    assert_eq!(
-        command,
-        GearsCommand::Lint(cargo_gears_core::lint::LintParams {
-            all: false,
-            path: None,
-            manifest: ManifestSelection {
-                manifest: PathBuf::from("Gears.toml"),
-                app: Some("app1".to_owned()),
-                env: Some("dev".to_owned()),
-            },
-            fmt: true,
-            clippy: true,
-            strict: true,
-            dylint: false,
-        })
-    );
+    let cargo_gears::Commands::Lint(args) = cli.command() else {
+        panic!("expected lint command");
+    };
+
+    assert!(!args.all);
+    assert!(args.fmt);
+    assert!(args.clippy);
+    assert!(args.strict);
+    assert!(!args.dylint);
+    assert_eq!(args.manifest.app.as_deref(), Some("app1"));
+    assert_eq!(args.manifest.env.as_deref(), Some("dev"));
 }
 
 #[test]

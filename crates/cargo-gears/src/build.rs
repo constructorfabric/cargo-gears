@@ -4,19 +4,24 @@ use clap::Args;
 #[derive(Args)]
 pub struct BuildArgs {
     #[command(flatten)]
-    build_run_args: BuildRunArgs,
+    pub build_run_args: BuildRunArgs,
 }
 
 impl BuildArgs {
-    pub fn run(self) -> anyhow::Result<()> {
-        cargo_gears_core::build::BuildParams::from(self).run()
-    }
-}
-
-impl From<BuildArgs> for cargo_gears_core::build::BuildParams {
-    fn from(args: BuildArgs) -> Self {
-        Self {
-            build_run_args: args.build_run_args.into(),
-        }
+    /// Resolve manifest + CLI overrides into a fully-resolved `BuildParams`.
+    pub fn resolve(self) -> anyhow::Result<cargo_gears_core::build::BuildParams> {
+        let resolved = self.build_run_args.resolve()?;
+        Ok(cargo_gears_core::build::BuildParams {
+            workspace_root: resolved.workspace_root,
+            generated_dir: resolved.generated_dir,
+            generated_name: resolved.generated_name,
+            config_path: resolved.config_path,
+            dependencies: resolved.dependencies,
+            otel: resolved.otel,
+            fips: resolved.fips,
+            release: resolved.release,
+            clean: resolved.clean,
+            dry_run: resolved.dry_run,
+        })
     }
 }

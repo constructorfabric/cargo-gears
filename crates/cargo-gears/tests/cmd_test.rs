@@ -1,13 +1,11 @@
 mod common;
 
-use cargo_gears_core::GearsCommand;
-use cargo_gears_core::manifest::{ManifestSelection, TestRunner};
-use common::parse_command;
-use std::path::PathBuf;
+use cargo_gears_core::manifest::TestRunner;
+use common::parse_cli;
 
 #[test]
-fn parses_test_into_core_command() {
-    let command = parse_command(&[
+fn parses_test_flags() {
+    let cli = parse_cli(&[
         "gears",
         "test",
         "--manifest",
@@ -23,38 +21,36 @@ fn parses_test_into_core_command() {
         "--coverage",
     ]);
 
+    let cargo_gears::Commands::Test(args) = cli.command() else {
+        panic!("expected test command");
+    };
+
     assert_eq!(
-        command,
-        GearsCommand::Test(cargo_gears_core::test::TestParams {
-            path: None,
-            manifest: ManifestSelection {
-                manifest: PathBuf::from("Gears.dev.toml"),
-                app: Some("app1".to_owned()),
-                env: Some("dev".to_owned()),
-            },
-            runner: Some(TestRunner::Nextest),
-            module: Some("module-a".to_owned()),
-            coverage: true,
-        })
+        args.manifest.manifest_path.manifest.to_str(),
+        Some("Gears.dev.toml")
     );
+    assert_eq!(args.manifest.app.as_deref(), Some("app1"));
+    assert_eq!(args.manifest.env.as_deref(), Some("dev"));
+    assert_eq!(args.runner, Some(TestRunner::Nextest));
+    assert_eq!(args.module.as_deref(), Some("module-a"));
+    assert!(args.coverage);
 }
 
 #[test]
-fn parses_test_defaults_into_core_command() {
-    let command = parse_command(&["gears", "test"]);
+fn parses_test_defaults() {
+    let cli = parse_cli(&["gears", "test"]);
+
+    let cargo_gears::Commands::Test(args) = cli.command() else {
+        panic!("expected test command");
+    };
 
     assert_eq!(
-        command,
-        GearsCommand::Test(cargo_gears_core::test::TestParams {
-            path: None,
-            manifest: ManifestSelection {
-                manifest: PathBuf::from("Gears.toml"),
-                app: None,
-                env: None,
-            },
-            runner: None,
-            module: None,
-            coverage: false,
-        })
+        args.manifest.manifest_path.manifest.to_str(),
+        Some("Gears.toml")
     );
+    assert_eq!(args.manifest.app, None);
+    assert_eq!(args.manifest.env, None);
+    assert_eq!(args.runner, None);
+    assert_eq!(args.module, None);
+    assert!(!args.coverage);
 }
