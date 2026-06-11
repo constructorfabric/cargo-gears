@@ -18,7 +18,7 @@ pub struct WorkspacePath {
 pub struct ManifestPath {
     /// Path to the Gears manifest file
     #[arg(long, default_value = cargo_gears_core::manifest::DEFAULT_MANIFEST_FILE)]
-    pub manifest: PathBuf,
+    pub(crate) manifest: PathBuf,
 }
 
 #[derive(Args)]
@@ -42,39 +42,39 @@ impl From<PathConfigArgs> for cargo_gears_core::common::PathConfigParams {
 #[derive(Args)]
 pub struct BuildRunArgs {
     #[command(flatten)]
-    pub workspace: WorkspacePath,
+    workspace: WorkspacePath,
     #[command(flatten)]
-    pub manifest: ManifestTargetArgs,
+    manifest: ManifestTargetArgs,
     /// Use OpenTelemetry tracing
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_otel")]
-    pub otel: bool,
+    otel: bool,
     /// Disable OpenTelemetry tracing
     #[arg(long = "no-otel", action = ArgAction::SetTrue, conflicts_with = "otel")]
-    pub no_otel: bool,
+    no_otel: bool,
     /// Enable FIPS mode
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_fips")]
-    pub fips: bool,
+    fips: bool,
     /// Disable FIPS mode
     #[arg(long = "no-fips", action = ArgAction::SetTrue, conflicts_with = "fips")]
-    pub no_fips: bool,
+    no_fips: bool,
     /// Build/run in release mode
     #[arg(short = 'r', long, action = ArgAction::SetTrue, conflicts_with = "no_release")]
-    pub release: bool,
+    release: bool,
     /// Build/run without release mode
     #[arg(long = "no-release", action = ArgAction::SetTrue, conflicts_with = "release")]
-    pub no_release: bool,
+    no_release: bool,
     /// Remove Cargo.lock at the start of the execution
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_clean")]
-    pub clean: bool,
+    clean: bool,
     /// Do not remove Cargo.lock at the start of the execution
     #[arg(long = "no-clean", action = ArgAction::SetTrue, conflicts_with = "clean")]
-    pub no_clean: bool,
+    no_clean: bool,
     /// Print the resolved generation model without building or running
     #[arg(long)]
-    pub dry_run: bool,
+    dry_run: bool,
     /// Override the generated server and binary name
     #[arg(long)]
-    pub name: Option<String>,
+    name: Option<String>,
 }
 
 /// Fully-resolved build/run parameters after manifest + CLI override merge.
@@ -133,6 +133,120 @@ impl BuildRunArgs {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::BuildRunArgs;
+    use clap::Parser;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[derive(Parser)]
+    struct TestCli {
+        #[command(flatten)]
+        br: BuildRunArgs,
+    }
+
+    fn parse(temp: &TempDir, extra: &[&str]) -> BuildRunArgs {
+        let p = temp.path().to_str().expect("temp path should be UTF-8");
+        let mut args = vec!["test", "-p", p, "--app", "app", "--env", "dev"];
+        args.extend(extra);
+        TestCli::try_parse_from(args).expect("should parse").br
+    }
+
+    fn write_workspace(temp: &TempDir, manifest: &str) {
+        fs::write(temp.path().join("Gears.toml"), manifest).expect("write manifest");
+        fs::create_dir_all(temp.path().join("config")).expect("create config dir");
+        fs::write(temp.path().join("config/app-dev.yml"), "server: {}\n").expect("write config");
+    }
+
+    #[test]
+    fn cli_overrides_take_precedence_over_manifest() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.run]\n\
+             otel = true\n\
+             fips = true\n\
+             [apps.app.dev.build]\n\
+             profile = \"release\"\n\
+             clean = true\n",
+        );
+
+        let resolved = parse(
+            &temp,
+            &["--no-otel", "--no-fips", "--no-release", "--no-clean"],
+        )
+        .resolve()
+        .expect("resolve");
+
+        assert!(!resolved.otel);
+        assert!(!resolved.fips);
+        assert!(!resolved.release);
+        assert!(!resolved.clean);
+    }
+
+    #[test]
+    fn defaults_to_manifest_policy_when_no_cli_override() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.run]\n\
+             otel = true\n\
+             fips = true\n\
+             [apps.app.dev.build]\n\
+             profile = \"release\"\n\
+             clean = true\n",
+        );
+
+        let resolved = parse(&temp, &[]).resolve().expect("resolve");
+
+        assert!(resolved.otel);
+        assert!(resolved.fips);
+        assert!(resolved.release);
+        assert!(resolved.clean);
+    }
+
+    #[test]
+    fn clean_defaults_to_release_when_manifest_omits_clean() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.build]\n\
+             profile = \"release\"\n",
+        );
+
+        let resolved = parse(&temp, &[]).resolve().expect("resolve");
+
+        assert!(resolved.release);
+        assert!(resolved.clean);
+    }
+
+    #[test]
+    fn clean_defaults_to_false_for_debug_builds() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n",
+        );
+
+        let resolved = parse(&temp, &[]).resolve().expect("resolve");
+
+        assert!(!resolved.release);
+        assert!(!resolved.clean);
+    }
+}
+
 #[must_use]
 pub const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
     match (positive, negative) {
@@ -145,13 +259,13 @@ pub const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
 #[derive(Args)]
 pub struct ManifestTargetArgs {
     #[command(flatten)]
-    pub manifest_path: ManifestPath,
+    manifest_path: ManifestPath,
     /// Manifest app to select (inferred from manifest if omitted)
     #[arg(long)]
-    pub app: Option<String>,
+    app: Option<String>,
     /// Manifest environment to select (inferred from manifest if omitted)
     #[arg(long)]
-    pub env: Option<String>,
+    env: Option<String>,
 }
 
 impl ManifestTargetArgs {

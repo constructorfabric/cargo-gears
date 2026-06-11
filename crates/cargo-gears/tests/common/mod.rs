@@ -4,20 +4,15 @@ use clap::{Parser, error::ErrorKind};
 
 // Each integration test file is its own binary, so functions used by *other*
 // test files appear dead from the perspective of files that don't call them.
-// `#[allow(dead_code)]` silences the false positive for all three helpers.
 
 /// Parse CLI args and convert into a `GearsCommand`.
 /// Only valid for non-manifest-based commands (panics for Build/Run/Test/Lint).
 #[allow(dead_code)]
 #[allow(clippy::expect_used)]
 pub fn parse_command(args: &[&str]) -> GearsCommand {
-    parse_cli(args).into_command()
-}
-
-#[allow(dead_code)]
-#[allow(clippy::expect_used)]
-pub fn parse_cli(args: &[&str]) -> Cli {
-    Cli::try_parse_from(args).expect("argv should parse")
+    Cli::try_parse_from(args)
+        .expect("argv should parse")
+        .into_command()
 }
 
 #[allow(dead_code)]

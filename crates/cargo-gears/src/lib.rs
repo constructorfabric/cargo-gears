@@ -1,15 +1,15 @@
-pub mod build;
-pub mod common;
+mod build;
+mod common;
 mod config;
 mod deploy;
 mod generate;
 mod help;
-pub mod lint;
+mod lint;
 mod list;
 mod manifest;
-pub mod run;
+mod run;
 mod source;
-pub mod testing;
+mod testing;
 mod tools;
 
 #[derive(clap::Parser)]
@@ -23,7 +23,7 @@ pub struct Cli {
 
 #[derive(clap::Subcommand)]
 #[command(disable_help_subcommand = true)]
-pub enum Commands {
+enum Commands {
     /// Generate workspace, module, and config scaffolding
     Generate(generate::GenerateArgs),
     /// Alias for `generate workspace`
@@ -67,16 +67,11 @@ impl Cli {
     }
 
     /// Convert into a `GearsCommand` for non-manifest-based commands.
+    ///
     /// Panics if called on a manifest-based command (Build, Run, Test, Lint).
     #[must_use]
     pub fn into_command(self) -> cargo_gears_core::GearsCommand {
         self.command.into_command()
-    }
-
-    /// Access the parsed command variant (for testing).
-    #[must_use]
-    pub const fn command(&self) -> &Commands {
-        &self.command
     }
 }
 

@@ -4,7 +4,7 @@ use clap::Args;
 #[derive(Args)]
 pub struct BuildArgs {
     #[command(flatten)]
-    pub build_run_args: BuildRunArgs,
+    build_run_args: BuildRunArgs,
 }
 
 impl BuildArgs {

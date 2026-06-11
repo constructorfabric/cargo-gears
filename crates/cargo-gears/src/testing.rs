@@ -5,18 +5,18 @@ use clap::{ArgAction, Args};
 #[derive(Args)]
 pub struct TestArgs {
     #[command(flatten)]
-    pub workspace: WorkspacePath,
+    workspace: WorkspacePath,
     #[command(flatten)]
-    pub manifest: ManifestTargetArgs,
+    manifest: ManifestTargetArgs,
     /// Test runner override.
     #[arg(long, value_enum)]
-    pub runner: Option<TestRunner>,
+    runner: Option<TestRunner>,
     /// Limit tests to a module/package.
     #[arg(long)]
-    pub module: Option<String>,
+    module: Option<String>,
     /// Run test coverage.
     #[arg(long, action = ArgAction::SetTrue)]
-    pub coverage: bool,
+    coverage: bool,
 }
 
 impl TestArgs {
@@ -43,5 +43,63 @@ impl TestArgs {
             dependencies: resolved.dependencies,
             feature_set: resolved.test.feature_set,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TestArgs;
+    use cargo_gears_core::manifest::TestRunner;
+    use clap::Parser;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[derive(Parser)]
+    struct TestCli {
+        #[command(flatten)]
+        test: TestArgs,
+    }
+
+    fn parse(temp: &TempDir, extra: &[&str]) -> TestArgs {
+        let p = temp.path().to_str().expect("temp path should be UTF-8");
+        let mut args = vec!["test", "-p", p, "--app", "app", "--env", "dev"];
+        args.extend(extra);
+        TestCli::try_parse_from(args).expect("should parse").test
+    }
+
+    fn write_workspace(temp: &TempDir, manifest: &str) {
+        fs::write(temp.path().join("Gears.toml"), manifest).expect("write manifest");
+        fs::create_dir_all(temp.path().join("config")).expect("create config dir");
+        fs::write(temp.path().join("config/app-dev.yml"), "server: {}\n").expect("write config");
+    }
+
+    const MINIMAL: &str = "[apps.app.dev]\nconfig = \"app-dev.yml\"\nmodules = []\n";
+
+    #[test]
+    fn defaults_to_manifest_runner() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            &format!("{MINIMAL}[apps.app.dev.test]\nrunner = \"cargo\"\n"),
+        );
+
+        let resolved = parse(&temp, &[]).resolve().expect("resolve");
+
+        assert_eq!(resolved.runner, TestRunner::Cargo);
+    }
+
+    #[test]
+    fn cli_runner_overrides_manifest() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            &format!("{MINIMAL}[apps.app.dev.test]\nrunner = \"cargo\"\n"),
+        );
+
+        let resolved = parse(&temp, &["--runner", "nextest"])
+            .resolve()
+            .expect("resolve");
+
+        assert_eq!(resolved.runner, TestRunner::Nextest);
     }
 }

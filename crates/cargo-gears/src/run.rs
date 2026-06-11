@@ -6,12 +6,12 @@ use clap::{ArgAction, Args};
 pub struct RunArgs {
     /// Watch for changes
     #[arg(short = 'w', long, action = ArgAction::SetTrue, conflicts_with = "no_watch")]
-    pub watch: bool,
+    watch: bool,
     /// Do not watch for changes
     #[arg(long = "no-watch", action = ArgAction::SetTrue, conflicts_with = "watch")]
-    pub no_watch: bool,
+    no_watch: bool,
     #[command(flatten)]
-    pub br_args: BuildRunArgs,
+    br_args: BuildRunArgs,
 }
 
 impl RunArgs {
