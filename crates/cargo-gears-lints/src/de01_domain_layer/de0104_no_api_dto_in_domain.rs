@@ -21,7 +21,7 @@ dylint_linting::declare_pre_expansion_lint! {
     /// ```rust
     /// // Bad - domain model uses api_dto
     /// mod domain {
-    ///     #[gears_toolkit_macros::api_dto(request, response)]
+    ///     #[cf_gears_toolkit_macros::api_dto(request, response)]
     ///     pub struct User { pub id: String }
     /// }
     /// ```
@@ -36,7 +36,7 @@ dylint_linting::declare_pre_expansion_lint! {
     ///
     /// // Separate DTO in API layer
     /// mod api {
-    ///     #[gears_toolkit_macros::api_dto(request, response)]
+    ///     #[cf_gears_toolkit_macros::api_dto(request, response)]
     ///     pub struct UserDto { pub id: String }
     /// }
     /// ```
@@ -68,10 +68,10 @@ impl EarlyLintPass for De0104NoApiDtoInContract {
                     .collect();
 
                 // Check if this is an api_dto attribute
-                // Handles: api_dto, gears_toolkit_macros::api_dto, ::gears_toolkit_macros::api_dto
+                // Handles: api_dto, cf_gears_toolkit_macros::api_dto, ::cf_gears_toolkit_macros::api_dto
                 let is_api_dto = matches!(
                     segments.as_slice(),
-                    ["api_dto"] | [.., "gears_toolkit_macros", "api_dto"]
+                    ["api_dto"] | [.., "cf_gears_toolkit_macros", "api_dto"]
                 );
 
                 if is_api_dto {

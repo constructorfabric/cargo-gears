@@ -6,7 +6,7 @@ LL | |     pub id: String,
 LL | | }
    | |_^
    |
-   = help: Use #[gears_toolkit_macros::api_dto(request)] for request DTOs, #[gears_toolkit_macros::api_dto(response)] for response DTOs, or #[gears_toolkit_macros::api_dto(request, response)] for both
+   = help: Use #[cf_gears_toolkit_macros::api_dto(request)] for request DTOs, #[cf_gears_toolkit_macros::api_dto(response)] for response DTOs, or #[cf_gears_toolkit_macros::api_dto(request, response)] for both
    = note: `#[deny(de0203_dtos_must_use_api_dto)]` on by default
 
 error: api/rest type is missing required ToSchema derive (DE0204)
@@ -28,7 +28,7 @@ LL | |     pub name: String,
 LL | | }
    | |_^
    |
-   = help: Use #[gears_toolkit_macros::api_dto(request)] for request DTOs, #[gears_toolkit_macros::api_dto(response)] for response DTOs, or #[gears_toolkit_macros::api_dto(request, response)] for both
+   = help: Use #[cf_gears_toolkit_macros::api_dto(request)] for request DTOs, #[cf_gears_toolkit_macros::api_dto(response)] for response DTOs, or #[cf_gears_toolkit_macros::api_dto(request, response)] for both
 
 error: api/rest type is missing required ToSchema derive (DE0204)
   --> $DIR/missing_api_dto.rs:14:1

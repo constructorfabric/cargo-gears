@@ -23,7 +23,7 @@ None.
 ```rust
 // Bad - contract model uses api_dto
 mod contract {
-    #[gears_toolkit_macros::api_dto(request, response)]
+    #[cf_gears_toolkit_macros::api_dto(request, response)]
     pub struct User {
         pub id: String,
         pub name: String,
@@ -45,7 +45,7 @@ mod contract {
 // Separate DTO in API layer
 mod api {
     mod rest {
-        #[gears_toolkit_macros::api_dto(request, response)]
+        #[cf_gears_toolkit_macros::api_dto(request, response)]
         pub struct UserDto {
             pub id: String,
             pub name: String,
