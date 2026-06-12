@@ -512,6 +512,9 @@ fn read_workspace_dependencies(
     let Some(workspace_manifest_path) = find_workspace_manifest(crate_root)? else {
         return Ok(None);
     };
+    let workspace_root = workspace_manifest_path
+        .parent()
+        .context("workspace manifest path has no parent")?;
     let workspace_manifest = read_manifest(&workspace_manifest_path)?;
     let Some(table) = workspace_manifest
         .get("workspace")
@@ -524,7 +527,13 @@ fn read_workspace_dependencies(
 
     let mut deps = HashMap::new();
     for (alias, value) in table.iter() {
-        deps.insert(alias.to_owned(), parse_dependency_spec(alias, value));
+        let mut spec = parse_dependency_spec(alias, value);
+        // Workspace dep paths are relative to the workspace root — make them
+        // absolute so they stay correct when consumed from member crates.
+        if let Some(ref relative) = spec.path {
+            spec.path = Some(workspace_root.join(relative));
+        }
+        deps.insert(alias.to_owned(), spec);
     }
 
     Ok(Some(deps))
@@ -666,6 +675,9 @@ fn parse_dependency_spec_with_workspace(
         }
         if spec.version.is_none() {
             spec.version.clone_from(&workspace_spec.version);
+        }
+        if spec.path.is_none() {
+            spec.path.clone_from(&workspace_spec.path);
         }
     }
     spec
@@ -1272,13 +1284,14 @@ mod tests {
             ",
         );
 
+        let member_path = project.path().join("cf-gears-toolkit");
         let client = build_registry_client().expect("client should build");
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("runtime should build");
         let resolver = Resolver {
-            workspace_path: project.path(),
+            workspace_path: &member_path,
             client: &client,
             runtime: &runtime,
             registry: Registry::CratesIo,
@@ -1287,7 +1300,7 @@ mod tests {
 
         let resolved_query = resolve_query_recursive(
             &resolver,
-            &project.path().join("cf-gears-toolkit"),
+            &member_path,
             "cf-gears-toolkit::module",
             None,
             &mut visited,
