@@ -115,21 +115,41 @@ pub struct TopicParams {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Topic {
-    Manifest,
-    ModuleRefs,
-    GeneratedServer,
+    Architecture,
+    Cli,
+    ClientHub,
+    Database,
+    RestErrors,
     Fips,
+    GearLayout,
+    GearRefs,
+    GearsCatalog,
+    GeneratedServer,
+    Lifecycle,
+    Manifest,
     Otel,
+    RestApi,
+    Security,
 }
 
 impl fmt::Display for Topic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Manifest => f.write_str("manifest"),
-            Self::ModuleRefs => f.write_str("module-refs"),
-            Self::GeneratedServer => f.write_str("generated-server"),
+            Self::Architecture => f.write_str("architecture"),
+            Self::Cli => f.write_str("cli"),
+            Self::ClientHub => f.write_str("clienthub"),
+            Self::Database => f.write_str("database"),
+            Self::RestErrors => f.write_str("rest-errors"),
             Self::Fips => f.write_str("fips"),
+            Self::GearLayout => f.write_str("gear-layout"),
+            Self::GearRefs => f.write_str("gear-refs"),
+            Self::GearsCatalog => f.write_str("gears-catalog"),
+            Self::GeneratedServer => f.write_str("generated-server"),
+            Self::Lifecycle => f.write_str("lifecycle"),
+            Self::Manifest => f.write_str("manifest"),
             Self::Otel => f.write_str("otel"),
+            Self::RestApi => f.write_str("rest-api"),
+            Self::Security => f.write_str("security"),
         }
     }
 }
@@ -159,11 +179,21 @@ impl SchemaParams {
 impl TopicParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let text = match self.topic {
-            Topic::Manifest => include_str!("topics/manifest.md"),
-            Topic::ModuleRefs => include_str!("topics/module_refs.md"),
-            Topic::GeneratedServer => include_str!("topics/generated_server.md"),
+            Topic::Architecture => include_str!("topics/architecture.md"),
+            Topic::Cli => include_str!("topics/cli.md"),
+            Topic::ClientHub => include_str!("topics/clienthub.md"),
+            Topic::Database => include_str!("topics/database.md"),
+            Topic::RestErrors => include_str!("topics/errors.md"),
             Topic::Fips => include_str!("topics/fips.md"),
+            Topic::GearLayout => include_str!("topics/gear_layout.md"),
+            Topic::GearRefs => include_str!("topics/gear_refs.md"),
+            Topic::GearsCatalog => include_str!("topics/gears_catalog.md"),
+            Topic::GeneratedServer => include_str!("topics/generated_server.md"),
+            Topic::Lifecycle => include_str!("topics/lifecycle.md"),
+            Topic::Manifest => include_str!("topics/manifest.md"),
             Topic::Otel => include_str!("topics/otel.md"),
+            Topic::RestApi => include_str!("topics/rest_api.md"),
+            Topic::Security => include_str!("topics/security.md"),
         };
         println!("{text}");
         Ok(())
@@ -315,11 +345,21 @@ mod tests {
     #[test]
     fn all_topics_are_non_empty() {
         let topics: &[&str] = &[
-            include_str!("topics/manifest.md"),
-            include_str!("topics/module_refs.md"),
-            include_str!("topics/generated_server.md"),
+            include_str!("topics/architecture.md"),
+            include_str!("topics/cli.md"),
+            include_str!("topics/clienthub.md"),
+            include_str!("topics/database.md"),
+            include_str!("topics/errors.md"),
             include_str!("topics/fips.md"),
+            include_str!("topics/gear_layout.md"),
+            include_str!("topics/gear_refs.md"),
+            include_str!("topics/gears_catalog.md"),
+            include_str!("topics/generated_server.md"),
+            include_str!("topics/lifecycle.md"),
+            include_str!("topics/manifest.md"),
             include_str!("topics/otel.md"),
+            include_str!("topics/rest_api.md"),
+            include_str!("topics/security.md"),
         ];
         for topic in topics {
             assert!(!topic.is_empty());

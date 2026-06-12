@@ -54,8 +54,8 @@ let user = UserEntity::find()
 
 ```rust
 // ✅ Good - SecureConn with access scope
-use modkit_db::secure::SecureEntityExt;
-use modkit_security::AccessScope;
+use cf_gears_toolkit_db::secure::SecureEntityExt;
+use cf_gears_toolkit_security::AccessScope;
 
 let users = UserEntity::find()
     .secure()                    // Enable security layer

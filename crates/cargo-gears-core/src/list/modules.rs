@@ -1,10 +1,10 @@
 use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule};
 use crate::common::{OutputFormat, Registry};
-use crate::manifest::{Manifest, ModuleRef};
-use crate::module_parser::{
-    Capability, ConfigModule, ConfigModuleMetadata, get_module_name_from_crate,
-    parse_module_rs_source,
+use crate::gears_parser::{
+    Capability, ConfigModule, ConfigModuleMetadata, NotFoundError, ParsedModule,
+    get_module_name_from_crate, parse_module_rs_source,
 };
+use crate::manifest::{Manifest, ModuleRef};
 use anyhow::{Context, bail};
 use flate2::read::GzDecoder;
 use reqwest::Client;
@@ -470,10 +470,14 @@ async fn fetch_registry_metadata(
         .find(|version| version.num == latest_version)
         .map_or_else(Vec::new, |version| version.features.into_keys().collect());
 
-    let module_rs_content =
-        fetch_module_rs_content(client, registry, module, &latest_version).await?;
-    let module_metadata = parse_module_rs_source(&module_rs_content)
-        .with_context(|| format!("invalid src/module.rs for {}", module.crate_name))?;
+    let module_metadata = fetch_gears_module_metadata(client, registry, module, &latest_version)
+        .await
+        .with_context(|| {
+            format!(
+                "failed to find gears module in src/ for {}",
+                module.crate_name
+            )
+        })?;
 
     Ok(RegistryMetadata {
         latest_version,
@@ -483,12 +487,12 @@ async fn fetch_registry_metadata(
     })
 }
 
-async fn fetch_module_rs_content(
+async fn fetch_gears_module_metadata(
     client: &Client,
     registry: Registry,
     module: SystemRegistryModule,
     latest_version: &str,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<ParsedModule> {
     let download_url = format!(
         "https://{registry}/api/v1/crates/{}/{}/download",
         module.crate_name, latest_version
@@ -509,11 +513,12 @@ async fn fetch_module_rs_content(
         .await
         .with_context(|| format!("failed to read downloaded source for {}", module.crate_name))?;
 
-    extract_module_rs(crate_archive.as_ref())
-        .with_context(|| format!("failed to extract src/module.rs for {}", module.crate_name))
+    extract_gears_module(crate_archive.as_ref())
 }
 
-fn extract_module_rs(crate_archive: &[u8]) -> anyhow::Result<String> {
+/// Scans all `.rs` files directly under `src/` in the crate archive for a gears
+/// module annotation, returning the parsed metadata from the first match.
+fn extract_gears_module(crate_archive: &[u8]) -> anyhow::Result<ParsedModule> {
     let decoder = GzDecoder::new(Cursor::new(crate_archive));
     let mut archive = tar::Archive::new(decoder);
     let entries = archive
@@ -524,17 +529,38 @@ fn extract_module_rs(crate_archive: &[u8]) -> anyhow::Result<String> {
         let mut entry = entry.context("failed to read crate archive entry")?;
         let path = entry
             .path()
-            .context("failed to read crate archive entry path")?;
-        if path.ends_with(Path::new("src/module.rs")) {
-            let mut module_rs = String::new();
+            .context("failed to read crate archive entry path")?
+            .into_owned();
+        if is_src_rs_entry(&path) {
+            let mut content = String::new();
             entry
-                .read_to_string(&mut module_rs)
-                .context("failed to read src/module.rs from crate archive")?;
-            return Ok(module_rs);
+                .read_to_string(&mut content)
+                .context("failed to read .rs file from crate archive")?;
+            match parse_module_rs_source(&content) {
+                Ok(parsed) => return Ok(parsed),
+                Err(e) if e.is::<NotFoundError>() => {}
+                Err(e) => {
+                    return Err(e).with_context(|| {
+                        format!("failed to parse {} from crate archive", path.display())
+                    });
+                }
+            }
         }
     }
 
-    bail!("crate archive does not contain src/module.rs")
+    bail!("crate archive does not contain a gears module annotation in src/")
+}
+
+/// Returns `true` if the archive entry is a `.rs` file under `src/` at any depth.
+///
+/// Archive entries look like `<crate-version>/src/<file>.rs` or
+/// `<crate-version>/src/subdir/<file>.rs`.
+/// We check that the file has a `.rs` extension and has `src` as an ancestor.
+fn is_src_rs_entry(path: &Path) -> bool {
+    path.extension().is_some_and(|ext| ext == "rs")
+        && path
+            .ancestors()
+            .any(|a| a.file_name().is_some_and(|name| name == "src"))
 }
 
 #[cfg(test)]
@@ -601,6 +627,34 @@ mod tests {
         fs::create_dir_all(path.parent().expect("test path should have parent"))
             .expect("failed to create parent directory");
         fs::write(path, contents).expect("failed to write test file");
+    }
+
+    #[test]
+    fn is_src_rs_entry_matches_rs_file_under_src() {
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/module.rs")));
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/lib.rs")));
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/gear.rs")));
+    }
+
+    #[test]
+    fn is_src_rs_entry_rejects_non_rs_files() {
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/src/Cargo.toml")));
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/src/README.md")));
+    }
+
+    #[test]
+    fn is_src_rs_entry_matches_nested_rs_files() {
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/api/handler.rs")));
+        assert!(is_src_rs_entry(Path::new(
+            "crate-0.1.0/src/domain/model.rs"
+        )));
+        assert!(is_src_rs_entry(Path::new("crate-0.1.0/src/a/b/c/deep.rs")));
+    }
+
+    #[test]
+    fn is_src_rs_entry_rejects_rs_outside_src() {
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/tests/test.rs")));
+        assert!(!is_src_rs_entry(Path::new("crate-0.1.0/benches/bench.rs")));
     }
 
     #[test]

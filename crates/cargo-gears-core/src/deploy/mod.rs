@@ -197,7 +197,7 @@ impl fmt::Display for DockerBuildArg {
 #[cfg(test)]
 mod tests {
     use super::{DockerBuildArg, manifest_package_name, resolve_manifest};
-    use crate::module_parser::test_utils::TempDirExt;
+    use crate::gears_parser::test_utils::TempDirExt;
     use std::path::Path;
     use tempfile::TempDir;
 

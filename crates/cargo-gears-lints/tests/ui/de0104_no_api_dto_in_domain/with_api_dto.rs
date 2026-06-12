@@ -1,24 +1,24 @@
 // simulated_dir=/cyberfabric/modules/some_module/domain/
 #![feature(register_tool)]
-#![register_tool(modkit_macros)]
+#![register_tool(gears_toolkit_macros)]
 #![allow(dead_code)]
 
 // Should trigger DE0104 - api_dto in domain
-#[modkit_macros::api_dto(request, response)]
+#[gears_toolkit_macros::api_dto(request, response)]
 pub struct User {
     pub id: String,
     pub name: String,
 }
 
 // Should trigger DE0104 - api_dto in domain
-#[modkit_macros::api_dto(response)]
+#[gears_toolkit_macros::api_dto(response)]
 pub struct Product {
     pub id: String,
     pub price: f64,
 }
 
 // Should trigger DE0104 - api_dto in domain
-#[modkit_macros::api_dto(request)]
+#[gears_toolkit_macros::api_dto(request)]
 pub enum OrderStatus {
     Pending,
     Completed,

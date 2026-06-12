@@ -1,7 +1,7 @@
 use super::{load_config, save_config, validate_module_name};
 use crate::app_config::AppConfig;
 use crate::common::PathConfigParams;
-use crate::module_parser::{ConfigModule, ConfigModuleMetadata, get_module_name_from_crate};
+use crate::gears_parser::{ConfigModule, ConfigModuleMetadata, get_module_name_from_crate};
 use anyhow::{Context, bail};
 use std::collections::HashMap;
 use std::path::Path;
@@ -179,7 +179,7 @@ mod tests {
     use super::{AddParams, build_required_metadata, upsert_module_config};
     use crate::app_config::{AppConfig, ModuleConfig};
     use crate::common::PathConfigParams;
-    use crate::module_parser::{Capability, ConfigModule, ConfigModuleMetadata};
+    use crate::gears_parser::{Capability, ConfigModule, ConfigModuleMetadata};
     use std::path::PathBuf;
 
     #[test]

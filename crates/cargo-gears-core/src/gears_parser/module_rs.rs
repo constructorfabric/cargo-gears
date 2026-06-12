@@ -1,8 +1,8 @@
 use super::config::{Capability, ConfigModule, ConfigModuleMetadata};
-use anyhow::Context;
+use anyhow::{Context, bail};
 use cargo_metadata::{Package, Target};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use syn::parse::{Parse, ParseStream};
 use syn::{Attribute, Item, Lit, Meta};
 
@@ -13,7 +13,7 @@ pub struct ParsedModule {
     pub capabilities: Vec<Capability>,
 }
 
-pub fn retrieve_module_rs(
+pub fn retrieve_gears_module(
     package: &Package,
     target: &Target,
 ) -> anyhow::Result<(String, ConfigModule)> {
@@ -21,11 +21,8 @@ pub fn retrieve_module_rs(
     let src = lib_rs
         .parent()
         .with_context(|| format!("no source parent for {}", target.src_path))?;
-    let module_rs = src.join("module.rs");
-    let content = fs::read_to_string(&module_rs)
-        .with_context(|| format!("can't read module from {}", module_rs.display()))?;
-    let parsed_module = parse_module_rs_source(&content)
-        .with_context(|| format!("invalid {}", module_rs.display()))?;
+    let parsed_module = find_gears_module_in_src(src)
+        .with_context(|| format!("no gears module found in {}", src.display()))?;
     let crate_root = PathBuf::from(&package.manifest_path)
         .parent()
         .map(|p| p.display().to_string());
@@ -44,11 +41,53 @@ pub fn retrieve_module_rs(
     Ok((parsed_module.name, config_module))
 }
 
+/// Recursively scans all `.rs` files under `src/` for a gears module annotation.
+fn find_gears_module_in_src(src: &Path) -> anyhow::Result<ParsedModule> {
+    if let Some(parsed) = scan_dir_for_gears_module(src)? {
+        return Ok(parsed);
+    }
+    bail!("no gears module annotation found in {}", src.display())
+}
+
+/// Recursively walks `dir`, trying to parse each `.rs` file for a gears module
+/// annotation. Returns the first match, or `None` if no annotated struct is found.
+fn scan_dir_for_gears_module(dir: &Path) -> anyhow::Result<Option<ParsedModule>> {
+    let mut paths: Vec<_> = fs::read_dir(dir)
+        .with_context(|| format!("can't read source directory {}", dir.display()))?
+        .map(|entry| entry.map(|e| e.path()))
+        .collect::<Result<_, _>>()?;
+    paths.sort();
+
+    for path in paths {
+        if path.is_dir() {
+            if let Some(parsed) = scan_dir_for_gears_module(&path)? {
+                return Ok(Some(parsed));
+            }
+        } else if path.extension().is_some_and(|ext| ext == "rs") {
+            let content = match fs::read_to_string(&path) {
+                Ok(content) => content,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => {
+                    return Err(anyhow::Error::new(e)
+                        .context(format!("can't read source file {}", path.display())));
+                }
+            };
+            match parse_module_rs_source(&content) {
+                Ok(parsed) => return Ok(Some(parsed)),
+                Err(e) if e.is::<super::source::NotFoundError>() => {}
+                Err(e) => return Err(e.context(format!("can't parse {}", path.display()))),
+            }
+        }
+    }
+
+    Ok(None)
+}
+
 pub fn parse_module_rs_source(content: &str) -> anyhow::Result<ParsedModule> {
     let ast = syn::parse_file(content)?;
     for item in ast.items {
         if let Item::Struct(struct_item) = item
-            && let Some(module_info) = parse_modkit_module_attribute(&struct_item.attrs)?
+            && let Some(module_info) = parse_gears_module_attribute(&struct_item.attrs)?
         {
             return Ok(ParsedModule {
                 name: module_info.name,
@@ -58,7 +97,7 @@ pub fn parse_module_rs_source(content: &str) -> anyhow::Result<ParsedModule> {
         }
     }
 
-    Err(anyhow::anyhow!("no module found"))
+    Err(super::source::NotFoundError("no module found".into()).into())
 }
 
 struct ModuleInfo {
@@ -67,21 +106,21 @@ struct ModuleInfo {
     capabilities: Vec<Capability>,
 }
 
-fn parse_modkit_module_attribute(attrs: &[Attribute]) -> anyhow::Result<Option<ModuleInfo>> {
+fn parse_gears_module_attribute(attrs: &[Attribute]) -> anyhow::Result<Option<ModuleInfo>> {
     for attr in attrs {
-        if is_modkit_module_path(attr) {
+        if is_gears_module_path(attr) {
             return parse_module_args(attr).map(Some);
         }
     }
     Ok(None)
 }
 
-fn is_modkit_module_path(attr: &Attribute) -> bool {
+fn is_gears_module_path(attr: &Attribute) -> bool {
     let path = attr.path();
     let segments: Vec<_> = path.segments.iter().map(|s| s.ident.to_string()).collect();
 
     (segments.len() == 1 && segments[0] == "module")
-        || (segments.len() == 2 && segments[0] == "modkit" && segments[1] == "module")
+        || (segments.len() == 2 && segments[0] == "gears_toolkit" && segments[1] == "module")
 }
 
 fn parse_module_args(attr: &Attribute) -> anyhow::Result<ModuleInfo> {
@@ -197,12 +236,12 @@ fn consume_unknown_meta(input: ParseStream<'_>) -> syn::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::parse_module_rs_source;
-    use crate::module_parser::Capability;
+    use crate::gears_parser::Capability;
 
     #[test]
     fn parses_module_with_lifecycle_meta() {
         let content = r#"
-            #[modkit::module(
+            #[gears_toolkit::module(
                 name = "grpc-hub",
                 capabilities = [stateful, system, grpc_hub],
                 lifecycle(entry = "serve", await_ready)

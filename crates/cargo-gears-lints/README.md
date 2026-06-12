@@ -20,14 +20,14 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 |------|------|------------------|
 | DE0201 | DTOs Only in API Rest | Types with `*Dto` suffix must live in `*/api/rest/*.rs` |
 | DE0202 | DTOs Not Outside API | Contract, domain, and infra modules must not import DTO types |
-| DE0203 | DTOs Must Use `api_dto` | DTO types in `api/rest` must use `#[modkit_macros::api_dto(...)]` |
+| DE0203 | DTOs Must Use `api_dto` | DTO types in `api/rest` must use `#[gears_toolkit_macros::api_dto(...)]` |
 | DE0204 | DTOs Must Have ToSchema | DTO types must derive `utoipa::ToSchema` for OpenAPI docs |
 
 ### DE03xx — Domain Layer (infra / HTTP boundaries)
 
 | Rule | Name | What it enforces |
 |------|------|------------------|
-| DE0301 | No Infra in Domain | Domain modules must not import infra crates (`modkit_db`, `sea_orm`, etc.) |
+| DE0301 | No Infra in Domain | Domain modules must not import infra crates (`cf_gears_toolkit_db`, `sea_orm`, etc.) |
 | DE0308 | No HTTP in Domain | Domain modules must not reference `http`, `axum`, or `hyper` types |
 
 ### DE05xx — Client Layer

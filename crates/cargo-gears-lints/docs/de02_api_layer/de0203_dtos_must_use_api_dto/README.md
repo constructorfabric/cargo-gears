@@ -2,7 +2,7 @@
 
 ## What it does
 
-Checks that all DTO types (structs/enums ending with `Dto`) in the API layer use the `#[modkit_macros::api_dto(...)]` macro instead of manually adding serde derives.
+Checks that all DTO types (structs/enums ending with `Dto`) in the API layer use the `#[gears_toolkit_macros::api_dto(...)]` macro instead of manually adding serde derives.
 
 ## Why is this bad?
 
@@ -50,21 +50,21 @@ Use instead:
 ```rust
 // ✅ Good - DTO using api_dto macro for request and response
 // File: src/api/rest/dto.rs
-#[modkit_macros::api_dto(request, response)]
+#[gears_toolkit_macros::api_dto(request, response)]
 pub struct UserDto {
     pub id: String,
     pub name: String,
 }
 
 // ✅ Good - DTO for request only
-#[modkit_macros::api_dto(request)]
+#[gears_toolkit_macros::api_dto(request)]
 pub struct CreateUserReq {
     pub name: String,
     pub email: String,
 }
 
 // ✅ Good - DTO for response only
-#[modkit_macros::api_dto(response)]
+#[gears_toolkit_macros::api_dto(response)]
 pub struct UserResponseDto {
     pub id: String,
     pub name: String,

@@ -53,7 +53,7 @@ test, lint, run, and build policy.
 
 Initial enum:
 
-- `local`: discovered from current Cargo workspace metadata and `src/module.rs`.
+- `local`: discovered from current Cargo workspace metadata and gears module annotations in any Rust source file under `src/`.
 - `remote`: resolved from the configured registry, defaulting to `crates.io`.
 
 For `local`, we treat it as module name first, then package

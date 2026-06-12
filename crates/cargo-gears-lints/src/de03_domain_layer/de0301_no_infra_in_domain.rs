@@ -56,10 +56,10 @@ const INFRA_PATTERNS: &[&str] = &[
     // Database frameworks (direct access forbidden)
     "sea_orm",
     "sqlx",
-    // ModKit infrastructure crates (should not leak into domain)
-    "modkit_db",
-    "modkit_db_macros",
-    "modkit_transport_grpc",
+    // Gears infrastructure crates (should not leak into domain)
+    "cf_gears_toolkit_db",
+    "cf_gears_toolkit_db_macros",
+    "cf_gears_toolkit_transport_grpc",
     // HTTP/Web frameworks (only used ones: axum, hyper, http)
     "axum",
     "hyper",

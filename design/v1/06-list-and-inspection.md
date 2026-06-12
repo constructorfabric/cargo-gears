@@ -20,7 +20,7 @@ enabled, and how manifest apps relate to runtime configuration.
 `config mod list` currently prints:
 
 - system modules when `--system` is passed
-- workspace modules from Cargo metadata and `src/module.rs`
+- workspace modules from Cargo metadata and gears module annotations in any Rust source file under `src/`
 - modules enabled in a specific config
 - verbose metadata when `--verbose` is passed
 

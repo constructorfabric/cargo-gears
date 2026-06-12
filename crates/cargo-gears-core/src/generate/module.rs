@@ -1,4 +1,4 @@
-use crate::module_parser::{CargoTomlDependencies, CargoTomlDependency};
+use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency};
 use anyhow::{Context, bail};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use semver::{Comparator, Op, Version, VersionReq};
@@ -601,7 +601,7 @@ mod tests {
         normalize_workspace_package_name, rewrite_dependencies_to_workspace_inheritance,
         should_replace_with_newer_semver,
     };
-    use crate::module_parser::{CargoTomlDependencies, CargoTomlDependency};
+    use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency};
     use std::collections::BTreeSet;
 
     #[test]

@@ -1,6 +1,6 @@
 Topic: Generated Server
 
-The CLI generates an ephemeral Cargo project that aggregates your modules into
+The CLI generates an ephemeral Cargo project that aggregates your gears into
 a single runnable binary.
 
 Location:
@@ -8,9 +8,9 @@ Location:
   Default: .gears/<app>-<env>/
 
 Generated files:
-  Cargo.toml           Declares dependencies on all selected modules
+  Cargo.toml           Declares dependencies on all selected gears
   .cargo/config.toml   Points target-dir back to workspace target/
-  src/main.rs          Bootstraps the modkit server with all modules
+  src/main.rs          Bootstraps the gears-toolkit server with all gears
 
 The generated server reads its runtime config from the GEARS_CONFIG
 environment variable, which the CLI sets automatically during build/run.

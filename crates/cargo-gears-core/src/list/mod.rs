@@ -93,8 +93,8 @@ pub const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
 mod tests {
     use super::*;
     use crate::common::{OutputFormat, Registry};
-    use crate::module_parser::get_module_name_from_crate;
-    use crate::module_parser::test_utils::TempDirExt;
+    use crate::gears_parser::get_module_name_from_crate;
+    use crate::gears_parser::test_utils::TempDirExt;
     use tempfile::TempDir;
 
     /// Scaffolds a temporary Cargo workspace with the given module crates.
@@ -167,6 +167,88 @@ mod tests {
     }
 
     #[test]
+    fn local_modules_discovers_annotation_in_any_src_rs_file() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [workspace]
+            members = ["crate-delta"]
+            resolver = "3"
+            "#,
+        );
+        temp_dir.write(
+            "crate-delta/Cargo.toml",
+            r#"
+            [package]
+            name = "crate-delta"
+            version = "0.1.0"
+            edition = "2024"
+
+            [lib]
+            path = "src/lib.rs"
+            "#,
+        );
+        temp_dir.write("crate-delta/src/lib.rs", "pub mod gear;");
+        temp_dir.write(
+            "crate-delta/src/gear.rs",
+            r#"
+            #[module(name = "delta")]
+            pub struct Delta;
+            "#,
+        );
+
+        let modules = get_module_name_from_crate(Some(temp_dir.path()))
+            .expect("module discovery should succeed");
+        assert_eq!(modules.len(), 1);
+        assert!(
+            modules.contains_key("delta"),
+            "should discover 'delta' module in src/gear.rs"
+        );
+    }
+
+    #[test]
+    fn local_modules_discovers_annotation_in_nested_src_subdir() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [workspace]
+            members = ["crate-epsilon"]
+            resolver = "3"
+            "#,
+        );
+        temp_dir.write(
+            "crate-epsilon/Cargo.toml",
+            r#"
+            [package]
+            name = "crate-epsilon"
+            version = "0.1.0"
+            edition = "2024"
+
+            [lib]
+            path = "src/lib.rs"
+            "#,
+        );
+        temp_dir.write("crate-epsilon/src/lib.rs", "pub mod inner;");
+        temp_dir.write(
+            "crate-epsilon/src/inner/mod.rs",
+            r#"
+            #[module(name = "epsilon")]
+            pub struct Epsilon;
+            "#,
+        );
+
+        let modules = get_module_name_from_crate(Some(temp_dir.path()))
+            .expect("module discovery should succeed");
+        assert_eq!(modules.len(), 1);
+        assert!(
+            modules.contains_key("epsilon"),
+            "should discover 'epsilon' module in src/inner/mod.rs"
+        );
+    }
+
+    #[test]
     fn local_modules_empty_workspace_finds_none() {
         let temp_dir = TempDir::new().expect("failed to create temp dir");
         temp_dir.write(
@@ -195,7 +277,7 @@ mod tests {
             .expect("module discovery should succeed");
         assert!(
             modules.is_empty(),
-            "workspace without module.rs should find no modules"
+            "workspace without gears module annotation should find no modules"
         );
     }
 

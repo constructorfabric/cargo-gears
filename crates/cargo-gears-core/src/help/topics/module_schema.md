@@ -29,7 +29,7 @@ Example Cargo.toml:
   edition = "2024"
 
   [dependencies]
-  cf-modkit = { workspace = true, features = ["http"] }
+  cf-gears-toolkit = { workspace = true, features = ["http"] }
 
   [package.metadata.gears]
   deps = ["authn-resolver"]

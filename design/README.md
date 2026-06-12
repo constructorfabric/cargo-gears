@@ -10,7 +10,7 @@ The Gears CLI exists to maximize developer productivity, consistency, and correc
 Gears standards, architectural patterns, and approved practices.
 
 The CLI orchestrates existing Rust ecosystem tooling rather than replacing it. Developers focus on writing modules and
-business logic; Modkit libraries provide the framework runtime; system modules provide generic functionality; and this
+business logic; Gears libraries provide the framework runtime; system modules provide generic functionality; and this
 CLI provides the development lifecycle tooling that ties everything together.
 
 ## Core Goals
