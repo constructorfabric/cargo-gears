@@ -57,9 +57,9 @@ const INFRA_PATTERNS: &[&str] = &[
     "sea_orm",
     "sqlx",
     // Gears infrastructure crates (should not leak into domain)
-    "modkit_db",
-    "modkit_db_macros",
-    "modkit_transport_grpc",
+    "cf_gears_toolkit_db",
+    "cf_gears_toolkit_db_macros",
+    "cf_gears_toolkit_transport_grpc",
     // HTTP/Web frameworks (only used ones: axum, hyper, http)
     "axum",
     "hyper",

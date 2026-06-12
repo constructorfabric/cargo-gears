@@ -27,7 +27,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 
 | Rule | Name | What it enforces |
 |------|------|------------------|
-| DE0301 | No Infra in Domain | Domain modules must not import infra crates (`modkit_db`, `sea_orm`, etc.) |
+| DE0301 | No Infra in Domain | Domain modules must not import infra crates (`cf_gears_toolkit_db`, `sea_orm`, etc.) |
 | DE0308 | No HTTP in Domain | Domain modules must not reference `http`, `axum`, or `hyper` types |
 
 ### DE05xx — Client Layer
