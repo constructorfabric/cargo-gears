@@ -34,6 +34,7 @@ mod de05_client_layer {
 mod de07_security {
     pub(crate) mod de0706_no_direct_sqlx;
     pub(crate) mod de0707_drop_zeroize;
+    pub(crate) mod de0708_no_non_fips_hasher;
 }
 
 mod de08_rest_api_conventions {
@@ -81,6 +82,7 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         de05_client_layer::de0504_client_versioning::DE0504_CLIENT_VERSIONING,
         de07_security::de0706_no_direct_sqlx::DE0706_NO_DIRECT_SQLX,
         de07_security::de0707_drop_zeroize::DE0707_DROP_ZEROIZE,
+        de07_security::de0708_no_non_fips_hasher::DE0708_NO_NON_FIPS_HASHER,
         de08_rest_api_conventions::de0801_api_endpoint_version::DE0801_API_ENDPOINT_VERSION,
         de08_rest_api_conventions::de0802_use_odata_ext::DE0802_USE_ODATA_EXT,
         de08_rest_api_conventions::de0803_api_snake_case::DE0803_API_SNAKE_CASE,
@@ -140,6 +142,9 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     });
     lint_store
         .register_early_pass(|| Box::new(de07_security::de0706_no_direct_sqlx::De0706NoDirectSqlx));
+    lint_store.register_early_pass(|| {
+        Box::new(de07_security::de0708_no_non_fips_hasher::De0708NoNonFipsHasher::new())
+    });
     lint_store.register_early_pass(|| {
         Box::new(de13_common_patterns::de1303_no_primitive_type_alias::De1303NoPrimitiveTypeAlias)
     });
@@ -217,6 +222,7 @@ mod tests {
         ("DE0504", "Client trait", "de0504_client_versioning"),
         ("DE0706", "sqlx", "de0706_no_direct_sqlx"),
         ("DE0707", "manual zeroing", "de0707_drop_zeroize"),
+        ("DE0708", "non-FIPS hasher", "de0708_no_non_fips_hasher"),
         (
             "DE0801",
             "API endpoint version",

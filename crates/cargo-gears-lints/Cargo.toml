@@ -43,6 +43,9 @@ http = "1.0"
 schemars = { version = "1.2", features = ["derive"] }
 sea-orm = "1.0"
 serde_json = "1.0"
+md5 = "0.7"
+sha1 = "0.10"
+sha2 = "0.10"
 sqlx = "0.8"
 thiserror = "2.0"
 tokio = { version = "1.44", features = ["macros", "rt"] }
@@ -229,6 +232,22 @@ path = "tests/ui/de0707_drop_zeroize/bad_drop_zeroing.rs"
 [[example]]
 name = "de0707_drop_zeroize-good_no_zeroing"
 path = "tests/ui/de0707_drop_zeroize/good_no_zeroing.rs"
+
+[[example]]
+name = "de0708_no_non_fips_hasher-bad_extern_crate"
+path = "tests/ui/de0708_no_non_fips_hasher/bad_extern_crate.rs"
+
+[[example]]
+name = "de0708_no_non_fips_hasher-bad_sha1_import"
+path = "tests/ui/de0708_no_non_fips_hasher/bad_sha1_import.rs"
+
+[[example]]
+name = "de0708_no_non_fips_hasher-bad_sha2_import"
+path = "tests/ui/de0708_no_non_fips_hasher/bad_sha2_import.rs"
+
+[[example]]
+name = "de0708_no_non_fips_hasher-good_non_banned_import"
+path = "tests/ui/de0708_no_non_fips_hasher/good_non_banned_import.rs"
 
 [[example]]
 name = "de0801_api_endpoint_version-valid_endpoints"

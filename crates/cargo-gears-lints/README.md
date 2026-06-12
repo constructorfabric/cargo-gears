@@ -43,6 +43,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 |------|------|------------------|
 | DE0706 | No Direct SQLx | Direct `sqlx` usage is forbidden; use Sea-ORM / SecORM abstractions |
 | DE0707 | Drop Zeroize | Manual byte-zeroing in `Drop` impls must use `zeroize` or `secrecy` |
+| DE0708 | No Non-FIPS Hasher | Direct `sha2`/`sha1`/`md5` imports are forbidden; allow-list configurable via `dylint.toml` |
 
 ### DE08xx — REST API Conventions
 
