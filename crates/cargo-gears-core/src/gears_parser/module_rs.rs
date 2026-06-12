@@ -52,11 +52,13 @@ fn find_gears_module_in_src(src: &Path) -> anyhow::Result<ParsedModule> {
 /// Recursively walks `dir`, trying to parse each `.rs` file for a gears module
 /// annotation. Returns the first match, or `None` if no annotated struct is found.
 fn scan_dir_for_gears_module(dir: &Path) -> anyhow::Result<Option<ParsedModule>> {
-    let entries = fs::read_dir(dir)
-        .with_context(|| format!("can't read source directory {}", dir.display()))?;
+    let mut paths: Vec<_> = fs::read_dir(dir)
+        .with_context(|| format!("can't read source directory {}", dir.display()))?
+        .map(|entry| entry.map(|e| e.path()))
+        .collect::<Result<_, _>>()?;
+    paths.sort();
 
-    for entry in entries {
-        let path = entry?.path();
+    for path in paths {
         if path.is_dir() {
             if let Some(parsed) = scan_dir_for_gears_module(&path)? {
                 return Ok(Some(parsed));
