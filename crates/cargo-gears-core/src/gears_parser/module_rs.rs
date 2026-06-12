@@ -52,21 +52,30 @@ fn find_gears_module_in_src(src: &Path) -> anyhow::Result<ParsedModule> {
 /// Recursively walks `dir`, trying to parse each `.rs` file for a gears module
 /// annotation. Returns the first match, or `None` if no annotated struct is found.
 fn scan_dir_for_gears_module(dir: &Path) -> anyhow::Result<Option<ParsedModule>> {
-    let entries = fs::read_dir(dir)
-        .with_context(|| format!("can't read source directory {}", dir.display()))?;
+    let mut paths: Vec<_> = fs::read_dir(dir)
+        .with_context(|| format!("can't read source directory {}", dir.display()))?
+        .map(|entry| entry.map(|e| e.path()))
+        .collect::<Result<_, _>>()?;
+    paths.sort();
 
-    for entry in entries {
-        let path = entry?.path();
+    for path in paths {
         if path.is_dir() {
             if let Some(parsed) = scan_dir_for_gears_module(&path)? {
                 return Ok(Some(parsed));
             }
         } else if path.extension().is_some_and(|ext| ext == "rs") {
-            let Ok(content) = fs::read_to_string(&path) else {
-                continue;
+            let content = match fs::read_to_string(&path) {
+                Ok(content) => content,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => {
+                    return Err(anyhow::Error::new(e)
+                        .context(format!("can't read source file {}", path.display())));
+                }
             };
-            if let Ok(parsed) = parse_module_rs_source(&content) {
-                return Ok(Some(parsed));
+            match parse_module_rs_source(&content) {
+                Ok(parsed) => return Ok(Some(parsed)),
+                Err(e) if e.is::<super::source::NotFoundError>() => {}
+                Err(e) => return Err(e.context(format!("can't parse {}", path.display()))),
             }
         }
     }

@@ -52,7 +52,7 @@ impl De1101TestsInSeparateFiles {
     }
 
     fn is_in_scope(&self, normalized_path: &str) -> bool {
-        // Try to extract a module key (e.g. "libs/modkit", "modules/system/oagw",
+        // Try to extract a module key (e.g. "libs/toolkit", "modules/system/oagw",
         // "examples/oop-modules").
         for prefix in MODULE_PREFIXES {
             if let Some(pos) = normalized_path.find(prefix) {

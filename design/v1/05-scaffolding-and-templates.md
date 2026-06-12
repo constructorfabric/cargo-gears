@@ -135,7 +135,7 @@ The template code should keep layer boundaries explicit:
 - `src/domain/` contains internal business logic, ports, and local client adapters.
 - `src/infra/` contains concrete persistence, HTTP, system, and other adapter implementations.
 - The Gears module annotation (`#[module(...)]` / `#[gears_toolkit::module(...)]`)
-  can live in any `src/*.rs` file. It is the Gears wiring point: module
+  can live in any Rust source file under `src/`. It is the Gears wiring point: module
   attributes, lifecycle methods, capability registration, and `ClientHub`
   registration.
 

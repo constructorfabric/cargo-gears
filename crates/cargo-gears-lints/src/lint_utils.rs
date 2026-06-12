@@ -199,16 +199,16 @@ pub fn is_in_sdk_crate(cx: &rustc_lint::EarlyContext<'_>, span: Span) -> bool {
     file_path.contains("-sdk/") || file_path.contains("-sdk\\") || is_temp_path(&file_path)
 }
 
-/// Check if span is within libs/modkit-db/ - the internal sqlx wrapper library
+/// Check if span is within libs/toolkit-db/ - the internal sqlx wrapper library
 /// This path is excluded from sqlx restrictions as it provides the abstraction layer
-pub fn is_in_modkit_db_path(source_map: &SourceMap, span: Span) -> bool {
+pub fn is_in_toolkit_db_path(source_map: &SourceMap, span: Span) -> bool {
     // Multiple checks handle different path contexts:
-    // - "/libs/modkit-db/" - absolute path from workspace root
-    // - "libs/modkit-db/" - relative path in some contexts
-    // - "modkit-db/src/" - simulated_dir paths in tests
-    check_span_path(source_map, span, "/libs/modkit-db/")
-        || check_span_path(source_map, span, "libs/modkit-db/")
-        || check_span_path(source_map, span, "modkit-db/src/")
+    // - "/libs/toolkit-db/" - absolute path from workspace root
+    // - "libs/toolkit-db/" - relative path in some contexts
+    // - "toolkit-db/src/" - simulated_dir paths in tests
+    check_span_path(source_map, span, "/libs/toolkit-db/")
+        || check_span_path(source_map, span, "libs/toolkit-db/")
+        || check_span_path(source_map, span, "toolkit-db/src/")
 }
 
 /// Check if span is within apps/cyberware-example-server - the main server binary
