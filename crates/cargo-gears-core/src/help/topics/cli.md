@@ -62,7 +62,7 @@ Available help topics:
   security          AuthN, AuthZ, SecureConn, AccessScope
   rest-api          OperationBuilder, OpenAPI, SSE, OData
   clienthub         Typed ClientHub, plugins, GTS
-  errors            RFC-9457 Problem error handling
+  rest-errors       RFC-9457 Problem error handling
   database          SecureConn, transactions, migrations
   lifecycle         Gear lifecycle, cancellation, background tasks
   gears-catalog     Gear categories and dependency rules
