@@ -28,7 +28,7 @@ impl TestArgs {
 
         let runner = self.runner.unwrap_or(resolved.test.runner);
 
-        if self.runner.is_some() && resolved.test.custom_command.is_some() {
+        if !self.coverage && self.runner.is_some() && resolved.test.custom_command.is_some() {
             eprintln!("WARN: custom command is specified in manifest, ignoring runner override");
         }
 
