@@ -406,7 +406,7 @@ fn create_file_structure(
         .context("can't write to file")
 }
 
-pub fn remove_from_file_structure(
+pub(crate) fn remove_from_file_structure(
     generated_dir: &Path,
     project_name: &str,
     relative_path: &str,
