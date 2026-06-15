@@ -88,6 +88,13 @@ fn resolve_runs(
 }
 
 fn expand_feature_set(package: Option<&str>, feature_set: &ModuleFeatureSet) -> Vec<TestRun> {
+    if feature_set.is_empty() {
+        return vec![TestRun {
+            package: package.map(str::to_owned),
+            features: FeatureSelection::Default,
+        }];
+    }
+
     feature_set
         .iter()
         .map(|set| TestRun {
@@ -276,6 +283,26 @@ mod tests {
                     features: FeatureSelection::Default,
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn empty_feature_set_falls_back_to_default_run() {
+        let feature_set = BTreeMap::from([("module-a".to_owned(), vec![])]);
+
+        let runs = resolve_runs(
+            None,
+            &feature_set,
+            &sample_modules(),
+            &CargoTomlDependencies::default(),
+        );
+
+        assert_eq!(
+            runs,
+            vec![TestRun {
+                package: Some("cf-module-a".to_owned()),
+                features: FeatureSelection::Default,
+            }]
         );
     }
 
