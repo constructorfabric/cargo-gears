@@ -2,7 +2,7 @@ error: domain type should not use `api_dto` macro (DE0104)
   --> $DIR/with_api_dto.rs:7:1
    |
 LL | #[gears_toolkit_macros::api_dto(request, response)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: api_dto is for API DTOs; use plain structs in domain/ and create DTOs in api/rest/
    = note: `#[deny(de0104_no_api_dto_in_contract)]` on by default
@@ -11,7 +11,7 @@ error: domain type should not use `api_dto` macro (DE0104)
   --> $DIR/with_api_dto.rs:14:1
    |
 LL | #[gears_toolkit_macros::api_dto(response)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: api_dto is for API DTOs; use plain structs in domain/ and create DTOs in api/rest/
 
@@ -19,7 +19,7 @@ error: domain type should not use `api_dto` macro (DE0104)
   --> $DIR/with_api_dto.rs:21:1
    |
 LL | #[gears_toolkit_macros::api_dto(request)]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: api_dto is for API DTOs; use plain structs in domain/ and create DTOs in api/rest/
 
