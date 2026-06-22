@@ -1,5 +1,6 @@
 use crate::common;
 use crate::gears_parser::CargoTomlDependencies;
+use crate::manifest::{BuildProfile, ManifestSelection};
 use anyhow::{Context, bail};
 use std::path::PathBuf;
 
@@ -25,6 +26,156 @@ pub struct BuildParams {
     pub clean: bool,
     /// Print the resolved generation model without building.
     pub dry_run: bool,
+}
+
+/// Builder for constructing `BuildParams` with manifest resolution and CLI overrides.
+pub struct BuildParamsBuilder {
+    workspace_path: Option<PathBuf>,
+    manifest: PathBuf,
+    app: Option<String>,
+    env: Option<String>,
+    otel: Option<bool>,
+    no_otel: Option<bool>,
+    fips: Option<bool>,
+    no_fips: Option<bool>,
+    release: Option<bool>,
+    no_release: Option<bool>,
+    clean: Option<bool>,
+    no_clean: Option<bool>,
+    dry_run: bool,
+}
+
+impl BuildParamsBuilder {
+    #[must_use]
+    pub const fn new(manifest: PathBuf) -> Self {
+        Self {
+            workspace_path: None,
+            manifest,
+            app: None,
+            env: None,
+            otel: None,
+            no_otel: None,
+            fips: None,
+            no_fips: None,
+            release: None,
+            no_release: None,
+            clean: None,
+            no_clean: None,
+            dry_run: false,
+        }
+    }
+
+    #[must_use]
+    pub fn workspace_path(mut self, path: Option<PathBuf>) -> Self {
+        self.workspace_path = path;
+        self
+    }
+
+    #[must_use]
+    pub fn app(mut self, app: Option<String>) -> Self {
+        self.app = app;
+        self
+    }
+
+    #[must_use]
+    pub fn env(mut self, env: Option<String>) -> Self {
+        self.env = env;
+        self
+    }
+
+    #[must_use]
+    pub const fn otel(mut self, otel: Option<bool>) -> Self {
+        self.otel = otel;
+        self
+    }
+
+    #[must_use]
+    pub const fn no_otel(mut self, no_otel: Option<bool>) -> Self {
+        self.no_otel = no_otel;
+        self
+    }
+
+    #[must_use]
+    pub const fn fips(mut self, fips: Option<bool>) -> Self {
+        self.fips = fips;
+        self
+    }
+
+    #[must_use]
+    pub const fn no_fips(mut self, no_fips: Option<bool>) -> Self {
+        self.no_fips = no_fips;
+        self
+    }
+
+    #[must_use]
+    pub const fn release(mut self, release: Option<bool>) -> Self {
+        self.release = release;
+        self
+    }
+
+    #[must_use]
+    pub const fn no_release(mut self, no_release: Option<bool>) -> Self {
+        self.no_release = no_release;
+        self
+    }
+
+    #[must_use]
+    pub const fn clean(mut self, clean: Option<bool>) -> Self {
+        self.clean = clean;
+        self
+    }
+
+    #[must_use]
+    pub const fn no_clean(mut self, no_clean: Option<bool>) -> Self {
+        self.no_clean = no_clean;
+        self
+    }
+
+    #[must_use]
+    pub const fn dry_run(mut self, dry_run: bool) -> Self {
+        self.dry_run = dry_run;
+        self
+    }
+
+    pub fn build(self) -> anyhow::Result<BuildParams> {
+        let workspace_root = common::resolve_workspace_path(self.workspace_path.as_deref())?;
+        let manifest_selection = ManifestSelection {
+            manifest: self.manifest,
+            app: self.app,
+            env: self.env,
+        };
+        let resolved = manifest_selection.resolve(&workspace_root)?;
+
+        let otel = ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
+        let fips = ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
+        let release = ordered_bool(self.release, self.no_release).unwrap_or(matches!(
+            resolved.build.profile,
+            Some(BuildProfile::Release)
+        ));
+        let clean = ordered_bool(self.clean, self.no_clean)
+            .unwrap_or_else(|| resolved.build.clean.unwrap_or(release));
+
+        Ok(BuildParams {
+            workspace_root: resolved.workspace_root,
+            generated_dir: resolved.generated_dir,
+            generated_name: resolved.generated_name,
+            config_path: resolved.config_path,
+            dependencies: resolved.dependencies,
+            otel,
+            fips,
+            release,
+            clean,
+            dry_run: self.dry_run,
+        })
+    }
+}
+
+const fn ordered_bool(enable: Option<bool>, disable: Option<bool>) -> Option<bool> {
+    match (enable, disable) {
+        (Some(true), _) => Some(true), // Enable flag takes precedence
+        (Some(false) | None, Some(true)) => Some(false), // Disable explicitly set
+        _ => None, // Neither flag provided or both false, use manifest default
+    }
 }
 
 impl BuildParams {

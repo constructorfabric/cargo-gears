@@ -11,7 +11,7 @@ pub use cargo_gears_core::common::{OutputFormat, Registry};
 pub struct WorkspacePath {
     /// Path to the module workspace root
     #[arg(short = 'p', long, value_parser = cargo_gears_core::common::parse_path)]
-    pub path: Option<PathBuf>,
+    pub(crate) path: Option<PathBuf>,
 }
 
 #[derive(Args)]
@@ -42,100 +42,45 @@ impl From<PathConfigArgs> for cargo_gears_core::common::PathConfigParams {
 #[derive(Args)]
 pub struct BuildRunArgs {
     #[command(flatten)]
-    workspace: WorkspacePath,
+    pub(crate) workspace: WorkspacePath,
     #[command(flatten)]
-    manifest: ManifestTargetArgs,
+    pub(crate) manifest: ManifestTargetArgs,
     /// Use OpenTelemetry tracing
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_otel")]
-    otel: bool,
+    pub(crate) otel: Option<bool>,
     /// Disable OpenTelemetry tracing
     #[arg(long = "no-otel", action = ArgAction::SetTrue, conflicts_with = "otel")]
-    no_otel: bool,
+    pub(crate) no_otel: Option<bool>,
     /// Enable FIPS mode
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_fips")]
-    fips: bool,
+    pub(crate) fips: Option<bool>,
     /// Disable FIPS mode
     #[arg(long = "no-fips", action = ArgAction::SetTrue, conflicts_with = "fips")]
-    no_fips: bool,
+    pub(crate) no_fips: Option<bool>,
     /// Build/run in release mode
     #[arg(short = 'r', long, action = ArgAction::SetTrue, conflicts_with = "no_release")]
-    release: bool,
+    pub(crate) release: Option<bool>,
     /// Build/run without release mode
     #[arg(long = "no-release", action = ArgAction::SetTrue, conflicts_with = "release")]
-    no_release: bool,
+    pub(crate) no_release: Option<bool>,
     /// Remove Cargo.lock at the start of the execution
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_clean")]
-    clean: bool,
+    pub(crate) clean: Option<bool>,
     /// Do not remove Cargo.lock at the start of the execution
     #[arg(long = "no-clean", action = ArgAction::SetTrue, conflicts_with = "clean")]
-    no_clean: bool,
+    pub(crate) no_clean: Option<bool>,
     /// Print the resolved generation model without building or running
     #[arg(long)]
-    dry_run: bool,
+    pub(crate) dry_run: bool,
     /// Override the generated server and binary name
     #[arg(long)]
-    name: Option<String>,
-}
-
-/// Fully-resolved build/run parameters after manifest + CLI override merge.
-pub struct ResolvedBuildRun {
-    pub workspace_root: std::path::PathBuf,
-    pub generated_dir: std::path::PathBuf,
-    pub generated_name: String,
-    pub config_path: std::path::PathBuf,
-    pub manifest_path: std::path::PathBuf,
-    pub dependencies: cargo_gears_core::gears_parser::CargoTomlDependencies,
-    pub otel: bool,
-    pub fips: bool,
-    pub release: bool,
-    pub clean: bool,
-    pub dry_run: bool,
-    pub watch_policy: cargo_gears_core::manifest::WatchPolicy,
-}
-
-impl BuildRunArgs {
-    /// Resolve the manifest and merge CLI overrides into final values.
-    ///
-    /// Takes `&self` so it can be called repeatedly (e.g. in a watch loop).
-    pub fn resolve(&self) -> anyhow::Result<ResolvedBuildRun> {
-        let workspace_path =
-            cargo_gears_core::common::resolve_workspace_path(self.workspace.path.as_deref())?;
-        let manifest_selection = cargo_gears_core::manifest::ManifestSelection {
-            manifest: self.manifest.manifest_path.manifest.clone(),
-            app: self.manifest.app.clone(),
-            env: self.manifest.env.clone(),
-        };
-        let resolved = manifest_selection.resolve(&workspace_path)?;
-
-        let otel = ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
-        let fips = ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
-        let release = ordered_bool(self.release, self.no_release).unwrap_or(matches!(
-            resolved.build.profile,
-            Some(cargo_gears_core::manifest::BuildProfile::Release)
-        ));
-        let clean = ordered_bool(self.clean, self.no_clean)
-            .unwrap_or_else(|| resolved.build.clean.unwrap_or(release));
-
-        Ok(ResolvedBuildRun {
-            workspace_root: resolved.workspace_root,
-            generated_dir: resolved.generated_dir,
-            generated_name: resolved.generated_name,
-            config_path: resolved.config_path,
-            manifest_path: resolved.manifest_path,
-            dependencies: resolved.dependencies,
-            otel,
-            fips,
-            release,
-            clean,
-            dry_run: self.dry_run,
-            watch_policy: resolved.run.watch,
-        })
-    }
+    pub(crate) name: Option<String>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::BuildRunArgs;
+    use cargo_gears_core::build::BuildParamsBuilder;
     use clap::Parser;
     use std::fs;
     use tempfile::TempDir;
@@ -175,12 +120,26 @@ mod tests {
              clean = true\n",
         );
 
-        let resolved = parse(
+        let args = parse(
             &temp,
             &["--no-otel", "--no-fips", "--no-release", "--no-clean"],
-        )
-        .resolve()
-        .expect("resolve");
+        );
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .otel(args.otel)
+            .no_otel(args.no_otel)
+            .fips(args.fips)
+            .no_fips(args.no_fips)
+            .release(args.release)
+            .no_release(args.no_release)
+            .clean(args.clean)
+            .no_clean(args.no_clean)
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
 
         assert!(!resolved.otel);
         assert!(!resolved.fips);
@@ -204,7 +163,23 @@ mod tests {
              clean = true\n",
         );
 
-        let resolved = parse(&temp, &[]).resolve().expect("resolve");
+        let args = parse(&temp, &[]);
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .otel(args.otel)
+            .no_otel(args.no_otel)
+            .fips(args.fips)
+            .no_fips(args.no_fips)
+            .release(args.release)
+            .no_release(args.no_release)
+            .clean(args.clean)
+            .no_clean(args.no_clean)
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
 
         assert!(resolved.otel);
         assert!(resolved.fips);
@@ -224,7 +199,23 @@ mod tests {
              profile = \"release\"\n",
         );
 
-        let resolved = parse(&temp, &[]).resolve().expect("resolve");
+        let args = parse(&temp, &[]);
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .otel(args.otel)
+            .no_otel(args.no_otel)
+            .fips(args.fips)
+            .no_fips(args.no_fips)
+            .release(args.release)
+            .no_release(args.no_release)
+            .clean(args.clean)
+            .no_clean(args.no_clean)
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
 
         assert!(resolved.release);
         assert!(resolved.clean);
@@ -240,7 +231,23 @@ mod tests {
              modules = []\n",
         );
 
-        let resolved = parse(&temp, &[]).resolve().expect("resolve");
+        let args = parse(&temp, &[]);
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .otel(args.otel)
+            .no_otel(args.no_otel)
+            .fips(args.fips)
+            .no_fips(args.no_fips)
+            .release(args.release)
+            .no_release(args.no_release)
+            .clean(args.clean)
+            .no_clean(args.no_clean)
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
 
         assert!(!resolved.release);
         assert!(!resolved.clean);
@@ -248,24 +255,16 @@ mod tests {
 }
 
 #[must_use]
-pub const fn ordered_bool(positive: bool, negative: bool) -> Option<bool> {
-    match (positive, negative) {
-        (true, false) => Some(true),
-        (false, true) => Some(false),
-        _ => None,
-    }
-}
-
 #[derive(Args)]
 pub struct ManifestTargetArgs {
     #[command(flatten)]
-    manifest_path: ManifestPath,
+    pub(crate) manifest_path: ManifestPath,
     /// Manifest app to select (inferred from manifest if omitted)
     #[arg(long)]
-    app: Option<String>,
+    pub(crate) app: Option<String>,
     /// Manifest environment to select (inferred from manifest if omitted)
     #[arg(long)]
-    env: Option<String>,
+    pub(crate) env: Option<String>,
 }
 
 impl ManifestTargetArgs {

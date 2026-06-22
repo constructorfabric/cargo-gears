@@ -1,4 +1,5 @@
 use crate::common::BuildRunArgs;
+use cargo_gears_core::build::BuildParamsBuilder;
 use clap::Args;
 
 #[derive(Args)]
@@ -10,18 +11,20 @@ pub struct BuildArgs {
 impl BuildArgs {
     /// Resolve manifest + CLI overrides into a fully-resolved `BuildParams`.
     pub fn resolve(self) -> anyhow::Result<cargo_gears_core::build::BuildParams> {
-        let resolved = self.build_run_args.resolve()?;
-        Ok(cargo_gears_core::build::BuildParams {
-            workspace_root: resolved.workspace_root,
-            generated_dir: resolved.generated_dir,
-            generated_name: resolved.generated_name,
-            config_path: resolved.config_path,
-            dependencies: resolved.dependencies,
-            otel: resolved.otel,
-            fips: resolved.fips,
-            release: resolved.release,
-            clean: resolved.clean,
-            dry_run: resolved.dry_run,
-        })
+        let args = self.build_run_args;
+        BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .otel(args.otel)
+            .no_otel(args.no_otel)
+            .fips(args.fips)
+            .no_fips(args.no_fips)
+            .release(args.release)
+            .no_release(args.no_release)
+            .clean(args.clean)
+            .no_clean(args.no_clean)
+            .dry_run(args.dry_run)
+            .build()
     }
 }
