@@ -15,6 +15,7 @@ pub fn parse_command(args: &[&str]) -> GearsCommand {
         .into_command()
 }
 
+// This is not dead code, it is used in tests but based on how cargo handles tests it is required
 #[allow(dead_code)]
 pub fn assert_parse_error(args: &[&str], kind: ErrorKind) {
     let Err(error) = Cli::try_parse_from(args) else {
