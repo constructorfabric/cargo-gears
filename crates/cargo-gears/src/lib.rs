@@ -12,6 +12,8 @@ mod source;
 mod testing;
 mod tools;
 
+use std::convert::TryFrom;
+
 #[derive(clap::Parser)]
 #[command(version, about)]
 #[command(propagate_version = true)]
@@ -62,41 +64,43 @@ impl Cli {
             Commands::Build(build) => build.resolve()?.run(),
             Commands::Run(run) => run.resolve_and_run(),
             // Non-manifest commands: pass through to core.
-            other => other.into_command().run(),
+            other => cargo_gears_core::GearsCommand::try_from(other)?.run(),
         }
-    }
-
-    /// Convert into a `GearsCommand` for non-manifest-based commands.
-    ///
-    /// Panics if called on a manifest-based command (Build, Run, Test, Lint).
-    #[must_use]
-    pub fn into_command(self) -> cargo_gears_core::GearsCommand {
-        self.command.into_command()
     }
 }
 
-impl Commands {
-    fn into_command(self) -> cargo_gears_core::GearsCommand {
-        match self {
-            Self::Generate(generate) => cargo_gears_core::GearsCommand::Generate(generate.into()),
-            Self::New(workspace) => cargo_gears_core::GearsCommand::Generate(
-                cargo_gears_core::generate::GenerateParams {
+impl TryFrom<Commands> for cargo_gears_core::GearsCommand {
+    type Error = anyhow::Error;
+
+    fn try_from(cmd: Commands) -> Result<Self, Self::Error> {
+        match cmd {
+            Commands::Generate(generate) => Ok(Self::Generate(generate.into())),
+            Commands::New(workspace) => {
+                Ok(Self::Generate(cargo_gears_core::generate::GenerateParams {
                     command: cargo_gears_core::generate::GenerateCommand::Workspace(
                         workspace.into(),
                     ),
-                },
-            ),
-            Self::Config(config) => cargo_gears_core::GearsCommand::Config((*config).into()),
-            Self::Src(src) => cargo_gears_core::GearsCommand::Src(src.into()),
-            Self::Help(help) => help.into(),
-            Self::List(list) => cargo_gears_core::GearsCommand::List(list.into()),
-            Self::Manifest(manifest) => cargo_gears_core::GearsCommand::Manifest(manifest.into()),
-            Self::Tools(tools) => cargo_gears_core::GearsCommand::Tools(tools.into()),
-            Self::Deploy(deploy) => cargo_gears_core::GearsCommand::Deploy(deploy.into()),
-            // Manifest-based commands handled in Cli::run() — unreachable here.
-            Self::Lint(_) | Self::Test(_) | Self::Build(_) | Self::Run(_) => {
-                unreachable!("manifest-based commands are resolved in Cli::run()")
+                }))
+            }
+            Commands::Config(config) => Ok(Self::Config((*config).into())),
+            Commands::Src(src) => Ok(Self::Src(src.into())),
+            Commands::Help(help) => Ok(help.into()),
+            Commands::List(list) => Ok(Self::List(list.into())),
+            Commands::Manifest(manifest) => Ok(Self::Manifest(manifest.into())),
+            Commands::Tools(tools) => Ok(Self::Tools(tools.into())),
+            Commands::Deploy(deploy) => Ok(Self::Deploy(deploy.into())),
+            // Manifest-based commands should be resolved in Cli::run(), not converted here.
+            Commands::Lint(_) | Commands::Test(_) | Commands::Build(_) | Commands::Run(_) => {
+                anyhow::bail!("manifest-based commands should be resolved in Cli::run()")
             }
         }
+    }
+}
+
+impl TryFrom<Cli> for cargo_gears_core::GearsCommand {
+    type Error = anyhow::Error;
+
+    fn try_from(cli: Cli) -> Result<Self, Self::Error> {
+        Self::try_from(cli.command)
     }
 }

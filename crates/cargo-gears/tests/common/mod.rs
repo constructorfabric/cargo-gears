@@ -10,9 +10,8 @@ use clap::{Parser, error::ErrorKind};
 #[allow(dead_code)]
 #[allow(clippy::expect_used)]
 pub fn parse_command(args: &[&str]) -> GearsCommand {
-    Cli::try_parse_from(args)
-        .expect("argv should parse")
-        .into_command()
+    let cli = Cli::try_parse_from(args).expect("argv should parse");
+    GearsCommand::try_from(cli).expect("cli should convert to GearsCommand")
 }
 
 // This is not dead code, it is used in tests but based on how cargo handles tests it is required
