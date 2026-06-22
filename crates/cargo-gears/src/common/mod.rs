@@ -141,10 +141,10 @@ mod tests {
             .build()
             .expect("resolve");
 
-        assert!(!resolved.otel);
-        assert!(!resolved.fips);
-        assert!(!resolved.release);
-        assert!(!resolved.clean);
+        assert!(!resolved.build_run_args.otel);
+        assert!(!resolved.build_run_args.fips);
+        assert!(!resolved.build_run_args.release);
+        assert!(!resolved.build_run_args.clean);
     }
 
     #[test]
@@ -181,10 +181,10 @@ mod tests {
             .build()
             .expect("resolve");
 
-        assert!(resolved.otel);
-        assert!(resolved.fips);
-        assert!(resolved.release);
-        assert!(resolved.clean);
+        assert!(resolved.build_run_args.otel);
+        assert!(resolved.build_run_args.fips);
+        assert!(resolved.build_run_args.release);
+        assert!(resolved.build_run_args.clean);
     }
 
     #[test]
@@ -217,8 +217,8 @@ mod tests {
             .build()
             .expect("resolve");
 
-        assert!(resolved.release);
-        assert!(resolved.clean);
+        assert!(resolved.build_run_args.release);
+        assert!(resolved.build_run_args.clean);
     }
 
     #[test]
@@ -249,8 +249,8 @@ mod tests {
             .build()
             .expect("resolve");
 
-        assert!(!resolved.release);
-        assert!(!resolved.clean);
+        assert!(!resolved.build_run_args.release);
+        assert!(!resolved.build_run_args.clean);
     }
 }
 

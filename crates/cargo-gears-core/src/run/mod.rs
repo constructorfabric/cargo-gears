@@ -1,7 +1,6 @@
 mod run_loop;
 mod watch;
 
-use crate::gears_parser::CargoTomlDependencies;
 use crate::manifest::{BuildProfile, ManifestSelection, WatchPolicy};
 use crate::run::run_loop::RunSignal;
 use std::path::PathBuf;
@@ -9,28 +8,10 @@ use std::path::PathBuf;
 /// Fully-resolved parameters for a single run iteration.
 #[derive(Debug)]
 pub struct RunParams {
-    /// Resolved workspace root path.
-    pub workspace_root: PathBuf,
-    /// Resolved generated output directory.
-    pub generated_dir: PathBuf,
-    /// Resolved generated project name.
-    pub generated_name: String,
-    /// Resolved config file path.
-    pub config_path: PathBuf,
+    /// Shared build/run parameters.
+    pub build_run_args: crate::build::BuildRunParams,
     /// Resolved manifest path (needed by watch for change detection).
     pub manifest_path: PathBuf,
-    /// Resolved workspace dependencies.
-    pub dependencies: CargoTomlDependencies,
-    /// Effective otel flag (CLI override already applied).
-    pub otel: bool,
-    /// Effective FIPS flag.
-    pub fips: bool,
-    /// Effective release flag.
-    pub release: bool,
-    /// Whether to remove Cargo.lock before running.
-    pub clean: bool,
-    /// Print the resolved generation model without running.
-    pub dry_run: bool,
     /// Whether to watch for changes.
     pub watch: bool,
     /// Watch policy from manifest.
@@ -171,39 +152,35 @@ impl RunParamsBuilder {
         };
         let resolved = manifest_selection.resolve(&workspace_root)?;
 
-        let otel = ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
-        let fips = ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
-        let release = ordered_bool(self.release, self.no_release).unwrap_or(matches!(
-            resolved.build.profile,
-            Some(BuildProfile::Release)
-        ));
-        let clean = ordered_bool(self.clean, self.no_clean)
+        let otel =
+            crate::common::ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
+        let fips =
+            crate::common::ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
+        let release = crate::common::ordered_bool(self.release, self.no_release).unwrap_or(
+            matches!(resolved.build.profile, Some(BuildProfile::Release)),
+        );
+        let clean = crate::common::ordered_bool(self.clean, self.no_clean)
             .unwrap_or_else(|| resolved.build.clean.unwrap_or(release));
-        let watch = ordered_bool(self.watch, self.no_watch).unwrap_or(resolved.run.watch.enabled);
+        let watch = crate::common::ordered_bool(self.watch, self.no_watch)
+            .unwrap_or(resolved.run.watch.enabled);
 
         Ok(RunParams {
-            workspace_root: resolved.workspace_root,
-            generated_dir: resolved.generated_dir,
-            generated_name: resolved.generated_name,
-            config_path: resolved.config_path,
+            build_run_args: crate::build::BuildRunParams {
+                workspace_root: resolved.workspace_root,
+                generated_dir: resolved.generated_dir,
+                generated_name: resolved.generated_name,
+                config_path: resolved.config_path,
+                dependencies: resolved.dependencies,
+                otel,
+                fips,
+                release,
+                clean,
+                dry_run: self.dry_run,
+            },
             manifest_path: resolved.manifest_path,
-            dependencies: resolved.dependencies,
-            otel,
-            fips,
-            release,
-            clean,
-            dry_run: self.dry_run,
             watch,
             watch_policy: resolved.run.watch,
         })
-    }
-}
-
-const fn ordered_bool(enable: Option<bool>, disable: Option<bool>) -> Option<bool> {
-    match (enable, disable) {
-        (Some(true), _) => Some(true), // Enable flag takes precedence
-        (Some(false) | None, Some(true)) => Some(false), // Disable explicitly set
-        _ => None, // Neither flag provided or both false, use manifest default
     }
 }
 
@@ -219,37 +196,46 @@ impl RunParams {
     /// Execute a single run iteration. Returns `Rerun` if the watch loop
     /// detected changes and the caller should re-resolve and call again.
     pub fn run(self) -> anyhow::Result<RunOutcome> {
-        if self.clean {
+        if self.build_run_args.clean {
             crate::common::remove_from_file_structure(
-                &self.generated_dir,
-                &self.generated_name,
+                &self.build_run_args.generated_dir,
+                &self.build_run_args.generated_name,
                 "Cargo.lock",
             )?;
         }
 
-        if self.dry_run {
+        if self.build_run_args.dry_run {
             let generated = crate::common::generate_server_structure(
-                &self.workspace_root,
-                &self.generated_dir,
-                &self.generated_name,
-                &self.dependencies,
+                &self.build_run_args.workspace_root,
+                &self.build_run_args.generated_dir,
+                &self.build_run_args.generated_name,
+                &self.build_run_args.dependencies,
             )?;
             generated.print_json()?;
             return Ok(RunOutcome::Stop);
         }
 
         let rl = run_loop::RunLoop::new(
-            self.generated_dir,
-            self.workspace_root,
-            self.config_path,
-            self.generated_name,
+            self.build_run_args.generated_dir,
+            self.build_run_args.workspace_root,
+            self.build_run_args.config_path,
+            self.build_run_args.generated_name,
             self.manifest_path,
             self.watch_policy,
         )
-        .with_dependencies(self.dependencies);
-        run_loop::OTEL.store(self.otel, std::sync::atomic::Ordering::Relaxed);
-        run_loop::FIPS.store(self.fips, std::sync::atomic::Ordering::Relaxed);
-        run_loop::RELEASE.store(self.release, std::sync::atomic::Ordering::Relaxed);
+        .with_dependencies(self.build_run_args.dependencies);
+        run_loop::OTEL.store(
+            self.build_run_args.otel,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        run_loop::FIPS.store(
+            self.build_run_args.fips,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        run_loop::RELEASE.store(
+            self.build_run_args.release,
+            std::sync::atomic::Ordering::Relaxed,
+        );
 
         match rl.run(self.watch)? {
             RunSignal::Rerun => Ok(RunOutcome::Rerun),

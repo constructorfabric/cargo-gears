@@ -4,8 +4,9 @@ use crate::manifest::{BuildProfile, ManifestSelection};
 use anyhow::{Context, bail};
 use std::path::PathBuf;
 
+/// Shared parameters for build and run operations.
 #[derive(Debug, Eq, PartialEq)]
-pub struct BuildParams {
+pub struct BuildRunParams {
     /// Resolved workspace root path.
     pub workspace_root: PathBuf,
     /// Resolved generated output directory.
@@ -26,6 +27,12 @@ pub struct BuildParams {
     pub clean: bool,
     /// Print the resolved generation model without building.
     pub dry_run: bool,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub struct BuildParams {
+    /// Shared build/run parameters.
+    pub build_run_args: BuildRunParams,
 }
 
 /// Builder for constructing `BuildParams` with manifest resolution and CLI overrides.
@@ -146,67 +153,64 @@ impl BuildParamsBuilder {
         };
         let resolved = manifest_selection.resolve(&workspace_root)?;
 
-        let otel = ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
-        let fips = ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
-        let release = ordered_bool(self.release, self.no_release).unwrap_or(matches!(
+        let otel = common::ordered_bool(self.otel, self.no_otel).unwrap_or(resolved.run.otel);
+        let fips = common::ordered_bool(self.fips, self.no_fips).unwrap_or(resolved.run.fips);
+        let release = common::ordered_bool(self.release, self.no_release).unwrap_or(matches!(
             resolved.build.profile,
             Some(BuildProfile::Release)
         ));
-        let clean = ordered_bool(self.clean, self.no_clean)
+        let clean = common::ordered_bool(self.clean, self.no_clean)
             .unwrap_or_else(|| resolved.build.clean.unwrap_or(release));
 
         Ok(BuildParams {
-            workspace_root: resolved.workspace_root,
-            generated_dir: resolved.generated_dir,
-            generated_name: resolved.generated_name,
-            config_path: resolved.config_path,
-            dependencies: resolved.dependencies,
-            otel,
-            fips,
-            release,
-            clean,
-            dry_run: self.dry_run,
+            build_run_args: BuildRunParams {
+                workspace_root: resolved.workspace_root,
+                generated_dir: resolved.generated_dir,
+                generated_name: resolved.generated_name,
+                config_path: resolved.config_path,
+                dependencies: resolved.dependencies,
+                otel,
+                fips,
+                release,
+                clean,
+                dry_run: self.dry_run,
+            },
         })
-    }
-}
-
-const fn ordered_bool(enable: Option<bool>, disable: Option<bool>) -> Option<bool> {
-    match (enable, disable) {
-        (Some(true), _) => Some(true), // Enable flag takes precedence
-        (Some(false) | None, Some(true)) => Some(false), // Disable explicitly set
-        _ => None, // Neither flag provided or both false, use manifest default
     }
 }
 
 impl BuildParams {
     pub fn run(&self) -> anyhow::Result<()> {
-        if self.clean {
+        if self.build_run_args.clean {
             common::remove_from_file_structure(
-                &self.generated_dir,
-                &self.generated_name,
+                &self.build_run_args.generated_dir,
+                &self.build_run_args.generated_name,
                 "Cargo.lock",
             )?;
         }
 
         let generated = common::generate_server_structure(
-            &self.workspace_root,
-            &self.generated_dir,
-            &self.generated_name,
-            &self.dependencies,
+            &self.build_run_args.workspace_root,
+            &self.build_run_args.generated_dir,
+            &self.build_run_args.generated_name,
+            &self.build_run_args.dependencies,
         )?;
 
-        if self.dry_run {
+        if self.build_run_args.dry_run {
             return generated.print_json();
         }
 
-        let cargo_dir = common::generated_project_dir(&self.generated_dir, &self.generated_name);
+        let cargo_dir = common::generated_project_dir(
+            &self.build_run_args.generated_dir,
+            &self.build_run_args.generated_name,
+        );
         let status = common::cargo_command(
             "build",
             &cargo_dir,
-            &self.config_path,
-            self.otel,
-            self.fips,
-            self.release,
+            &self.build_run_args.config_path,
+            self.build_run_args.otel,
+            self.build_run_args.fips,
+            self.build_run_args.release,
         )?
         .status()
         .context("failed to run cargo build")?;
@@ -221,7 +225,7 @@ impl BuildParams {
 
 #[cfg(test)]
 mod tests {
-    use super::BuildParams;
+    use super::{BuildParams, BuildRunParams};
     use crate::manifest::ManifestSelection;
     use std::fs;
     use std::path::PathBuf;
@@ -259,16 +263,18 @@ name = "demo-server"
         .expect("manifest should resolve");
 
         BuildParams {
-            workspace_root: resolved.workspace_root,
-            generated_dir: resolved.generated_dir,
-            generated_name: resolved.generated_name,
-            config_path: resolved.config_path,
-            dependencies: resolved.dependencies,
-            otel: false,
-            fips: false,
-            release: false,
-            clean: false,
-            dry_run: true,
+            build_run_args: BuildRunParams {
+                workspace_root: resolved.workspace_root,
+                generated_dir: resolved.generated_dir,
+                generated_name: resolved.generated_name,
+                config_path: resolved.config_path,
+                dependencies: resolved.dependencies,
+                otel: false,
+                fips: false,
+                release: false,
+                clean: false,
+                dry_run: true,
+            },
         }
         .run()
         .expect("build dry-run should generate server files");

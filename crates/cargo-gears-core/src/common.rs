@@ -707,3 +707,16 @@ resolver = "3"
         result.expect("generate_server_structure should rewrite dependency paths");
     }
 }
+
+/// Helper function to resolve boolean flags with enable/disable pairs.
+///
+/// Returns Some(true) if enable is explicitly set, Some(false) if disable is explicitly set,
+/// or None if neither flag was provided (use manifest default).
+#[must_use]
+pub const fn ordered_bool(enable: Option<bool>, disable: Option<bool>) -> Option<bool> {
+    match (enable, disable) {
+        (Some(true), _) => Some(true), // Enable flag takes precedence
+        (Some(false) | None, Some(true)) => Some(false), // Disable explicitly set
+        _ => None,                     // Neither flag provided or both false, use manifest default
+    }
+}
