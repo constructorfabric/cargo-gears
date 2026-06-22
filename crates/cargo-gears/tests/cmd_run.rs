@@ -1,5 +1,6 @@
 mod common;
 
+use clap::Parser;
 use clap::error::ErrorKind;
 use common::assert_parse_error;
 
@@ -19,4 +20,20 @@ fn rejects_run_positive_and_negative_boolean_pairs() {
             ErrorKind::ArgumentConflict,
         );
     }
+}
+
+#[test]
+fn try_from_returns_error_for_run_command() {
+    use cargo_gears::Cli;
+    use cargo_gears_core::GearsCommand;
+    use std::convert::TryFrom;
+
+    let cli = Cli::try_parse_from(["gears", "run", "--app", "app1", "--env", "dev"])
+        .expect("should parse");
+    let result = GearsCommand::try_from(cli);
+    assert!(result.is_err());
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "manifest-based commands should be resolved in Cli::run()"
+    );
 }

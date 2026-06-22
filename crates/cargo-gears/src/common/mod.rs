@@ -81,6 +81,7 @@ pub struct BuildRunArgs {
 mod tests {
     use super::BuildRunArgs;
     use cargo_gears_core::build::BuildParamsBuilder;
+    use cargo_gears_core::run::RunParamsBuilder;
     use clap::Parser;
     use std::fs;
     use tempfile::TempDir;
@@ -251,6 +252,98 @@ mod tests {
 
         assert!(!resolved.build_run_args.release);
         assert!(!resolved.build_run_args.clean);
+    }
+
+    #[test]
+    fn run_builder_cli_overrides_take_precedence_over_manifest() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.run]\n\
+             otel = true\n\
+             fips = true\n\
+             [apps.app.dev.run.watch]\n\
+             enabled = true\n\
+             [apps.app.dev.build]\n\
+             profile = \"release\"\n\
+             clean = true\n",
+        );
+
+        let args = parse(
+            &temp,
+            &["--no-otel", "--no-fips", "--no-release", "--no-clean"],
+        );
+
+        let resolved = RunParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .otel(args.otel)
+            .no_otel(args.no_otel)
+            .fips(args.fips)
+            .no_fips(args.no_fips)
+            .release(args.release)
+            .no_release(args.no_release)
+            .clean(args.clean)
+            .no_clean(args.no_clean)
+            .dry_run(args.dry_run)
+            .watch(None)
+            .no_watch(None)
+            .build()
+            .expect("resolve");
+
+        assert!(!resolved.build_run_args.otel);
+        assert!(!resolved.build_run_args.fips);
+        assert!(!resolved.build_run_args.release);
+        assert!(!resolved.build_run_args.clean);
+    }
+
+    #[test]
+    fn run_builder_defaults_to_manifest_policy_when_no_cli_override() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.run]\n\
+             otel = true\n\
+             fips = true\n\
+             [apps.app.dev.run.watch]\n\
+             enabled = true\n\
+             [apps.app.dev.build]\n\
+             profile = \"release\"\n\
+             clean = true\n",
+        );
+
+        let args = parse(&temp, &[]);
+
+        let resolved = RunParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .otel(args.otel)
+            .no_otel(args.no_otel)
+            .fips(args.fips)
+            .no_fips(args.no_fips)
+            .release(args.release)
+            .no_release(args.no_release)
+            .clean(args.clean)
+            .no_clean(args.no_clean)
+            .dry_run(args.dry_run)
+            .watch(None)
+            .no_watch(None)
+            .build()
+            .expect("resolve");
+
+        assert!(resolved.build_run_args.otel);
+        assert!(resolved.build_run_args.fips);
+        assert!(resolved.build_run_args.release);
+        assert!(resolved.build_run_args.clean);
+        assert!(resolved.watch);
     }
 }
 
