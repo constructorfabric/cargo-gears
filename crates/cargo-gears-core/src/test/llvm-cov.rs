@@ -161,6 +161,9 @@ mod tests {
         let plan = TestPlan {
             workspace_root: PathBuf::from("/workspace"),
             config_path: PathBuf::from("/workspace/config/app-dev.yml"),
+            runner: TestRunner::Cargo,
+            coverage: true,
+            custom_command: None,
             runs: vec![],
         };
         let run = TestRun {
@@ -208,6 +211,9 @@ mod tests {
         let plan = TestPlan {
             workspace_root: PathBuf::from("/workspace"),
             config_path: PathBuf::from("/workspace/config/app-dev.yml"),
+            runner: TestRunner::Cargo,
+            coverage: true,
+            custom_command: None,
             runs: vec![
                 TestRun {
                     package: Some("cf-module-b".to_owned()),

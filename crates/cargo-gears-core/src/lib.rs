@@ -16,19 +16,19 @@ pub mod source;
 pub mod test;
 pub mod tools;
 
+/// Commands that do not require manifest resolution.
+///
+/// Manifest-based commands (Build, Run, Test, Lint) are resolved and dispatched
+/// directly in the CLI layer — see `Cli::run()`.
 #[derive(Debug, Eq, PartialEq)]
 pub enum GearsCommand {
     Generate(generate::GenerateParams),
     Config(config::ConfigParams),
     Src(source::SourceParams),
     Help(help::HelpParams),
-    Lint(lint::LintParams),
     List(list::ListParams),
     Manifest(manifest::ManifestParams),
-    Test(test::TestParams),
     Tools(tools::ToolsParams),
-    Run(run::RunParams),
-    Build(build::BuildParams),
     Deploy(deploy::DeployParams),
 }
 
@@ -39,13 +39,9 @@ impl GearsCommand {
             Self::Config(args) => args.run(),
             Self::Src(args) => args.run(),
             Self::Help(args) => args.run(),
-            Self::Lint(args) => args.run(),
             Self::List(args) => args.run(),
             Self::Manifest(args) => args.run(),
-            Self::Test(args) => args.run(),
             Self::Tools(args) => args.run(),
-            Self::Run(args) => args.run(),
-            Self::Build(args) => args.run(),
             Self::Deploy(args) => args.run(),
         }
     }
