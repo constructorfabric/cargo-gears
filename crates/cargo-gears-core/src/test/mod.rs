@@ -1,7 +1,6 @@
 use crate::common::CONFIG_PATH_ENV_VAR;
-use crate::manifest::{
-    FeatureSet, ManifestSelection, ModuleFeatureSet, ModuleRef, ResolvedManifest, TestRunner,
-};
+use crate::gears_parser::CargoTomlDependencies;
+use crate::manifest::{FeatureSet, ModuleFeatureSet, ModuleRef, TestRunner};
 use anyhow::{Context, bail};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -13,39 +12,39 @@ mod nextest;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct TestParams {
-    /// Path to the module workspace root.
-    pub path: Option<PathBuf>,
-    pub manifest: ManifestSelection,
-    /// Test runner override. Defaults to the manifest policy, then nextest(built-in integrated).
-    pub runner: Option<TestRunner>,
+    /// Resolved workspace root path.
+    pub workspace_root: PathBuf,
+    /// Resolved config file path.
+    pub config_path: PathBuf,
+    /// Effective test runner (CLI override already applied).
+    pub runner: TestRunner,
     /// Limit tests to a module/package.
     pub module: Option<String>,
     /// Run coverage with cargo llvm-cov.
     pub coverage: bool,
+    /// Custom test command from manifest (takes priority over runner).
+    pub custom_command: Option<String>,
+    /// Module references for package resolution.
+    pub modules: Vec<ModuleRef>,
+    /// Workspace dependencies for package resolution.
+    pub dependencies: CargoTomlDependencies,
+    /// Feature-set matrix from test policy.
+    pub feature_set: std::collections::BTreeMap<String, ModuleFeatureSet>,
 }
 
 impl TestParams {
     pub fn run(&self) -> anyhow::Result<()> {
-        let workspace_path = crate::common::resolve_workspace_path(self.path.as_deref())?;
-        let resolved = self.manifest.resolve(&workspace_path)?;
-        let plan = TestPlan::new(&resolved, self.module.as_deref());
-
-        let runner = self.runner.unwrap_or(resolved.test.runner);
+        let plan = TestPlan::new(self);
 
         if self.coverage {
-            return llvm_cov::run(&plan, runner);
+            return llvm_cov::run(&plan, self.runner);
         }
 
-        if let Some(command) = &resolved.test.custom_command {
-            if self.runner.is_some() {
-                eprintln!(
-                    "WARN: custom command is specified in manifest, ignoring runner override"
-                );
-            }
-            return run_custom_command(command, &resolved.workspace_root, &resolved.config_path);
+        if let Some(command) = &self.custom_command {
+            return run_custom_command(command, &self.workspace_root, &self.config_path);
         }
 
-        match runner {
+        match self.runner {
             TestRunner::Cargo => cargo::run(&plan),
             TestRunner::Nextest => nextest::run(&plan),
         }
@@ -60,28 +59,30 @@ pub(crate) struct TestPlan {
 }
 
 impl TestPlan {
-    fn new(resolved: &ResolvedManifest, module: Option<&str>) -> Self {
-        let runs = resolve_runs(resolved, module);
+    fn new(params: &TestParams) -> Self {
+        let runs = resolve_runs(params);
         Self {
-            workspace_root: resolved.workspace_root.clone(),
-            config_path: resolved.config_path.clone(),
+            workspace_root: params.workspace_root.clone(),
+            config_path: params.config_path.clone(),
             runs,
         }
     }
 }
 
-fn resolve_runs(resolved: &ResolvedManifest, module: Option<&str>) -> Vec<TestRun> {
-    let policy = &resolved.test;
-    if policy.feature_set.is_empty() {
+fn resolve_runs(params: &TestParams) -> Vec<TestRun> {
+    if params.feature_set.is_empty() {
         return vec![TestRun {
-            package: module.map(|module| package_for_module(resolved, module)),
+            package: params
+                .module
+                .as_deref()
+                .map(|module| package_for_module(params, module)),
             features: FeatureSelection::Default,
         }];
     }
 
-    if let Some(module) = module {
-        let package = package_for_module(resolved, module);
-        return match policy.feature_set.get(module) {
+    if let Some(module) = params.module.as_deref() {
+        let package = package_for_module(params, module);
+        return match params.feature_set.get(module) {
             Some(set) => expand_feature_set(Some(package.as_str()), set),
             None => vec![TestRun {
                 package: Some(package),
@@ -90,11 +91,11 @@ fn resolve_runs(resolved: &ResolvedManifest, module: Option<&str>) -> Vec<TestRu
         };
     }
 
-    policy
+    params
         .feature_set
         .iter()
         .flat_map(|(module, set)| {
-            let package = package_for_module(resolved, module);
+            let package = package_for_module(params, module);
             expand_feature_set(Some(package.as_str()), set)
         })
         .collect()
@@ -192,17 +193,17 @@ impl From<&FeatureSet> for FeatureSelection {
     }
 }
 
-fn package_for_module(resolved: &ResolvedManifest, module: &str) -> String {
-    if let Some(package) = package_from_dependencies(resolved, module) {
+fn package_for_module(params: &TestParams, module: &str) -> String {
+    if let Some(package) = package_from_dependencies(&params.dependencies, module) {
         return package;
     }
 
     let normalized = module.replace('-', "_");
-    if let Some(package) = package_from_dependencies(resolved, &normalized) {
+    if let Some(package) = package_from_dependencies(&params.dependencies, &normalized) {
         return package;
     }
 
-    resolved
+    params
         .modules
         .iter()
         .find_map(|module_ref| match module_ref {
@@ -219,8 +220,8 @@ fn package_for_module(resolved: &ResolvedManifest, module: &str) -> String {
         .unwrap_or_else(|| module.to_owned())
 }
 
-fn package_from_dependencies(resolved: &ResolvedManifest, module: &str) -> Option<String> {
-    resolved.dependencies.get(module).map(|dependency| {
+fn package_from_dependencies(dependencies: &CargoTomlDependencies, module: &str) -> Option<String> {
+    dependencies.get(module).map(|dependency| {
         dependency
             .package
             .clone()
@@ -256,23 +257,17 @@ fn run_custom_command(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::gears_parser::CargoTomlDependencies;
-    use crate::manifest::{BuildPolicy, LintPolicy, RunPolicy, TestPolicy};
+    use crate::manifest::TestPolicy;
     use std::collections::BTreeMap;
 
-    fn resolved(test: TestPolicy) -> ResolvedManifest {
-        ResolvedManifest {
-            app: "app".to_owned(),
-            env: "dev".to_owned(),
-            manifest_path: PathBuf::from("/workspace/Gears.toml"),
+    fn test_params(test: TestPolicy, module: Option<&str>) -> TestParams {
+        TestParams {
             workspace_root: PathBuf::from("/workspace"),
-            generated_dir: PathBuf::from("/workspace/.gears"),
             config_path: PathBuf::from("/workspace/config/app-dev.yml"),
-            generated_name: "app-dev".to_owned(),
-            run: RunPolicy::default(),
-            build: BuildPolicy::default(),
-            lint: LintPolicy::default(),
-            test,
+            runner: test.runner,
+            module: module.map(str::to_owned),
+            coverage: false,
+            custom_command: test.custom_command.clone(),
             modules: vec![ModuleRef::Remote(crate::manifest::RemoteModuleRef {
                 name: "module-a".to_owned(),
                 version: semver::VersionReq::STAR,
@@ -280,12 +275,14 @@ mod tests {
                 registry: None,
             })],
             dependencies: CargoTomlDependencies::default(),
+            feature_set: test.feature_set,
         }
     }
 
     #[test]
     fn default_plan_tests_workspace_once() {
-        let plan = TestPlan::new(&resolved(TestPolicy::default()), None);
+        let params = test_params(TestPolicy::default(), None);
+        let plan = TestPlan::new(&params);
 
         assert_eq!(
             plan.runs,
@@ -312,7 +309,8 @@ mod tests {
             )]),
             ..Default::default()
         };
-        let plan = TestPlan::new(&resolved(policy), None);
+        let params = test_params(policy, None);
+        let plan = TestPlan::new(&params);
 
         assert_eq!(
             plan.runs,
@@ -339,7 +337,8 @@ mod tests {
 
     #[test]
     fn cli_module_without_policy_tests_that_package() {
-        let plan = TestPlan::new(&resolved(TestPolicy::default()), Some("module-a"));
+        let params = test_params(TestPolicy::default(), Some("module-a"));
+        let plan = TestPlan::new(&params);
 
         assert_eq!(
             plan.runs,
