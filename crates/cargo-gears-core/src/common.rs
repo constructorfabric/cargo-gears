@@ -470,22 +470,22 @@ pub struct BuildRunParams {
 
 impl BuildRunParams {
     #[must_use]
-    pub fn otel(&self) -> bool {
+    pub const fn otel(&self) -> bool {
         self.otel
     }
 
     #[must_use]
-    pub fn fips(&self) -> bool {
+    pub const fn fips(&self) -> bool {
         self.fips
     }
 
     #[must_use]
-    pub fn release(&self) -> bool {
+    pub const fn release(&self) -> bool {
         self.release
     }
 
     #[must_use]
-    pub fn clean(&self) -> bool {
+    pub const fn clean(&self) -> bool {
         self.clean
     }
 }
