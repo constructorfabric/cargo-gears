@@ -6,10 +6,10 @@ use clap::{ArgAction, Args};
 pub struct RunArgs {
     /// Watch for changes
     #[arg(short = 'w', long, action = ArgAction::SetTrue, conflicts_with = "no_watch")]
-    watch: Option<bool>,
+    watch: bool,
     /// Do not watch for changes
     #[arg(long = "no-watch", action = ArgAction::SetTrue, conflicts_with = "watch")]
-    no_watch: Option<bool>,
+    no_watch: bool,
     #[command(flatten)]
     br_args: BuildRunArgs,
 }
@@ -33,8 +33,8 @@ impl RunArgs {
                 .clean(args.clean)
                 .no_clean(args.no_clean)
                 .dry_run(args.dry_run)
-                .watch(self.watch)
-                .no_watch(self.no_watch)
+                .watch(self.watch.then_some(true))
+                .no_watch(self.no_watch.then_some(true))
                 .build()?;
 
             match params.run()? {
@@ -42,5 +42,72 @@ impl RunArgs {
                 RunOutcome::Stop => break Ok(()),
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RunArgs;
+    use clap::Parser;
+
+    #[derive(Parser)]
+    struct TestCli {
+        #[command(flatten)]
+        run: RunArgs,
+    }
+
+    fn parse(extra: &[&str]) -> RunArgs {
+        let mut args = vec!["test"];
+        args.extend(extra);
+        TestCli::try_parse_from(args).expect("should parse").run
+    }
+
+    #[test]
+    fn watch_flag_sets_true() {
+        let args = parse(&["-w"]);
+        assert!(args.watch);
+        assert!(!args.no_watch);
+    }
+
+    #[test]
+    fn no_watch_flag_sets_true() {
+        let args = parse(&["--no-watch"]);
+        assert!(!args.watch);
+        assert!(args.no_watch);
+    }
+
+    #[test]
+    fn neither_watch_flag_defaults_to_false() {
+        let args = parse(&[]);
+        assert!(!args.watch);
+        assert!(!args.no_watch);
+    }
+
+    #[test]
+    fn watch_and_no_watch_conflict() {
+        let result =
+            TestCli::try_parse_from(["test", "--watch", "--no-watch"]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn watch_converts_to_option_for_builder() {
+        let args = parse(&["-w"]);
+        assert_eq!(args.watch.then_some(true), Some(true));
+        assert_eq!(args.no_watch.then_some(true), None);
+    }
+
+    #[test]
+    fn no_watch_converts_to_option_for_builder() {
+        let args = parse(&["--no-watch"]);
+        assert_eq!(args.watch.then_some(true), None);
+        assert_eq!(args.no_watch.then_some(true), Some(true));
+    }
+
+    #[test]
+    fn neither_flag_converts_to_none_for_builder() {
+        let args = parse(&[]);
+        assert_eq!(args.watch.then_some(true), None);
+        assert_eq!(args.no_watch.then_some(true), None);
     }
 }
