@@ -1,0 +1,21 @@
+error: non-FIPS-validated hasher import detected: `sha2` (DE0708)
+  --> $DIR/bad_extern_crate.rs:4:1
+   |
+LL | extern crate sha2;
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: these crates use pure-Rust RustCrypto; allow-list the path via `hasher_allowed_paths` in dylint.toml if reviewed
+   = note: see your project's FIPS dependency policy for details
+   = note: `#[deny(de0708_no_non_fips_hasher)]` on by default
+
+error: non-FIPS-validated hasher import detected: `md5` (DE0708)
+  --> $DIR/bad_extern_crate.rs:7:1
+   |
+LL | extern crate md5 as md5_aliased;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: these crates use pure-Rust RustCrypto; allow-list the path via `hasher_allowed_paths` in dylint.toml if reviewed
+   = note: see your project's FIPS dependency policy for details
+
+error: aborting due to 2 previous errors
+

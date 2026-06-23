@@ -413,10 +413,13 @@ dependencies = [
  "gts-id",
  "gts-macros",
  "http",
+ "md5",
  "schemars",
  "sea-orm",
  "serde",
  "serde_json",
+ "sha1",
+ "sha2",
  "sqlx",
  "thiserror 2.0.18",
  "tokio",
@@ -1739,6 +1742,12 @@ dependencies = [
  "cfg-if",
  "digest",
 ]
+
+[[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "memchr"

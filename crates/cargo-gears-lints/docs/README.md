@@ -28,6 +28,7 @@ This directory gathers the per-lint documentation for `cargo-gears-lints`.
 
 - [DE0706 - No Direct SQLx](de07_security/de0706_no_direct_sqlx/README.md)
 - [DE0707 - Drop Zeroize](de07_security/de0707_drop_zeroize/README.md)
+- [DE0708 - No Non-FIPS Hasher](de07_security/de0708_no_non_fips_hasher/README.md)
 
 ## DE08xx - REST API Conventions
 
