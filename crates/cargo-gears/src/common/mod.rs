@@ -130,6 +130,7 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
+            .name(args.name)
             .otel(args.otel.then_some(true))
             .no_otel(args.no_otel.then_some(true))
             .fips(args.fips.then_some(true))
@@ -170,6 +171,7 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
+            .name(args.name)
             .otel(args.otel.then_some(true))
             .no_otel(args.no_otel.then_some(true))
             .fips(args.fips.then_some(true))
@@ -206,6 +208,7 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
+            .name(args.name)
             .otel(args.otel.then_some(true))
             .no_otel(args.no_otel.then_some(true))
             .fips(args.fips.then_some(true))
@@ -238,6 +241,7 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
+            .name(args.name)
             .otel(args.otel.then_some(true))
             .no_otel(args.no_otel.then_some(true))
             .fips(args.fips.then_some(true))
@@ -281,6 +285,7 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
+            .name(args.name)
             .otel(args.otel.then_some(true))
             .no_otel(args.no_otel.then_some(true))
             .fips(args.fips.then_some(true))
@@ -325,6 +330,7 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
+            .name(args.name)
             .otel(args.otel.then_some(true))
             .no_otel(args.no_otel.then_some(true))
             .fips(args.fips.then_some(true))
@@ -344,6 +350,110 @@ mod tests {
         assert!(resolved.build_run_args.release());
         assert!(resolved.build_run_args.clean());
         assert!(resolved.watch);
+    }
+
+    #[test]
+    fn cli_name_override_works_for_build() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.build]\n\
+             name = \"demo-server\"\n",
+        );
+
+        let args = parse(&temp, &["--name", "custom-name"]);
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .name(args.name)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
+
+        assert_eq!(resolved.build_run_args.generated_name(), "custom-name");
+    }
+
+    #[test]
+    fn cli_name_override_works_for_run() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.build]\n\
+             name = \"demo-server\"\n",
+        );
+
+        let args = parse(&temp, &["--name", "custom-name"]);
+
+        let resolved = RunParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .name(args.name)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
+            .dry_run(args.dry_run)
+            .watch(None)
+            .no_watch(None)
+            .build()
+            .expect("resolve");
+
+        assert_eq!(resolved.build_run_args.generated_name(), "custom-name");
+    }
+
+    #[test]
+    fn cli_name_override_defaults_to_manifest_when_not_provided() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             modules = []\n\
+             [apps.app.dev.build]\n\
+             name = \"demo-server\"\n",
+        );
+
+        let args = parse(&temp, &[]);
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .name(args.name)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
+
+        assert_eq!(resolved.build_run_args.generated_name(), "demo-server");
     }
 }
 

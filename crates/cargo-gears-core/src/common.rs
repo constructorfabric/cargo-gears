@@ -488,6 +488,11 @@ impl BuildRunParams {
     pub const fn clean(&self) -> bool {
         self.clean
     }
+
+    #[must_use]
+    pub fn generated_name(&self) -> &str {
+        &self.generated_name
+    }
 }
 
 /// Helper function to resolve boolean flags with enable/disable pairs.
