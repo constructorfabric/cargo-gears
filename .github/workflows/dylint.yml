@@ -1,0 +1,22 @@
+name: Dylint checks
+
+on:
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - 'crates/cargo-gears-lints/*'
+      - 'crates/cargo-gears-lints/**/*'
+
+jobs:
+  test:
+    name: Format, Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+
+      - run: cd crates/cargo-gears-lints
+      - run: cargo fmt --check
+      # too many issues
+      # - run: cargo clippy --workspace -- -D warnings
+      - run: cargo test

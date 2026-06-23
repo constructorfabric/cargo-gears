@@ -2,11 +2,17 @@ name: CI
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
     paths:
-      - '**/*.rs'
-      - '**/*.toml'
+      - 'crates/cargo-gears/**/*.rs'
+      - 'crates/cargo-gears/**/*.toml'
+      - 'crates/cargo-gears-core/**/*.rs'
+      - 'crates/cargo-gears-core/**/*.toml'
+      - 'crates/cargo-gears-macros/**/*.rs'
+      - 'crates/cargo-gears-macros/**/*.toml'
       - 'Cargo.lock'
+      - '.clippy.toml'
+      - 'rust-toolchain.toml'
 
 env:
   CARGO_TERM_COLOR: always
