@@ -69,7 +69,9 @@ fn resolve_runs(
 
     if let Some(module) = module {
         let package = package_for_module(modules, dependencies, module);
-        return match feature_set.get(module) {
+        let actual_module =
+            module_for_package(modules, &package).unwrap_or_else(|| module.to_owned());
+        return match feature_set.get(&actual_module) {
             Some(set) => expand_feature_set(Some(package.as_str()), set),
             None => vec![TestRun {
                 package: Some(package),
@@ -141,6 +143,16 @@ fn package_for_module(
             _ => None,
         })
         .unwrap_or_else(|| module.to_owned())
+}
+
+fn module_for_package(modules: &[ModuleRef], package: &str) -> Option<String> {
+    modules.iter().find_map(|module_ref| match module_ref {
+        ModuleRef::Local(local) if local.package.as_deref() == Some(package) => {
+            Some(local.name.clone())
+        }
+        ModuleRef::Remote(remote) if remote.package == package => Some(remote.name.clone()),
+        _ => None,
+    })
 }
 
 fn package_from_dependencies(dependencies: &CargoTomlDependencies, module: &str) -> Option<String> {
@@ -321,6 +333,32 @@ mod tests {
                 package: Some("cf-module-a".to_owned()),
                 features: FeatureSelection::Default,
             }]
+        );
+    }
+
+    #[test]
+    fn feature_set_lookup_works_with_package_name() {
+        let feature_set = BTreeMap::from([(
+            "module-a".to_owned(),
+            vec![FeatureSet::Features {
+                features: vec!["sqlite".to_owned()],
+            }],
+        )]);
+
+        // Test with package name instead of module name
+        let runs = resolve_runs(
+            Some("cf-module-a"),
+            &feature_set,
+            &sample_modules(),
+            &CargoTomlDependencies::default(),
+        );
+
+        assert_eq!(
+            runs,
+            vec![TestRun {
+                package: Some("cf-module-a".to_owned()),
+                features: FeatureSelection::Features(vec!["sqlite".to_owned()]),
+            },]
         );
     }
 }
