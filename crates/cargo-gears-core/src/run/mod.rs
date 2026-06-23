@@ -9,7 +9,7 @@ use std::path::PathBuf;
 #[derive(Debug)]
 pub struct RunParams {
     /// Shared build/run parameters.
-    pub build_run_args: crate::build::BuildRunParams,
+    pub build_run_args: crate::common::BuildRunParams,
     /// Resolved manifest path (needed by watch for change detection).
     pub manifest_path: PathBuf,
     /// Whether to watch for changes.
@@ -165,7 +165,7 @@ impl RunParamsBuilder {
             .unwrap_or(resolved.run.watch.enabled);
 
         Ok(RunParams {
-            build_run_args: crate::build::BuildRunParams {
+            build_run_args: crate::common::BuildRunParams {
                 workspace_root: resolved.workspace_root,
                 generated_dir: resolved.generated_dir,
                 generated_name: resolved.generated_name,

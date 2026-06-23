@@ -1,33 +1,7 @@
-use crate::common;
-use crate::gears_parser::CargoTomlDependencies;
+use crate::common::{self, BuildRunParams};
 use crate::manifest::{BuildProfile, ManifestSelection};
 use anyhow::{Context, bail};
 use std::path::PathBuf;
-
-/// Shared parameters for build and run operations.
-#[derive(Debug, Eq, PartialEq)]
-pub struct BuildRunParams {
-    /// Resolved workspace root path.
-    pub workspace_root: PathBuf,
-    /// Resolved generated output directory.
-    pub generated_dir: PathBuf,
-    /// Resolved generated project name.
-    pub generated_name: String,
-    /// Resolved config file path.
-    pub config_path: PathBuf,
-    /// Resolved workspace dependencies.
-    pub dependencies: CargoTomlDependencies,
-    /// Effective otel flag (CLI override already applied).
-    pub otel: bool,
-    /// Effective FIPS flag.
-    pub fips: bool,
-    /// Effective release flag.
-    pub release: bool,
-    /// Whether to remove Cargo.lock before building.
-    pub clean: bool,
-    /// Print the resolved generation model without building.
-    pub dry_run: bool,
-}
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct BuildParams {
@@ -225,7 +199,8 @@ impl BuildParams {
 
 #[cfg(test)]
 mod tests {
-    use super::{BuildParams, BuildRunParams};
+    use super::BuildParams;
+    use crate::common::BuildRunParams;
     use crate::manifest::ManifestSelection;
     use std::fs;
     use std::path::PathBuf;

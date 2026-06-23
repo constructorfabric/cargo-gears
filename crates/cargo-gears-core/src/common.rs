@@ -453,6 +453,43 @@ fn prepare_cargo_server_main(dependencies: &CargoTomlDependencies) -> String {
     CARGO_SERVER_MAIN.replace("{{dependencies}}", &dependencies)
 }
 
+/// Shared resolved parameters for build and run operations.
+#[derive(Debug, Eq, PartialEq)]
+pub struct BuildRunParams {
+    pub(crate) workspace_root: PathBuf,
+    pub(crate) generated_dir: PathBuf,
+    pub(crate) generated_name: String,
+    pub(crate) config_path: PathBuf,
+    pub(crate) dependencies: CargoTomlDependencies,
+    pub(crate) otel: bool,
+    pub(crate) fips: bool,
+    pub(crate) release: bool,
+    pub(crate) clean: bool,
+    pub(crate) dry_run: bool,
+}
+
+impl BuildRunParams {
+    #[must_use]
+    pub fn otel(&self) -> bool {
+        self.otel
+    }
+
+    #[must_use]
+    pub fn fips(&self) -> bool {
+        self.fips
+    }
+
+    #[must_use]
+    pub fn release(&self) -> bool {
+        self.release
+    }
+
+    #[must_use]
+    pub fn clean(&self) -> bool {
+        self.clean
+    }
+}
+
 /// Helper function to resolve boolean flags with enable/disable pairs.
 ///
 /// Returns Some(true) if enable is explicitly set, Some(false) if disable is explicitly set,
