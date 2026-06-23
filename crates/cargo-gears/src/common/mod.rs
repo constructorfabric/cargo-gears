@@ -47,28 +47,28 @@ pub struct BuildRunArgs {
     pub(crate) manifest: ManifestTargetArgs,
     /// Use OpenTelemetry tracing
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_otel")]
-    pub(crate) otel: Option<bool>,
+    pub(crate) otel: bool,
     /// Disable OpenTelemetry tracing
     #[arg(long = "no-otel", action = ArgAction::SetTrue, conflicts_with = "otel")]
-    pub(crate) no_otel: Option<bool>,
+    pub(crate) no_otel: bool,
     /// Enable FIPS mode
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_fips")]
-    pub(crate) fips: Option<bool>,
+    pub(crate) fips: bool,
     /// Disable FIPS mode
     #[arg(long = "no-fips", action = ArgAction::SetTrue, conflicts_with = "fips")]
-    pub(crate) no_fips: Option<bool>,
+    pub(crate) no_fips: bool,
     /// Build/run in release mode
     #[arg(short = 'r', long, action = ArgAction::SetTrue, conflicts_with = "no_release")]
-    pub(crate) release: Option<bool>,
+    pub(crate) release: bool,
     /// Build/run without release mode
     #[arg(long = "no-release", action = ArgAction::SetTrue, conflicts_with = "release")]
-    pub(crate) no_release: Option<bool>,
+    pub(crate) no_release: bool,
     /// Remove Cargo.lock at the start of the execution
     #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_clean")]
-    pub(crate) clean: Option<bool>,
+    pub(crate) clean: bool,
     /// Do not remove Cargo.lock at the start of the execution
     #[arg(long = "no-clean", action = ArgAction::SetTrue, conflicts_with = "clean")]
-    pub(crate) no_clean: Option<bool>,
+    pub(crate) no_clean: bool,
     /// Print the resolved generation model without building or running
     #[arg(long)]
     pub(crate) dry_run: bool,
@@ -130,14 +130,14 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
-            .otel(args.otel)
-            .no_otel(args.no_otel)
-            .fips(args.fips)
-            .no_fips(args.no_fips)
-            .release(args.release)
-            .no_release(args.no_release)
-            .clean(args.clean)
-            .no_clean(args.no_clean)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
             .build()
             .expect("resolve");
@@ -170,14 +170,14 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
-            .otel(args.otel)
-            .no_otel(args.no_otel)
-            .fips(args.fips)
-            .no_fips(args.no_fips)
-            .release(args.release)
-            .no_release(args.no_release)
-            .clean(args.clean)
-            .no_clean(args.no_clean)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
             .build()
             .expect("resolve");
@@ -206,14 +206,14 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
-            .otel(args.otel)
-            .no_otel(args.no_otel)
-            .fips(args.fips)
-            .no_fips(args.no_fips)
-            .release(args.release)
-            .no_release(args.no_release)
-            .clean(args.clean)
-            .no_clean(args.no_clean)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
             .build()
             .expect("resolve");
@@ -238,14 +238,14 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
-            .otel(args.otel)
-            .no_otel(args.no_otel)
-            .fips(args.fips)
-            .no_fips(args.no_fips)
-            .release(args.release)
-            .no_release(args.no_release)
-            .clean(args.clean)
-            .no_clean(args.no_clean)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
             .build()
             .expect("resolve");
@@ -281,14 +281,14 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
-            .otel(args.otel)
-            .no_otel(args.no_otel)
-            .fips(args.fips)
-            .no_fips(args.no_fips)
-            .release(args.release)
-            .no_release(args.no_release)
-            .clean(args.clean)
-            .no_clean(args.no_clean)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
             .watch(None)
             .no_watch(None)
@@ -325,14 +325,14 @@ mod tests {
             .workspace_path(args.workspace.path)
             .app(args.manifest.app)
             .env(args.manifest.env)
-            .otel(args.otel)
-            .no_otel(args.no_otel)
-            .fips(args.fips)
-            .no_fips(args.no_fips)
-            .release(args.release)
-            .no_release(args.no_release)
-            .clean(args.clean)
-            .no_clean(args.no_clean)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
             .watch(None)
             .no_watch(None)

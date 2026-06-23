@@ -24,14 +24,14 @@ impl RunArgs {
                 .workspace_path(args.workspace.path.clone())
                 .app(args.manifest.app.clone())
                 .env(args.manifest.env.clone())
-                .otel(args.otel)
-                .no_otel(args.no_otel)
-                .fips(args.fips)
-                .no_fips(args.no_fips)
-                .release(args.release)
-                .no_release(args.no_release)
-                .clean(args.clean)
-                .no_clean(args.no_clean)
+                .otel(args.otel.then_some(true))
+                .no_otel(args.no_otel.then_some(true))
+                .fips(args.fips.then_some(true))
+                .no_fips(args.no_fips.then_some(true))
+                .release(args.release.then_some(true))
+                .no_release(args.no_release.then_some(true))
+                .clean(args.clean.then_some(true))
+                .no_clean(args.no_clean.then_some(true))
                 .dry_run(args.dry_run)
                 .watch(self.watch.then_some(true))
                 .no_watch(self.no_watch.then_some(true))
@@ -85,8 +85,7 @@ mod tests {
 
     #[test]
     fn watch_and_no_watch_conflict() {
-        let result =
-            TestCli::try_parse_from(["test", "--watch", "--no-watch"]);
+        let result = TestCli::try_parse_from(["test", "--watch", "--no-watch"]);
         assert!(result.is_err());
     }
 
