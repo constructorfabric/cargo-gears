@@ -45,7 +45,7 @@ impl AddArgs {
                 validate_module_db_payload(&self.module, &self.conn)?;
 
                 let mut config = load_config(config_path)?;
-                if !config.modules.contains_key(&self.module) {
+                if !config.gears.contains_key(&self.module) {
                     bail!(
                         "module '{}' not found in {}; use `config mod add` first",
                         self.module,
@@ -123,7 +123,7 @@ fn get_module_cfg_mut<'a>(
     config_path: &Path,
 ) -> anyhow::Result<&'a mut ModuleConfig> {
     config
-        .modules
+        .gears
         .get_mut(module)
         .with_context(|| format!("module '{module}' not found in {}", config_path.display()))
 }
