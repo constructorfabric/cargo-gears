@@ -613,7 +613,7 @@ mod tests {
                 temp_dir.path().join(crate_name).join("src/module.rs"),
                 &format!(
                     r#"
-                    #[module(name = "{module_name}")]
+                    #[toolkit::gear(name = "{module_name}")]
                     pub struct Module;
                     "#,
                 ),

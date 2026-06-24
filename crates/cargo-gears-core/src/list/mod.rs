@@ -139,7 +139,7 @@ mod tests {
                 &format!("{crate_name}/src/module.rs"),
                 &format!(
                     r#"
-                    #[module(name = "{module_name}")]
+                    #[toolkit::gear(name = "{module_name}")]
                     pub struct Module;
                     "#,
                 ),
@@ -193,7 +193,7 @@ mod tests {
         temp_dir.write(
             "crate-delta/src/gear.rs",
             r#"
-            #[module(name = "delta")]
+            #[toolkit::gear(name = "delta")]
             pub struct Delta;
             "#,
         );
@@ -234,7 +234,7 @@ mod tests {
         temp_dir.write(
             "crate-epsilon/src/inner/mod.rs",
             r#"
-            #[module(name = "epsilon")]
+            #[toolkit::gear(name = "epsilon")]
             pub struct Epsilon;
             "#,
         );
