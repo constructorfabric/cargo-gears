@@ -328,7 +328,10 @@ fn resolve_dependencies(
                     metadata.version = version_req_to_metadata(version);
                 }
                 if !local.features.is_empty() {
-                    metadata.features = local.features.clone();
+                    metadata.features.clone_from(&local.features);
+                }
+                if local.default_features.is_some() {
+                    metadata.default_features = local.default_features;
                 }
                 (local.name.clone(), metadata)
             }
@@ -338,6 +341,7 @@ fn resolve_dependencies(
                     package: Some(remote.package.clone()),
                     version: version_req_to_metadata(&remote.version),
                     features: remote.features.clone(),
+                    default_features: remote.default_features,
                     ..Default::default()
                 },
             ),
@@ -479,6 +483,12 @@ pub struct LocalModuleRef {
     pub package: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub features: Vec<String>,
+    #[serde(
+        default,
+        rename = "default-features",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_features: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -491,6 +501,12 @@ pub struct RemoteModuleRef {
     pub registry: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub features: Vec<String>,
+    #[serde(
+        default,
+        rename = "default-features",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_features: Option<bool>,
 }
 
 /// Runtime policy for watch, FIPS, and OpenTelemetry.

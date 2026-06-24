@@ -234,6 +234,7 @@ mod tests {
             package: "cf-module-a".to_owned(),
             registry: None,
             features: vec![],
+            default_features: None,
         })]
     }
 
