@@ -167,18 +167,6 @@ pub struct ConfigModuleAddArgs {
     path_config: PathConfigArgs,
     /// Module name
     module: String,
-    /// Module package name for metadata
-    #[arg(long)]
-    package: Option<String>,
-    /// Module package version for metadata
-    #[arg(long = "module-version")]
-    module_version: Option<String>,
-    /// Whether Cargo default features should be enabled
-    #[arg(long)]
-    default_features: Option<bool>,
-    /// Feature to include in metadata (repeatable)
-    #[arg(short = 'F', long = "feature", value_delimiter = ',')]
-    features: Vec<String>,
     /// Dependency name to include in metadata.deps (repeatable)
     #[arg(long = "dep")]
     deps: Vec<String>,
@@ -189,10 +177,6 @@ impl From<ConfigModuleAddArgs> for cargo_gears_core::config::modules::add::AddPa
         Self {
             path_config: args.path_config.into(),
             module: args.module,
-            package: args.package,
-            module_version: args.module_version,
-            default_features: args.default_features,
-            features: args.features,
             deps: args.deps,
         }
     }

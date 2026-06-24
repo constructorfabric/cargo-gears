@@ -233,6 +233,8 @@ mod tests {
             version: semver::VersionReq::STAR,
             package: "cf-module-a".to_owned(),
             registry: None,
+            features: vec![],
+            default_features: None,
         })]
     }
 

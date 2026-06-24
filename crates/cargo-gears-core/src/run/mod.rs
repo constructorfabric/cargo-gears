@@ -230,8 +230,8 @@ impl RunParams {
             self.build_run_args.generated_name,
             self.manifest_path,
             self.watch_policy,
-        )
-        .with_dependencies(self.build_run_args.dependencies);
+            self.build_run_args.dependencies,
+        );
         run_loop::OTEL.store(
             self.build_run_args.otel,
             std::sync::atomic::Ordering::Relaxed,

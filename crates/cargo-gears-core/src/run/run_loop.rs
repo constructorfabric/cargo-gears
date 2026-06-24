@@ -20,7 +20,7 @@ pub(super) struct RunLoop {
     project_name: String,
     manifest_path: PathBuf,
     watch_policy: WatchPolicy,
-    dependencies: Option<crate::gears_parser::CargoTomlDependencies>,
+    dependencies: crate::gears_parser::CargoTomlDependencies,
 }
 
 pub(super) static OTEL: AtomicBool = AtomicBool::new(false);
@@ -35,6 +35,7 @@ impl RunLoop {
         project_name: String,
         manifest_path: PathBuf,
         watch_policy: WatchPolicy,
+        dependencies: crate::gears_parser::CargoTomlDependencies,
     ) -> Self {
         Self {
             generated_dir,
@@ -43,29 +44,18 @@ impl RunLoop {
             project_name,
             manifest_path,
             watch_policy,
-            dependencies: None,
+            dependencies,
         }
-    }
-
-    pub(super) fn with_dependencies(
-        mut self,
-        dependencies: crate::gears_parser::CargoTomlDependencies,
-    ) -> Self {
-        self.dependencies = Some(dependencies);
-        self
     }
 
     pub(super) fn run(&self, watch: bool) -> anyhow::Result<RunSignal> {
         let workspace_path = &self.workspace_path;
-        let dependencies = self.dependencies.as_ref().map_or_else(
-            || common::get_config(workspace_path, &self.config_path)?.create_dependencies(),
-            |dependencies| Ok(dependencies.clone()),
-        )?;
+        let dependencies = &self.dependencies;
         common::generate_server_structure(
             workspace_path,
             &self.generated_dir,
             &self.project_name,
-            &dependencies,
+            dependencies,
         )?;
 
         let cargo_dir = common::generated_project_dir(&self.generated_dir, &self.project_name);
@@ -102,7 +92,7 @@ impl RunLoop {
                 workspace_path,
                 manifest_path: &self.manifest_path,
                 config_path: &self.config_path,
-                dependencies: &dependencies,
+                dependencies,
             },
         )?;
         watch_plan.watch(&mut watcher)?;
