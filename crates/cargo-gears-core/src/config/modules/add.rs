@@ -11,14 +11,6 @@ pub struct AddParams {
     pub path_config: PathConfigParams,
     /// Module name
     pub module: String,
-    /// Module package name for metadata
-    pub package: Option<String>,
-    /// Module package version for metadata
-    pub module_version: Option<String>,
-    /// Whether Cargo default features should be enabled
-    pub default_features: Option<bool>,
-    /// Feature to include in metadata (repeatable)
-    pub features: Vec<String>,
     /// Dependency name to include in metadata.deps (repeatable)
     pub deps: Vec<String>,
 }
@@ -30,7 +22,7 @@ impl AddParams {
                 validate_module_name(&self.module)?;
 
                 let mut config = load_config(config_path)?;
-                let local_modules = discover_local_modules(workspace_path, self)?;
+                let local_modules = discover_local_modules(workspace_path)?;
                 let metadata = build_required_metadata(self, local_modules.get(&self.module))?;
 
                 upsert_module_config(&mut config, self, metadata);
@@ -55,16 +47,6 @@ fn merge_module_metadata(
     incoming: ConfigModuleMetadata,
     args: &AddParams,
 ) -> ConfigModuleMetadata {
-    let features = if args.features.is_empty() {
-        if existing.features.is_empty() {
-            incoming.features
-        } else {
-            existing.features
-        }
-    } else {
-        incoming.features
-    };
-
     let deps = if args.deps.is_empty() {
         if existing.deps.is_empty() {
             incoming.deps
@@ -76,22 +58,14 @@ fn merge_module_metadata(
     };
 
     ConfigModuleMetadata {
-        package: if args.package.is_some() {
-            incoming.package
+        package: existing.package.or(incoming.package),
+        version: existing.version.or(incoming.version),
+        features: if existing.features.is_empty() {
+            incoming.features
         } else {
-            existing.package.or(incoming.package)
+            existing.features
         },
-        version: if args.module_version.is_some() {
-            incoming.version
-        } else {
-            existing.version.or(incoming.version)
-        },
-        features,
-        default_features: if args.default_features.is_some() {
-            incoming.default_features
-        } else {
-            existing.default_features.or(incoming.default_features)
-        },
+        default_features: existing.default_features.or(incoming.default_features),
         path: existing.path.or(incoming.path),
         deps,
         capabilities: if existing.capabilities.is_empty() {
@@ -102,76 +76,32 @@ fn merge_module_metadata(
     }
 }
 
-fn discover_local_modules(
-    workspace_path: &Path,
-    args: &AddParams,
-) -> anyhow::Result<HashMap<String, ConfigModule>> {
-    match get_module_name_from_crate(Some(workspace_path)) {
-        Ok(modules) => Ok(modules),
-        Err(_) if args.package.is_some() && args.module_version.is_some() => {
-            // Allow remote module additions even if the provided -p path is not a Cargo workspace.
-            Ok(HashMap::new())
-        }
-        Err(err) => Err(err).with_context(|| {
-            "failed to discover local modules. if this is a remote module, provide both \
-            --package and --module-version"
-        }),
-    }
+fn discover_local_modules(workspace_path: &Path) -> anyhow::Result<HashMap<String, ConfigModule>> {
+    get_module_name_from_crate(Some(workspace_path))
+        .with_context(|| "failed to discover local modules")
 }
 
 fn build_required_metadata(
     args: &AddParams,
     local_module: Option<&ConfigModule>,
 ) -> anyhow::Result<ConfigModuleMetadata> {
-    let mut metadata = local_module.map_or_else(ConfigModuleMetadata::default, |module| {
-        module.metadata.clone()
-    });
+    let mut metadata = local_module.map_or_else(
+        || {
+            bail!(
+                "module '{}' not found locally; only local modules can be added",
+                args.module
+            )
+        },
+        |module| Ok(module.metadata.clone()),
+    )?;
 
-    if let Some(package) = &args.package {
-        metadata.package = Some(package.clone());
-    }
-    if let Some(version) = &args.module_version {
-        metadata.version = Some(version.clone());
-    }
-    if let Some(default_features) = args.default_features {
-        metadata.default_features = Some(default_features);
-    }
     // Keep config portable: do not persist local filesystem paths in metadata.
     metadata.path = None;
-    if !args.features.is_empty() {
-        metadata.features.clone_from(&args.features);
-    }
     if !args.deps.is_empty() {
         metadata.deps.clone_from(&args.deps);
     }
 
-    validate_required_metadata(args, local_module.is_some(), &metadata)?;
     Ok(metadata)
-}
-
-fn validate_required_metadata(
-    args: &AddParams,
-    is_local: bool,
-    metadata: &ConfigModuleMetadata,
-) -> anyhow::Result<()> {
-    let package_missing = metadata
-        .package
-        .as_deref()
-        .is_none_or(|package| package.trim().is_empty());
-    let version_missing = metadata
-        .version
-        .as_deref()
-        .is_none_or(|version| version.trim().is_empty());
-
-    if !package_missing && !version_missing {
-        return Ok(());
-    }
-
-    let module = &args.module;
-    if is_local {
-        bail!("module '{module}' is local, but metadata.package and metadata.version are required");
-    }
-    bail!("module '{module}' is remote, provide both --package and --module-version");
 }
 
 #[cfg(test)]
@@ -190,10 +120,6 @@ mod tests {
                 config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
-            package: None,
-            module_version: None,
-            default_features: Some(false),
-            features: vec!["foo".to_owned(), "bar".to_owned()],
             deps: vec!["authz".to_owned()],
         };
         let local_module = ConfigModule {
@@ -208,82 +134,29 @@ mod tests {
         let metadata = build_required_metadata(&args, Some(&local_module)).expect("metadata");
         assert_eq!(metadata.package.as_deref(), Some("cf-demo-local"));
         assert_eq!(metadata.version.as_deref(), Some("0.3.0"));
-        assert_eq!(metadata.default_features, Some(false));
         assert_eq!(metadata.path, None);
-        assert_eq!(metadata.features, vec!["foo", "bar"]);
         assert_eq!(metadata.deps, vec!["authz"]);
     }
 
     #[test]
-    fn build_required_metadata_requires_remote_package() {
+    fn build_required_metadata_fails_for_unknown_module() {
         let args = AddParams {
             path_config: PathConfigParams {
                 path: Some(PathBuf::from(".")),
                 config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
-            package: None,
-            module_version: Some("1.2.3".to_owned()),
-            default_features: None,
-            features: vec![],
             deps: vec![],
         };
 
         let Err(err) = build_required_metadata(&args, None) else {
             panic!("should fail");
         };
-        assert!(
-            err.to_string()
-                .contains("remote, provide both --package and --module-version")
-        );
+        assert!(err.to_string().contains("not found locally"));
     }
 
     #[test]
-    fn build_required_metadata_requires_remote_version() {
-        let args = AddParams {
-            path_config: PathConfigParams {
-                path: Some(PathBuf::from(".")),
-                config: Some(PathBuf::from(".")),
-            },
-            module: "demo".to_owned(),
-            package: Some("cf-demo".to_owned()),
-            module_version: None,
-            default_features: None,
-            features: vec![],
-            deps: vec![],
-        };
-
-        let Err(err) = build_required_metadata(&args, None) else {
-            panic!("should fail");
-        };
-        assert!(
-            err.to_string()
-                .contains("remote, provide both --package and --module-version")
-        );
-    }
-
-    #[test]
-    fn build_required_metadata_accepts_remote_with_package_and_version() {
-        let args = AddParams {
-            path_config: PathConfigParams {
-                path: Some(PathBuf::from(".")),
-                config: Some(PathBuf::from(".")),
-            },
-            module: "demo".to_owned(),
-            package: Some("cf-demo".to_owned()),
-            module_version: Some("1.2.3".to_owned()),
-            default_features: None,
-            features: vec![],
-            deps: vec![],
-        };
-
-        let metadata = build_required_metadata(&args, None).expect("metadata");
-        assert_eq!(metadata.package.as_deref(), Some("cf-demo"));
-        assert_eq!(metadata.version.as_deref(), Some("1.2.3"));
-    }
-
-    #[test]
-    fn upsert_module_config_preserves_existing_metadata_when_cli_fields_not_provided() {
+    fn upsert_module_config_preserves_existing_metadata() {
         let mut config = AppConfig::default();
         config.gears.insert(
             "demo".to_owned(),
@@ -307,10 +180,6 @@ mod tests {
                 config: Some(PathBuf::from(".")),
             },
             module: "demo".to_owned(),
-            package: None,
-            module_version: None,
-            default_features: None,
-            features: vec![],
             deps: vec![],
         };
 
