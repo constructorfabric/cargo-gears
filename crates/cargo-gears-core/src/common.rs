@@ -549,7 +549,7 @@ path = "src/lib.rs"
             version: None,
             features: vec!["grpc".to_owned(), "otel".to_owned()],
             default_features: Some(false),
-            path: Some("modules/custom-path".to_owned()),
+            path: Some("gears/custom-path".to_owned()),
             deps: vec![],
             capabilities: vec![],
         };
@@ -558,7 +558,7 @@ path = "src/lib.rs"
             version: Some("0.5.0".to_owned()),
             features: vec![],
             default_features: None,
-            path: Some("modules/demo".to_owned()),
+            path: Some("gears/demo".to_owned()),
             deps: vec!["authz".to_owned()],
             capabilities: vec![Capability::Grpc],
         };
@@ -568,7 +568,7 @@ path = "src/lib.rs"
         assert_eq!(merged.version.as_deref(), Some("0.5.0"));
         assert_eq!(merged.features, vec!["grpc", "otel"]);
         assert_eq!(merged.default_features, Some(false));
-        assert_eq!(merged.path.as_deref(), Some("modules/custom-path"));
+        assert_eq!(merged.path.as_deref(), Some("gears/custom-path"));
         assert_eq!(merged.deps, vec!["authz"]);
         assert_eq!(merged.capabilities, vec![Capability::Grpc]);
     }

@@ -1,6 +1,6 @@
 use crate::common::{ManifestTargetArgs, WorkspacePath};
 use cargo_gears_core::gears_parser::CargoTomlDependencies;
-use cargo_gears_core::manifest::{FeatureSet, ModuleFeatureSet, ModuleRef, TestRunner};
+use cargo_gears_core::manifest::{FeatureSet, GearRef, ModuleFeatureSet, TestRunner};
 use cargo_gears_core::test::{FeatureSelection, TestPlan, TestRun};
 use clap::{ArgAction, Args};
 
@@ -37,7 +37,7 @@ impl TestArgs {
         let runs = resolve_runs(
             self.module.as_deref(),
             &resolved.test.feature_set,
-            &resolved.modules,
+            &resolved.gears,
             &resolved.dependencies,
         );
 
@@ -57,7 +57,7 @@ impl TestArgs {
 fn resolve_runs(
     module: Option<&str>,
     feature_set: &std::collections::BTreeMap<String, ModuleFeatureSet>,
-    modules: &[ModuleRef],
+    modules: &[GearRef],
     dependencies: &CargoTomlDependencies,
 ) -> Vec<TestRun> {
     if feature_set.is_empty() {
@@ -116,7 +116,7 @@ fn feature_selection(set: &FeatureSet) -> FeatureSelection {
 }
 
 fn package_for_module(
-    modules: &[ModuleRef],
+    modules: &[GearRef],
     dependencies: &CargoTomlDependencies,
     module: &str,
 ) -> String {
@@ -132,12 +132,12 @@ fn package_for_module(
     modules
         .iter()
         .find_map(|module_ref| match module_ref {
-            ModuleRef::Local(local)
+            GearRef::Local(local)
                 if local.name == module || local.package.as_deref() == Some(module) =>
             {
                 Some(local.package.clone().unwrap_or_else(|| local.name.clone()))
             }
-            ModuleRef::Remote(remote) if remote.name == module || remote.package == module => {
+            GearRef::Remote(remote) if remote.name == module || remote.package == module => {
                 Some(remote.package.clone())
             }
             _ => None,
@@ -145,12 +145,12 @@ fn package_for_module(
         .unwrap_or_else(|| module.to_owned())
 }
 
-fn module_for_package(modules: &[ModuleRef], package: &str) -> Option<String> {
+fn module_for_package(modules: &[GearRef], package: &str) -> Option<String> {
     modules.iter().find_map(|module_ref| match module_ref {
-        ModuleRef::Local(local) if local.package.as_deref() == Some(package) => {
+        GearRef::Local(local) if local.package.as_deref() == Some(package) => {
             Some(local.name.clone())
         }
-        ModuleRef::Remote(remote) if remote.package == package => Some(remote.name.clone()),
+        GearRef::Remote(remote) if remote.package == package => Some(remote.name.clone()),
         _ => None,
     })
 }
@@ -168,7 +168,7 @@ fn package_from_dependencies(dependencies: &CargoTomlDependencies, module: &str)
 mod tests {
     use super::*;
     use cargo_gears_core::gears_parser::CargoTomlDependencies;
-    use cargo_gears_core::manifest::{FeatureSet, ModuleRef, RemoteModuleRef, TestRunner};
+    use cargo_gears_core::manifest::{FeatureSet, GearRef, GearRefRemote, TestRunner};
     use clap::Parser;
     use std::collections::BTreeMap;
     use std::fs;
@@ -193,7 +193,7 @@ mod tests {
         fs::write(temp.path().join("config/app-dev.yml"), "server: {}\n").expect("write config");
     }
 
-    const MINIMAL: &str = "[apps.app.dev]\nconfig = \"app-dev.yml\"\nmodules = []\n";
+    const MINIMAL: &str = "[apps.app.dev]\nconfig = \"app-dev.yml\"\ngears = []\n";
 
     // --- CLI override tests ---
 
@@ -227,8 +227,8 @@ mod tests {
 
     // --- Resolution logic tests ---
 
-    fn sample_modules() -> Vec<ModuleRef> {
-        vec![ModuleRef::Remote(RemoteModuleRef {
+    fn sample_gears() -> Vec<GearRef> {
+        vec![GearRef::Remote(GearRefRemote {
             name: "module-a".to_owned(),
             version: semver::VersionReq::STAR,
             package: "cf-module-a".to_owned(),
@@ -243,7 +243,7 @@ mod tests {
         let runs = resolve_runs(
             None,
             &BTreeMap::new(),
-            &sample_modules(),
+            &sample_gears(),
             &CargoTomlDependencies::default(),
         );
 
@@ -273,7 +273,7 @@ mod tests {
         let runs = resolve_runs(
             None,
             &feature_set,
-            &sample_modules(),
+            &sample_gears(),
             &CargoTomlDependencies::default(),
         );
 
@@ -307,7 +307,7 @@ mod tests {
         let runs = resolve_runs(
             None,
             &feature_set,
-            &sample_modules(),
+            &sample_gears(),
             &CargoTomlDependencies::default(),
         );
 
@@ -325,7 +325,7 @@ mod tests {
         let runs = resolve_runs(
             Some("module-a"),
             &BTreeMap::new(),
-            &sample_modules(),
+            &sample_gears(),
             &CargoTomlDependencies::default(),
         );
 
@@ -351,7 +351,7 @@ mod tests {
         let runs = resolve_runs(
             Some("cf-module-a"),
             &feature_set,
-            &sample_modules(),
+            &sample_gears(),
             &CargoTomlDependencies::default(),
         );
 

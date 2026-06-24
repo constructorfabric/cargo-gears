@@ -49,7 +49,7 @@ pub struct Environment {
     pub config: PathBuf,
     pub test: TestPolicy,
     pub lint: LintPolicy,
-    pub modules: Vec<ModuleRef>,
+    pub gears: Vec<ModuleRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run: Option<RunPolicy>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -279,7 +279,7 @@ mod tests {
             r#"
 [apps.app1.dev]
 config = "app1-dev.yml"
-modules = []
+gears = []
 "#,
         )
         .unwrap_err();

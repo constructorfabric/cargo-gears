@@ -1,11 +1,11 @@
 ---
 name: gears
 description: cli reference to help with the development of constructor fabric gears framework. It helps with the development of
-  the framework from its initialization, adding/removing modules, modifying configuration files,
+  the framework from its initialization, adding/removing gears, modifying configuration files,
   build and/or run project, lint the project and managing applications through its manifest.
   
   Always load this skill whenever you detect Gears.toml or you locate a reference to gears, cargo-gears, gears-toolkit, 
-  modules, plugins or packages that include the prefix cf- in its name.
+  gears, plugins or packages that include the prefix cf- in its name.
 ---
 
 # General Guidelines to follow
@@ -14,8 +14,8 @@ description: cli reference to help with the development of constructor fabric ge
 - When linting, use lint command of the cli to check if there are any lint errors.
   Do not try to run cargo check, clippy or fmt by your own.
 - Always verify that the application runs successfully after modifying the code.
-- Unless the user specifically mentions to use a custom module, prefer to use system modules
-  instead of implementing your own ones. Pay attention to the "deps" section of the modules, as the module will be
+- Unless the user specifically mentions to use a custom module, prefer to use system gears
+  instead of implementing your own ones. Pay attention to the "deps" section of the gears, as the module will be
   required to be added in order to be used.
 - Do not try to create a module from scratch, always use the generate module command to create a new module.
 
@@ -768,6 +768,7 @@ cargo gears manifest [-p <PATH>] [--manifest <Gears.toml>] ls [--format table|js
 Behavior:
 
 - **[path activation]** If `-p/--path` is provided, relative manifest paths are resolved from that workspace directory.
+- **[environment gears]** Manifest environments declare generation dependencies under the `gears` key.
 - **[validate]** Parses the manifest and resolves every app/environment entry.
 - **[ls]** Lists configured app/environment pairs with their resolved config paths and generated build names.
 - **[generated structure]** Use `build --dry-run` or `run --dry-run` to write and print the generated project structure.

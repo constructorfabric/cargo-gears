@@ -19,7 +19,7 @@ logging:
     max_backups: 3
     max_size_mb: 100
 
-modules: {}
+gears: {}
 ";
 
 const PROD_TEMPLATE: &str = r"server:

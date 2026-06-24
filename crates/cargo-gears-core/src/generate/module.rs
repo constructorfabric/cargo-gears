@@ -37,7 +37,7 @@ impl ModuleParams {
         ensure_modules_directory(&self.path)?;
 
         let generated_modules = self.generate_module()?;
-        println!("Modules {generated_modules:?} created");
+        println!("Gears {generated_modules:?} created");
 
         let (dependencies, staged_writes) =
             prepare_generated_modules(&self.path, &generated_modules)?;
@@ -57,7 +57,7 @@ impl ModuleParams {
 
     fn generate_module(&self) -> anyhow::Result<Vec<String>> {
         let module_name = self.module_name();
-        let modules_path = self.path.join("modules");
+        let modules_path = self.path.join("gears");
         let module_path = modules_path.join(module_name);
         if module_path.exists() {
             bail!("module {module_name} already exists");

@@ -4,7 +4,7 @@ use crate::gears_parser::{
     Capability, ConfigModule, ConfigModuleMetadata, NotFoundError, ParsedModule,
     get_module_name_from_crate, parse_module_rs_source,
 };
-use crate::manifest::{Manifest, ModuleRef};
+use crate::manifest::{GearRef, Manifest};
 use anyhow::{Context, bail};
 use flate2::read::GzDecoder;
 use reqwest::Client;
@@ -16,12 +16,12 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct ModulesOutput {
+pub struct GearsOutput {
     pub system: bool,
     pub local: bool,
 }
 
-impl ModulesOutput {
+impl GearsOutput {
     #[must_use]
     pub const fn all() -> Self {
         Self {
@@ -48,15 +48,15 @@ impl ModulesOutput {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ModulesParams {
+pub struct GearsParams {
     pub path: Option<PathBuf>,
     pub verbose: bool,
-    pub output: ModulesOutput,
+    pub output: GearsOutput,
     pub registry: Registry,
     pub format: OutputFormat,
 }
 
-impl ModulesParams {
+impl GearsParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let listing = self.collect_listing()?;
 
@@ -69,7 +69,7 @@ impl ModulesParams {
         }
     }
 
-    fn collect_listing(&self) -> anyhow::Result<ModuleListing> {
+    fn collect_listing(&self) -> anyhow::Result<GearListing> {
         let should_probe_system_usage = self.output.system && self.path.is_some();
         let workspace_path = (self.output.local || should_probe_system_usage)
             .then(|| crate::common::resolve_workspace_path(self.path.as_deref()))
@@ -107,7 +107,7 @@ impl ModulesParams {
             ));
         }
 
-        Ok(ModuleListing {
+        Ok(GearListing {
             modules,
             output: self.output,
         })
@@ -115,16 +115,16 @@ impl ModulesParams {
 }
 
 #[derive(Serialize)]
-struct ModuleListing {
-    modules: Vec<ListedModule>,
+struct GearListing {
+    modules: Vec<ListedGear>,
     #[serde(skip)]
-    output: ModulesOutput,
+    output: GearsOutput,
 }
 
 #[derive(Serialize)]
-struct ListedModule {
+struct ListedGear {
     name: String,
-    source: ModuleSource,
+    source: GearSource,
     #[serde(skip_serializing_if = "Option::is_none")]
     crate_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -147,7 +147,7 @@ struct ListedModule {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
-enum ModuleSource {
+enum GearSource {
     System,
     Local,
 }
@@ -157,7 +157,7 @@ fn collect_system_modules(
     registry: Registry,
     local_modules: Option<&HashMap<String, ConfigModule>>,
     manifest_system_modules: &BTreeSet<String>,
-) -> anyhow::Result<Vec<ListedModule>> {
+) -> anyhow::Result<Vec<ListedGear>> {
     let metadata_by_crate = if verbose {
         Some(fetch_system_metadata(registry)?)
     } else {
@@ -199,10 +199,10 @@ fn listed_system_module(
     module: &SystemRegistryModule,
     metadata: Option<&RegistryMetadata>,
     used: bool,
-) -> ListedModule {
-    ListedModule {
+) -> ListedGear {
+    ListedGear {
         name: module.module_name.to_owned(),
-        source: ModuleSource::System,
+        source: GearSource::System,
         crate_name: Some(module.crate_name.to_owned()),
         latest_version: metadata.map(|metadata| metadata.latest_version.clone()),
         metadata: None,
@@ -241,8 +241,8 @@ fn collect_manifest_system_modules(workspace_dir: &Path) -> anyhow::Result<BTree
     let mut modules = BTreeSet::new();
     for envs in manifest.apps.values() {
         for environment in envs.values() {
-            for module in &environment.modules {
-                if let ModuleRef::Remote(remote) = module {
+            for module in &environment.gears {
+                if let GearRef::Remote(remote) = module {
                     modules.insert(remote.name.clone());
                     modules.insert(remote.package.clone());
                 }
@@ -256,15 +256,15 @@ fn collect_manifest_system_modules(workspace_dir: &Path) -> anyhow::Result<BTree
 fn listed_local_modules(
     verbose: bool,
     local_modules: &HashMap<String, ConfigModule>,
-) -> Vec<ListedModule> {
+) -> Vec<ListedGear> {
     let mut entries: Vec<_> = local_modules.iter().collect();
     entries.sort_by_key(|(name, _)| *name);
 
     entries
         .into_iter()
-        .map(|(module_name, module)| ListedModule {
+        .map(|(module_name, module)| ListedGear {
             name: module_name.clone(),
-            source: ModuleSource::Local,
+            source: GearSource::Local,
             crate_name: None,
             latest_version: None,
             metadata: verbose.then(|| module.metadata.clone()),
@@ -276,16 +276,16 @@ fn listed_local_modules(
         .collect()
 }
 
-fn print_modules(listing: &ModuleListing) {
+fn print_modules(listing: &GearListing) {
     let system_modules: Vec<_> = listing
         .modules
         .iter()
-        .filter(|module| module.source == ModuleSource::System)
+        .filter(|module| module.source == GearSource::System)
         .collect();
     let local_modules: Vec<_> = listing
         .modules
         .iter()
-        .filter(|module| module.source == ModuleSource::Local)
+        .filter(|module| module.source == GearSource::Local)
         .collect();
     if listing.output.system {
         if system_modules.is_empty() {
@@ -310,16 +310,16 @@ fn print_modules(listing: &ModuleListing) {
     }
 }
 
-fn print_module_group(title: &str, modules: &[&ListedModule]) {
+fn print_module_group(title: &str, modules: &[&ListedGear]) {
     println!("{title}");
     for module in modules {
         print_module(module);
     }
 }
 
-fn print_module(module: &ListedModule) {
+fn print_module(module: &ListedGear) {
     match module.source {
-        ModuleSource::System => {
+        GearSource::System => {
             if let Some(crate_name) = &module.crate_name {
                 let used_label = match module.used {
                     Some(true) => ", used: yes",
@@ -341,7 +341,7 @@ fn print_module(module: &ListedModule) {
                 print_value_list("capabilities", &module.capabilities);
             }
         }
-        ModuleSource::Local => {
+        GearSource::Local => {
             println!("  - {}", module.name);
             if let Some(metadata) = &module.metadata {
                 print_metadata(metadata);
@@ -350,7 +350,7 @@ fn print_module(module: &ListedModule) {
     }
 }
 
-fn print_json_modules(listing: &ModuleListing) -> anyhow::Result<()> {
+fn print_json_modules(listing: &GearListing) -> anyhow::Result<()> {
     serde_json::to_writer(std::io::stdout(), listing)?;
     println!();
     Ok(())
@@ -660,10 +660,10 @@ mod tests {
     #[test]
     fn local_json_includes_verbose_metadata() {
         let temp_dir = scaffold_workspace(&[("crate-echo", "echo")]);
-        let args = ModulesParams {
+        let args = GearsParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: true,
-            output: ModulesOutput::local(),
+            output: GearsOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
         };
@@ -689,10 +689,10 @@ mod tests {
 
     #[test]
     fn system_json_includes_static_registry_without_verbose_fetch() {
-        let args = ModulesParams {
+        let args = GearsParams {
             path: None,
             verbose: false,
-            output: ModulesOutput::system(),
+            output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
         };
@@ -717,10 +717,10 @@ mod tests {
     #[test]
     fn system_json_marks_system_module_used_when_workspace_has_matching_module() {
         let temp_dir = scaffold_workspace(&[("crate-credstore", "credstore")]);
-        let args = ModulesParams {
+        let args = GearsParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
-            output: ModulesOutput::system(),
+            output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
         };
@@ -750,15 +750,15 @@ mod tests {
 
             [apps.quickstart.dev]
             config = "quickstart.yml"
-            modules = [
+            gears = [
                 { source = "remote", name = "api-gateway", package = "cf-api-gateway", version = "0.2.7" },
             ]
             "#,
         );
-        let args = ModulesParams {
+        let args = GearsParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
-            output: ModulesOutput::system(),
+            output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
         };
