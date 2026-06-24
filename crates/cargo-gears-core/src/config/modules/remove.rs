@@ -16,7 +16,7 @@ impl RemoveParams {
                 validate_module_name(&self.module)?;
 
                 let mut config = load_config(config_path)?;
-                if config.modules.remove(&self.module).is_none() {
+                if config.gears.remove(&self.module).is_none() {
                     let module = &self.module;
                     bail!("module '{module}' not found in modules section");
                 }

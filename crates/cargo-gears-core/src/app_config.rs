@@ -21,12 +21,12 @@ pub struct AppConfig {
     /// OpenTelemetry configuration (resource, tracing, metrics).
     #[serde(default)]
     pub opentelemetry: OpenTelemetryConfig,
-    /// Directory containing per-module YAML files (optional).
+    /// Directory containing per-gear YAML files (optional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub modules_dir: Option<String>,
-    /// Per-module configuration bag: `module_name` -> module config.
+    pub gears_dir: Option<String>,
+    /// Per-gear configuration bag: `gear_name` -> gear config.
     #[serde(default)]
-    pub modules: BTreeMap<String, ModuleConfig>,
+    pub gears: BTreeMap<String, ModuleConfig>,
     /// Per-vendor configuration bag: `vendor_name` → arbitrary JSON/YAML value.
     /// Allows vendors to add their own typed configuration sections.
     #[serde(default)]
@@ -36,7 +36,7 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn create_dependencies(self) -> anyhow::Result<CargoTomlDependencies> {
         let mut dependencies = CargoTomlDependencies::new();
-        for (name, module) in self.modules {
+        for (name, module) in self.gears {
             if matches!(
                 module.runtime.as_ref().map(|r| &r.mod_type),
                 Some(RuntimeKind::Oop)
@@ -80,8 +80,8 @@ impl Default for AppConfig {
             database: None,
             logging: default_logging_config(),
             opentelemetry: OpenTelemetryConfig::default(),
-            modules_dir: None,
-            modules: BTreeMap::new(),
+            gears_dir: None,
+            gears: BTreeMap::new(),
             vendor: VendorConfig::default(),
         }
     }

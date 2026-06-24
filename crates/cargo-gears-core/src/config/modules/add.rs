@@ -41,7 +41,7 @@ impl AddParams {
 }
 
 fn upsert_module_config(config: &mut AppConfig, args: &AddParams, incoming: ConfigModuleMetadata) {
-    let module_config = config.modules.entry(args.module.clone()).or_default();
+    let module_config = config.gears.entry(args.module.clone()).or_default();
     let merged_metadata = if let Some(existing) = module_config.metadata.take() {
         merge_module_metadata(existing, incoming, args)
     } else {
@@ -285,7 +285,7 @@ mod tests {
     #[test]
     fn upsert_module_config_preserves_existing_metadata_when_cli_fields_not_provided() {
         let mut config = AppConfig::default();
-        config.modules.insert(
+        config.gears.insert(
             "demo".to_owned(),
             ModuleConfig {
                 metadata: Some(ConfigModuleMetadata {
@@ -327,7 +327,7 @@ mod tests {
         upsert_module_config(&mut config, &args, incoming);
 
         let metadata = &config
-            .modules
+            .gears
             .get("demo")
             .and_then(|module| module.metadata.as_ref())
             .expect("metadata should be present after upsert");

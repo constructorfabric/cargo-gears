@@ -175,7 +175,7 @@ pub fn get_config(workspace_root: &Path, config_path: &Path) -> anyhow::Result<A
     let mut config = get_config_from_path(config_path)?;
     let mut members = get_module_name_from_crate(Some(workspace_root))?;
 
-    config.modules.iter_mut().for_each(|module| {
+    config.gears.iter_mut().for_each(|module| {
         if let Some(module_metadata) = members.remove(module.0.as_str()) {
             let config_metadata = std::mem::take(&mut module.1.metadata).unwrap_or_default();
             module.1.metadata = Some(merge_module_metadata(
