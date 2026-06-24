@@ -261,14 +261,14 @@ fn schema_config(section: Option<&str>) -> anyhow::Result<String> {
             out.push_str(&MetricsConfig::help_text());
             Ok(out)
         }
-        Some("modules") => {
+        Some("gears") => {
             let mut out = ModuleConfig::help_text();
             out.push('\n');
             out.push_str(&ModuleRuntime::help_text());
             Ok(out)
         }
         Some(other) => bail!(
-            "unknown config section '{other}'; available: server, database, logging, opentelemetry, modules"
+            "unknown config section '{other}'; available: server, database, logging, opentelemetry, gears"
         ),
     }
 }
@@ -312,12 +312,12 @@ mod tests {
         let text = schema_config(None).expect("overview should succeed");
         assert!(text.contains("AppConfig"));
         assert!(text.contains("server"));
-        assert!(text.contains("modules"));
+        assert!(text.contains("gears"));
     }
 
     #[test]
     fn schema_config_sections_resolve() {
-        for section in &["server", "database", "logging", "opentelemetry", "modules"] {
+        for section in &["server", "database", "logging", "opentelemetry", "gears"] {
             assert!(
                 schema_config(Some(section)).is_ok(),
                 "section '{section}' should resolve"

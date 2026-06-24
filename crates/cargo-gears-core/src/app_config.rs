@@ -22,10 +22,10 @@ pub struct AppConfig {
     #[serde(default)]
     pub opentelemetry: OpenTelemetryConfig,
     /// Directory containing per-module YAML files (optional).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, rename = "gears_dir", skip_serializing_if = "Option::is_none")]
     pub modules_dir: Option<String>,
     /// Per-module configuration bag: `module_name` -> module config.
-    #[serde(default)]
+    #[serde(default, rename = "gears")]
     pub modules: BTreeMap<String, ModuleConfig>,
     /// Per-vendor configuration bag: `vendor_name` → arbitrary JSON/YAML value.
     /// Allows vendors to add their own typed configuration sections.
