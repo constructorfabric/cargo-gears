@@ -20,6 +20,9 @@ jobs:
 
       - run: rustup install
       - run: cargo fmt --check
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-dylint,dylint-link
       # too many issues
       # - run: cargo clippy --workspace -- -D warnings
       - run: cargo test
