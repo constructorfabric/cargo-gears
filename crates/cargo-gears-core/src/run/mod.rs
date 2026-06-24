@@ -24,6 +24,7 @@ pub struct RunParamsBuilder {
     manifest: PathBuf,
     app: Option<String>,
     env: Option<String>,
+    name: Option<String>,
     otel: Option<bool>,
     no_otel: Option<bool>,
     fips: Option<bool>,
@@ -45,6 +46,7 @@ impl RunParamsBuilder {
             manifest,
             app: None,
             env: None,
+            name: None,
             otel: None,
             no_otel: None,
             fips: None,
@@ -74,6 +76,12 @@ impl RunParamsBuilder {
     #[must_use]
     pub fn env(mut self, env: Option<String>) -> Self {
         self.env = env;
+        self
+    }
+
+    #[must_use]
+    pub fn name(mut self, name: Option<String>) -> Self {
+        self.name = name;
         self
     }
 
@@ -168,7 +176,7 @@ impl RunParamsBuilder {
             build_run_args: crate::common::BuildRunParams {
                 workspace_root: resolved.workspace_root,
                 generated_dir: resolved.generated_dir,
-                generated_name: resolved.generated_name,
+                generated_name: self.name.unwrap_or(resolved.generated_name),
                 config_path: resolved.config_path,
                 dependencies: resolved.dependencies,
                 otel,
