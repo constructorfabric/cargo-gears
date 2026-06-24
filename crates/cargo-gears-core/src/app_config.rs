@@ -1,5 +1,4 @@
-use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
-use anyhow::bail;
+use crate::gears_parser::ConfigModuleMetadata;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 use std::collections::{BTreeMap, HashMap};
@@ -31,46 +30,6 @@ pub struct AppConfig {
     /// Allows vendors to add their own typed configuration sections.
     #[serde(default)]
     pub vendor: VendorConfig,
-}
-
-impl AppConfig {
-    pub fn create_dependencies(self) -> anyhow::Result<CargoTomlDependencies> {
-        let mut dependencies = CargoTomlDependencies::new();
-        for (name, module) in self.gears {
-            if matches!(
-                module.runtime.as_ref().map(|r| &r.mod_type),
-                Some(RuntimeKind::Oop)
-            ) {
-                // Out-of-process modules ship their own executable and only
-                // contribute execution config, so they don't require Cargo
-                // metadata for the generated server.
-                continue;
-            }
-            let Some(metadata) = module.metadata else {
-                bail!("module '{name}' doesn't have metadata associated, please review");
-            };
-            let Some(package) = metadata.package.clone() else {
-                bail!("module '{name}' doesn't have package associated, please review");
-            };
-            let package = package.replace('-', "_");
-            if dependencies.contains_key(&package) {
-                bail!("module '{name}' has duplicate package name '{package}'");
-            }
-
-            dependencies.insert(
-                package,
-                CargoTomlDependency {
-                    package: metadata.package,
-                    version: metadata.version,
-                    features: metadata.features.into_iter().collect(),
-                    default_features: metadata.default_features,
-                    path: metadata.path,
-                },
-            );
-        }
-
-        Ok(dependencies)
-    }
 }
 
 impl Default for AppConfig {
