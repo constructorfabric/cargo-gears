@@ -28,7 +28,7 @@ pub(super) static FIPS: AtomicBool = AtomicBool::new(false);
 pub(super) static RELEASE: AtomicBool = AtomicBool::new(false);
 
 impl RunLoop {
-    pub(super) fn new(
+    pub(super) const fn new(
         generated_dir: PathBuf,
         workspace_path: PathBuf,
         config_path: PathBuf,
@@ -55,7 +55,7 @@ impl RunLoop {
             workspace_path,
             &self.generated_dir,
             &self.project_name,
-            &dependencies,
+            dependencies,
         )?;
 
         let cargo_dir = common::generated_project_dir(&self.generated_dir, &self.project_name);
@@ -92,7 +92,7 @@ impl RunLoop {
                 workspace_path,
                 manifest_path: &self.manifest_path,
                 config_path: &self.config_path,
-                dependencies: &dependencies,
+                dependencies,
             },
         )?;
         watch_plan.watch(&mut watcher)?;
