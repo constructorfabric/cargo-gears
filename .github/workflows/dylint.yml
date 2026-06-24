@@ -11,11 +11,13 @@ jobs:
   test:
     name: Format, Lint & Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/cargo-gears-lints
     steps:
       - uses: actions/checkout@v6
       - uses: Swatinem/rust-cache@v2
 
-      - run: cd crates/cargo-gears-lints
       - run: cargo fmt --check
       # too many issues
       # - run: cargo clippy --workspace -- -D warnings

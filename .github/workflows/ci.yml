@@ -10,6 +10,7 @@ on:
       - 'crates/cargo-gears-core/**/*.toml'
       - 'crates/cargo-gears-macros/**/*.rs'
       - 'crates/cargo-gears-macros/**/*.toml'
+      - 'Cargo.toml'
       - 'Cargo.lock'
       - '.clippy.toml'
       - 'rust-toolchain.toml'
