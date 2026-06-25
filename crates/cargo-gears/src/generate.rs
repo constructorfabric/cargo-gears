@@ -78,15 +78,15 @@ impl From<WorkspaceArgs> for cargo_gears_core::generate::workspace::WorkspacePar
 }
 
 // ---------------------------------------------------------------------------
-// Module
+// Gear
 // ---------------------------------------------------------------------------
 
 #[derive(Args)]
-pub struct ModuleArgs {
+pub struct GearArgs {
     /// Template name (e.g. background-worker, api-db-handler, api-gateway)
     #[arg(short = 't', long)]
     template: String,
-    /// Module name; defaults to the template name when absent
+    /// Gear name; defaults to the template name when absent
     #[arg(short = 'n', long)]
     name: Option<String>,
     /// Path to the workspace root (defaults to current directory)
@@ -109,14 +109,14 @@ pub struct ModuleArgs {
     branch: Option<String>,
 }
 
-impl ModuleArgs {
+impl GearArgs {
     pub fn run(self) -> anyhow::Result<()> {
-        cargo_gears_core::generate::module::ModuleParams::from(self).run()
+        cargo_gears_core::generate::gear::GearParams::from(self).run()
     }
 }
 
-impl From<ModuleArgs> for cargo_gears_core::generate::module::ModuleParams {
-    fn from(args: ModuleArgs) -> Self {
+impl From<GearArgs> for cargo_gears_core::generate::gear::GearParams {
+    fn from(args: GearArgs) -> Self {
         Self {
             template: args.template,
             name: args.name,
@@ -179,8 +179,8 @@ impl From<GenerateConfigArgs> for cargo_gears_core::generate::config::GenerateCo
 pub enum GenerateCommand {
     /// Generate a new Gears workspace
     Workspace(WorkspaceArgs),
-    /// Generate a new module from a template
-    Module(ModuleArgs),
+    /// Generate a new gear from a template
+    Gear(GearArgs),
     /// Generate a runtime configuration file from a template
     Config(GenerateConfigArgs),
 }
@@ -189,7 +189,7 @@ impl From<GenerateCommand> for cargo_gears_core::generate::GenerateCommand {
     fn from(command: GenerateCommand) -> Self {
         match command {
             GenerateCommand::Workspace(args) => Self::Workspace(args.into()),
-            GenerateCommand::Module(args) => Self::Module(args.into()),
+            GenerateCommand::Gear(args) => Self::Gear(args.into()),
             GenerateCommand::Config(args) => Self::Config(args.into()),
         }
     }
