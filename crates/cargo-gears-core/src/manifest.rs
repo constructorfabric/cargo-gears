@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use crate::common;
 use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
 use anyhow::{Context, bail};
@@ -157,19 +158,19 @@ fn print_value<T: Serialize>(format: common::OutputFormat, value: &T) -> anyhow:
 /// Also defines templates
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct Manifest {
+pub struct Manifest<'a> {
     /// Configuration for the
     #[serde(default)]
     pub workspace: Workspace,
     pub apps: Apps,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub templates: Option<TemplateRegistry>,
+    pub templates: Option<TemplateRegistry<'a>>,
 }
 
 pub type Apps = BTreeMap<String, Environments>;
 pub type Environments = BTreeMap<String, Environment>;
 
-impl Manifest {
+impl<'a> Manifest<'a> {
     pub fn load(path: &Path) -> anyhow::Result<Self> {
         let manifest = fs::read_to_string(path)
             .with_context(|| format!("manifest not available at {}", path.display()))?;
@@ -654,38 +655,38 @@ pub struct TestPolicy {
 /// Optional registry of template sources for generate commands.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, default)]
-pub struct TemplateRegistry {
+pub struct TemplateRegistry<'a> {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub gear: Vec<TemplateDefinition>,
+    pub gear: Vec<TemplateDefinition<'a>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub config: Vec<TemplateDefinition>,
+    pub config: Vec<TemplateDefinition<'a>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub agents: Vec<TemplateDefinition>,
+    pub agents: Vec<TemplateDefinition<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
-pub struct TemplateDefinition {
-    pub name: String,
-    pub description: String,
-    pub source: TemplateSource,
+pub struct TemplateDefinition<'a> {
+    pub name: Cow<'a, str>,
+    pub description: Cow<'a, str>,
+    pub source: TemplateSource<'a>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(tag = "source", rename_all = "kebab-case")]
-pub enum TemplateSource {
+pub enum TemplateSource<'a> {
     Git {
-        url: String,
+        url: Cow<'a, str>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        revision: Option<String>,
+        revision: Option<Cow<'a, str>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        tag: Option<String>,
+        tag: Option<Cow<'a, str>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        branch: Option<String>,
+        branch: Option<Cow<'a, str>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        subfolder: Option<String>,
+        subfolder: Option<Cow<'a, str>>,
     },
     Local {
-        path: String,
+        path: Cow<'a, str>,
     },
     Embedded,
 }
