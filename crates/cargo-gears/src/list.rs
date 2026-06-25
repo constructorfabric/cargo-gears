@@ -11,6 +11,14 @@ pub struct ListArgs {
 pub enum ListCommand {
     /// List gears available
     Gears(GearsArgs),
+    /// List templates available
+    Templates(TemplatesArgs),
+}
+
+#[derive(Args)]
+pub struct TemplatesArgs {
+    #[command(flatten)]
+    workspace: WorkspacePath,
 }
 
 #[derive(Args)]
@@ -52,6 +60,15 @@ impl From<ListCommand> for cargo_gears_core::list::ListCommand {
     fn from(command: ListCommand) -> Self {
         match command {
             ListCommand::Gears(args) => Self::Gears(args.into()),
+            ListCommand::Templates(args) => Self::Templates(args.into()),
+        }
+    }
+}
+
+impl From<TemplatesArgs> for cargo_gears_core::list::TemplatesParams {
+    fn from(args: TemplatesArgs) -> Self {
+        Self {
+            path: args.workspace.path,
         }
     }
 }

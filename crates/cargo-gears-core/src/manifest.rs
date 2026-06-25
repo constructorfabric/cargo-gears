@@ -1,9 +1,9 @@
-use std::borrow::Cow;
 use crate::common;
 use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
 use anyhow::{Context, bail};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -170,7 +170,7 @@ pub struct Manifest<'a> {
 pub type Apps = BTreeMap<String, Environments>;
 pub type Environments = BTreeMap<String, Environment>;
 
-impl<'a> Manifest<'a> {
+impl Manifest<'_> {
     pub fn load(path: &Path) -> anyhow::Result<Self> {
         let manifest = fs::read_to_string(path)
             .with_context(|| format!("manifest not available at {}", path.display()))?;
@@ -656,6 +656,8 @@ pub struct TestPolicy {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, default)]
 pub struct TemplateRegistry<'a> {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub workspace: Vec<TemplateDefinition<'a>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub gear: Vec<TemplateDefinition<'a>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

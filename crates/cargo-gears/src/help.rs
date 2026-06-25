@@ -30,7 +30,7 @@ pub enum HelpCommand {
     /// Resolve Rust source code from a crate (alias for top-level `src`)
     Src(SrcArgs),
     /// Print operational documentation for a topic
-    Topic(TopicArgs),
+    Topic(cargo_gears_core::help::TopicParams),
 }
 
 impl From<HelpCommand> for cargo_gears_core::help::HelpCommand {
@@ -38,7 +38,7 @@ impl From<HelpCommand> for cargo_gears_core::help::HelpCommand {
         match command {
             HelpCommand::Schema(args) => Self::Schema(args.into()),
             HelpCommand::Src(args) => Self::Src(args.into()),
-            HelpCommand::Topic(args) => Self::Topic(args.into()),
+            HelpCommand::Topic(args) => Self::Topic(args),
         }
     }
 }
@@ -121,24 +121,6 @@ impl From<SrcArgs> for cargo_gears_core::source::SourceParams {
             version: args.version,
             clean: args.clean,
             query: args.query,
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Topic
-// ---------------------------------------------------------------------------
-
-#[derive(Args)]
-pub struct TopicArgs {
-    /// Topic to display
-    topic: cargo_gears_core::help::Topic,
-}
-
-impl From<TopicArgs> for cargo_gears_core::help::TopicParams {
-    fn from(args: TopicArgs) -> Self {
-        Self {
-            topic: args.topic.into(),
         }
     }
 }

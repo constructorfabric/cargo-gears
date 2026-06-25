@@ -22,7 +22,7 @@ fn parses_generate_workspace_into_core_command() {
             command: GenerateCommand::Workspace(
                 cargo_gears_core::generate::workspace::WorkspaceParams {
                     path: PathBuf::from("/tmp/cf-demo"),
-                    template: "default".to_owned(),
+                    template: "basic-init".to_owned(),
                     name: Some("cf-demo".to_owned()),
                     verbose: false,
                     local_path: None,
@@ -30,6 +30,7 @@ fn parses_generate_workspace_into_core_command() {
                     subfolder: None,
                     branch: None,
                     r#override: false,
+                    list: false,
                 }
             ),
         })
@@ -46,7 +47,7 @@ fn parses_new_alias_into_core_command() {
             command: GenerateCommand::Workspace(
                 cargo_gears_core::generate::workspace::WorkspaceParams {
                     path: PathBuf::from("/tmp/cf-demo"),
-                    template: "default".to_owned(),
+                    template: "basic-init".to_owned(),
                     name: None,
                     verbose: false,
                     local_path: None,
@@ -54,6 +55,7 @@ fn parses_new_alias_into_core_command() {
                     subfolder: None,
                     branch: None,
                     r#override: false,
+                    list: false,
                 }
             ),
         })
@@ -85,6 +87,7 @@ fn parses_generate_workspace_with_custom_template() {
                     subfolder: None,
                     branch: None,
                     r#override: false,
+                    list: false,
                 }
             ),
         })
@@ -107,6 +110,7 @@ fn parses_generate_gear_into_core_command() {
                 git: None,
                 subfolder: None,
                 branch: None,
+                list: false,
             }),
         })
     );
@@ -136,6 +140,54 @@ fn parses_generate_gear_with_name() {
                 git: None,
                 subfolder: None,
                 branch: None,
+                list: false,
+            }),
+        })
+    );
+}
+
+#[test]
+fn parses_generate_workspace_list_into_core_command() {
+    let command = parse_command(&["gears", "generate", "workspace", "--list"]);
+
+    assert_eq!(
+        command,
+        GearsCommand::Generate(GenerateParams {
+            command: GenerateCommand::Workspace(
+                cargo_gears_core::generate::workspace::WorkspaceParams {
+                    path: PathBuf::from("."),
+                    template: "basic-init".to_owned(),
+                    name: None,
+                    verbose: false,
+                    local_path: None,
+                    git: None,
+                    subfolder: None,
+                    branch: None,
+                    r#override: false,
+                    list: true,
+                }
+            ),
+        })
+    );
+}
+
+#[test]
+fn parses_generate_gear_list_into_core_command() {
+    let command = parse_command(&["gears", "generate", "gear", "--list"]);
+
+    assert_eq!(
+        command,
+        GearsCommand::Generate(GenerateParams {
+            command: GenerateCommand::Gear(cargo_gears_core::generate::gear::GearParams {
+                template: String::new(),
+                name: None,
+                path: PathBuf::from("."),
+                verbose: false,
+                local_path: None,
+                git: None,
+                subfolder: None,
+                branch: None,
+                list: true,
             }),
         })
     );

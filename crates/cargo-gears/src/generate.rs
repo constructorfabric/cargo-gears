@@ -29,9 +29,10 @@ impl From<GenerateArgs> for cargo_gears_core::generate::GenerateParams {
 #[derive(Args)]
 pub struct WorkspaceArgs {
     /// Path to initialize the project
-    path: PathBuf,
+    #[arg(required_unless_present = "list")]
+    path: Option<PathBuf>,
     /// Template name (defaults to "default")
-    #[arg(short = 't', long, default_value = "default")]
+    #[arg(short = 't', long, default_value = "basic-init")]
     template: String,
     /// Name of the project, it's inferred from the path name if not specified
     #[arg(short = 'p', long)]
@@ -53,6 +54,9 @@ pub struct WorkspaceArgs {
     branch: Option<String>,
     #[arg(long)]
     r#override: bool,
+    /// List available templates
+    #[arg(short = 'l', long)]
+    list: bool,
 }
 
 impl WorkspaceArgs {
@@ -64,7 +68,7 @@ impl WorkspaceArgs {
 impl From<WorkspaceArgs> for cargo_gears_core::generate::workspace::WorkspaceParams {
     fn from(args: WorkspaceArgs) -> Self {
         Self {
-            path: args.path,
+            path: args.path.unwrap_or_else(|| PathBuf::from(".")),
             template: args.template,
             name: args.project,
             verbose: args.verbose,
@@ -73,6 +77,7 @@ impl From<WorkspaceArgs> for cargo_gears_core::generate::workspace::WorkspacePar
             subfolder: args.subfolder,
             branch: args.branch,
             r#override: args.r#override,
+            list: args.list,
         }
     }
 }
@@ -84,8 +89,8 @@ impl From<WorkspaceArgs> for cargo_gears_core::generate::workspace::WorkspacePar
 #[derive(Args)]
 pub struct GearArgs {
     /// Template name (e.g. background-worker, api-db-handler, api-gateway)
-    #[arg(short = 't', long)]
-    template: String,
+    #[arg(short = 't', long, required_unless_present = "list")]
+    template: Option<String>,
     /// Gear name; defaults to the template name when absent
     #[arg(short = 'n', long)]
     name: Option<String>,
@@ -107,6 +112,9 @@ pub struct GearArgs {
     /// Branch of the git repo
     #[arg(long)]
     branch: Option<String>,
+    /// List available templates
+    #[arg(short = 'l', long)]
+    list: bool,
 }
 
 impl GearArgs {
@@ -118,7 +126,7 @@ impl GearArgs {
 impl From<GearArgs> for cargo_gears_core::generate::gear::GearParams {
     fn from(args: GearArgs) -> Self {
         Self {
-            template: args.template,
+            template: args.template.unwrap_or_default(),
             name: args.name,
             path: args.path,
             verbose: args.verbose,
@@ -126,6 +134,7 @@ impl From<GearArgs> for cargo_gears_core::generate::gear::GearParams {
             git: args.git,
             subfolder: args.subfolder,
             branch: args.branch,
+            list: args.list,
         }
     }
 }

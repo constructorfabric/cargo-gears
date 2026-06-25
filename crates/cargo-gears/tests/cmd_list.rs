@@ -79,3 +79,17 @@ fn parses_list_modules_system_flag_into_core_command() {
         })
     );
 }
+
+#[test]
+fn parses_list_templates_into_core_command() {
+    let command = parse_command(&["gears", "ls", "templates"]);
+
+    assert_eq!(
+        command,
+        GearsCommand::List(cargo_gears_core::list::ListParams {
+            command: cargo_gears_core::list::ListCommand::Templates(
+                cargo_gears_core::list::TemplatesParams { path: None },
+            ),
+        })
+    );
+}

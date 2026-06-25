@@ -48,6 +48,7 @@ pub struct TopicParams {
 pub enum Topic {
     Architecture,
     Cli,
+    #[cfg_attr(feature = "clap", value(alias = "clienthub"))]
     ClientHub,
     Database,
     RestErrors,
@@ -151,7 +152,7 @@ fn to_json_schema<T: JsonSchema>() -> anyhow::Result<String> {
 
 fn schema_config(section: Option<&str>) -> anyhow::Result<String> {
     use crate::app_config::{
-        AppConfig, GlobalDatabaseConfig, LoggingConfig, GearConfig, OpenTelemetryConfig,
+        AppConfig, GearConfig, GlobalDatabaseConfig, LoggingConfig, OpenTelemetryConfig,
         ServerConfig,
     };
     match section {
