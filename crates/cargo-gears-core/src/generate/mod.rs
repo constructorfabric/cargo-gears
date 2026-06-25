@@ -1,5 +1,5 @@
 pub mod config;
-pub mod module;
+pub mod gear;
 pub mod workspace;
 
 pub const DEFAULT_GIT_URL: &str = "git@github.com:Bechma/cf-template-rust.git";
@@ -19,7 +19,7 @@ impl GenerateParams {
 #[derive(Debug, Eq, PartialEq)]
 pub enum GenerateCommand {
     Workspace(workspace::WorkspaceParams),
-    Module(module::ModuleParams),
+    Gear(gear::GearParams),
     Config(config::GenerateConfigParams),
 }
 
@@ -27,7 +27,7 @@ impl GenerateCommand {
     pub fn run(&self) -> anyhow::Result<()> {
         match self {
             Self::Workspace(args) => args.run(),
-            Self::Module(args) => args.run(),
+            Self::Gear(args) => args.run(),
             Self::Config(args) => args.run(),
         }
     }

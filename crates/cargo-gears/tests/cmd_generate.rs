@@ -92,11 +92,11 @@ fn parses_generate_workspace_with_custom_template() {
 }
 
 #[test]
-fn parses_generate_module_into_core_command() {
+fn parses_generate_gear_into_core_command() {
     let command = parse_command(&[
         "gears",
         "generate",
-        "module",
+        "gear",
         "--template",
         "api-db-handler",
     ]);
@@ -104,7 +104,7 @@ fn parses_generate_module_into_core_command() {
     assert_eq!(
         command,
         GearsCommand::Generate(GenerateParams {
-            command: GenerateCommand::Module(cargo_gears_core::generate::module::ModuleParams {
+            command: GenerateCommand::Gear(cargo_gears_core::generate::gear::GearParams {
                 template: "api-db-handler".to_owned(),
                 name: None,
                 path: PathBuf::from("."),
@@ -119,11 +119,11 @@ fn parses_generate_module_into_core_command() {
 }
 
 #[test]
-fn parses_generate_module_with_name() {
+fn parses_generate_gear_with_name() {
     let command = parse_command(&[
         "gears",
         "generate",
-        "module",
+        "gear",
         "--template",
         "background-worker",
         "--name",
@@ -133,7 +133,7 @@ fn parses_generate_module_with_name() {
     assert_eq!(
         command,
         GearsCommand::Generate(GenerateParams {
-            command: GenerateCommand::Module(cargo_gears_core::generate::module::ModuleParams {
+            command: GenerateCommand::Gear(cargo_gears_core::generate::gear::GearParams {
                 template: "background-worker".to_owned(),
                 name: Some("jobs".to_owned()),
                 path: PathBuf::from("."),
