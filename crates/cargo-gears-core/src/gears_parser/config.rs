@@ -12,7 +12,7 @@ pub struct ConfigModule {
     pub metadata: ConfigModuleMetadata,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Capability {
     Db,
@@ -39,7 +39,7 @@ impl fmt::Display for Capability {
     }
 }
 
-#[derive(Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct ConfigModuleMetadata {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,

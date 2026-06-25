@@ -1,11 +1,10 @@
 use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency};
+use crate::list::templates::{self, TemplateKind};
 use anyhow::{Context, bail};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use semver::{Comparator, Op, Version, VersionReq};
 use std::fs;
 use std::path::{Path, PathBuf};
-
-use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct GearParams {
@@ -25,6 +24,8 @@ pub struct GearParams {
     pub subfolder: Option<String>,
     /// Branch of the git repo.
     pub branch: Option<String>,
+    /// List available templates.
+    pub list: bool,
 }
 
 struct StagedModuleWrite {
@@ -34,6 +35,10 @@ struct StagedModuleWrite {
 
 impl GearParams {
     pub fn run(&self) -> anyhow::Result<()> {
+        if self.list {
+            return templates::print_templates(Some(TemplateKind::Gear), &self.path);
+        }
+
         ensure_gears_directory(&self.path)?;
 
         let generated_gears = self.generate_gear()?;
@@ -62,7 +67,7 @@ impl GearParams {
             bail!("gear {gear_name} already exists");
         }
 
-        let resolved = self.resolve_template();
+        let resolved = self.resolve_template()?;
 
         generate(GenerateArgs {
             template_path: resolved,
@@ -85,26 +90,30 @@ impl GearParams {
         Ok(generated)
     }
 
-    fn resolve_template(&self) -> TemplatePath {
+    fn resolve_template(&self) -> anyhow::Result<TemplatePath> {
         if let Some(local) = &self.local_path {
-            return TemplatePath {
+            return Ok(TemplatePath {
                 path: Some(local.clone()),
                 auto_path: self.subfolder.clone(),
                 ..TemplatePath::default()
-            };
+            });
         }
 
-        let subfolder = self
-            .subfolder
-            .clone()
-            .unwrap_or_else(|| format!("Modules/{}", self.template));
-
-        TemplatePath {
-            git: Some(self.git.as_deref().unwrap_or(DEFAULT_GIT_URL).to_owned()),
-            branch: Some(self.branch.as_deref().unwrap_or(DEFAULT_BRANCH).to_owned()),
-            auto_path: Some(subfolder),
-            ..TemplatePath::default()
+        let mut template =
+            templates::resolve_template_path(TemplateKind::Gear, &self.template, &self.path)?;
+        if let Some(git) = &self.git {
+            template.git = Some(git.clone());
         }
+        if let Some(branch) = &self.branch {
+            template.branch = Some(branch.clone());
+            template.tag = None;
+            template.revision = None;
+        }
+        if let Some(subfolder) = &self.subfolder {
+            template.auto_path = Some(subfolder.clone());
+        }
+
+        Ok(template)
     }
 }
 

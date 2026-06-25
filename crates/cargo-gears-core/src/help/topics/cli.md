@@ -9,15 +9,15 @@ General guidelines for LLMs:
   - When linting, use `cargo gears lint`, not cargo check/clippy/fmt directly
   - Always verify that the application runs successfully after modifying code
   - Prefer system gears over implementing custom ones (check available
-    gears with `cargo gears ls modules --system`)
-  - Do not create gears from scratch; use `cargo gears generate module`
+    gears with `cargo gears ls gears --system`)
+  - Do not create gears from scratch; use `cargo gears generate gear`
   - Pay attention to the "deps" section of system gears
 
 Invocation: cargo gears <command>
 
 Command tree:
-  generate workspace  Initialize a Gears workspace from a template
-  generate module     Generate a gear from a template (background-worker,
+  generate workspace  Initialize a Gears workspace from a template (`--list` shows templates)
+  generate gear       Generate a gear from a template (`--list` shows templates)
                       api-db-handler, api-gateway)
   generate config     Generate a runtime YAML config (dev, prod, db)
   new                 Alias for generate workspace
@@ -28,7 +28,8 @@ Command tree:
   help schema         Print schema for manifest, config, or module formats
   help topic          Print operational documentation for a topic
   lint                Run workspace linting (fmt, clippy, dylint)
-  ls modules          List system and workspace gears
+  ls gears            List system and workspace gears
+  ls templates        List built-in and manifest generation templates
   manifest validate   Validate Gears.toml
   manifest ls         List app/environment pairs
   test                Run manifest-driven tests (cargo test or nextest)
@@ -46,7 +47,7 @@ Shared argument patterns:
 
 Quick start flow:
   cargo gears new /tmp/my-app
-  cargo gears generate module --template background-worker -p /tmp/my-app
+  cargo gears generate gear --template background-worker -p /tmp/my-app
   cargo gears generate config --template dev --app app1 --env dev -p /tmp/my-app
   cargo gears config mod add background-worker -p /tmp/my-app \
       -c /tmp/my-app/config/app1-dev.yml

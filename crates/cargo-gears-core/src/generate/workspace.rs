@@ -1,8 +1,7 @@
+use crate::list::templates::{self, TemplateKind};
 use anyhow::{Context, bail};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use std::path::PathBuf;
-
-use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
 
 /// Content of SKILL.md embedded at compile time
 const SKILL_MD_CONTENT: &str = include_str!("../../shared/SKILL.md");
@@ -33,10 +32,16 @@ pub struct WorkspaceParams {
     pub branch: Option<String>,
     /// Overwrite existing files.
     pub r#override: bool,
+    /// List available templates.
+    pub list: bool,
 }
 
 impl WorkspaceParams {
     pub fn run(&self) -> anyhow::Result<()> {
+        if self.list {
+            return templates::print_templates(Some(TemplateKind::Workspace), &self.path);
+        }
+
         if self.path.exists() && !self.path.is_dir() {
             bail!("path is not a directory");
         }
@@ -54,7 +59,7 @@ impl WorkspaceParams {
                 .context("name is strange")?,
         };
 
-        let resolved = self.resolve_template();
+        let resolved = self.resolve_template()?;
 
         generate(GenerateArgs {
             template_path: resolved,
@@ -97,28 +102,29 @@ impl WorkspaceParams {
         Ok(())
     }
 
-    fn resolve_template(&self) -> TemplatePath {
+    fn resolve_template(&self) -> anyhow::Result<TemplatePath> {
         if let Some(local) = &self.local_path {
-            return TemplatePath {
+            return Ok(TemplatePath {
                 path: Some(local.clone()),
                 auto_path: self.subfolder.clone(),
                 ..TemplatePath::default()
-            };
-        }
-
-        let subfolder = self
-            .subfolder
-            .clone()
-            .unwrap_or_else(|| match self.template.as_str() {
-                "default" => "Init".to_owned(),
-                other => format!("Workspace/{other}"),
             });
-
-        TemplatePath {
-            git: Some(self.git.as_deref().unwrap_or(DEFAULT_GIT_URL).to_owned()),
-            branch: Some(self.branch.as_deref().unwrap_or(DEFAULT_BRANCH).to_owned()),
-            auto_path: Some(subfolder),
-            ..TemplatePath::default()
         }
+
+        let mut template =
+            templates::resolve_template_path(TemplateKind::Workspace, &self.template, &self.path)?;
+        if let Some(git) = &self.git {
+            template.git = Some(git.clone());
+        }
+        if let Some(branch) = &self.branch {
+            template.branch = Some(branch.clone());
+            template.tag = None;
+            template.revision = None;
+        }
+        if let Some(subfolder) = &self.subfolder {
+            template.auto_path = Some(subfolder.clone());
+        }
+
+        Ok(template)
     }
 }

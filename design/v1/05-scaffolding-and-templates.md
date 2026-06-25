@@ -57,20 +57,20 @@ However, the developer can add their own templates by:
 Catalog shape:
 
 ```toml
-[templates.module.background-worker]
-source = "git"
-url = "ssh://github.com/username/repository.git"
-revision = "eb5a0f5d"
+[[templates.gear]]
+name = "background-worker"
+description = "Background worker gear template"
+source = { source = "git", url = "ssh://github.com/username/repository.git", revision = "eb5a0f5d" }
 
-[templates.config.grpc-service]
-source = "local"
-path = "templates/grpc-service"
+[[templates.config]]
+name = "grpc-service"
+description = "gRPC service config template"
+source = { source = "local", path = "templates/grpc-service" }
 
-[templates.agents.custom-agent]
-source = "git"
-url = "ssh://github.com/constructorfabric/cf-template-rust.git"
-tag = "0.2"
-subfolder = "Agents/custom-agent"
+[[templates.agents]]
+name = "custom-agent"
+description = "Custom agent template"
+source = { source = "git", url = "ssh://github.com/constructorfabric/cf-template-rust.git", tag = "0.2", subfolder = "Agents/custom-agent" }
 ```
 
 This catalog is optional and can be placed along `Gears.toml` or by its own section in the manifest.
@@ -105,7 +105,7 @@ can discover the built-in names without hardcoding them.
 
 Module templates should preserve the Gears module layout described in
 [02_module_layout_and_sdk_pattern.md](https://github.com/constructorfabric/gears-rust/blob/main/docs/modkit_unified_system/02_module_layout_and_sdk_pattern.md).
-The generated module lives under `modules/<name>/` and may contain both an
+The generated module lives under `gears/<name>/` and may contain both an
 implementation crate and an SDK crate:
 
 ```text
@@ -120,7 +120,7 @@ modules/<name>/
 |       `-- errors.rs
 `-- src/
     |-- lib.rs
-    |-- module.rs                 # Gears registration and lifecycle
+    |-- gear.rs                   # Gears registration and lifecycle
     |-- config.rs                 # typed runtime config
     |-- api/                      # HTTP/gRPC/interface adapters
     |-- domain/                   # business logic and ports
@@ -134,7 +134,7 @@ The template code should keep layer boundaries explicit:
   services instead of carrying business logic.
 - `src/domain/` contains internal business logic, ports, and local client adapters.
 - `src/infra/` contains concrete persistence, HTTP, system, and other adapter implementations.
-- The Gears module annotation (`#[module(...)]` / `#[gears_toolkit::module(...)]`)
+- The Gears module annotation (`#[gear(...)]` / `#[toolkit::gear(...)]`)
   can live in any Rust source file under `src/`. It is the Gears wiring point: module
   attributes, lifecycle methods, capability registration, and `ClientHub`
   registration.
@@ -161,7 +161,7 @@ cargo gears init ./my-app [--name my-app]
 Should create:
 
 - `Cargo.toml` workspace
-- `modules/` (with a simple module)
+- `gears/` (with a simple gear)
 - `config/` (with a simple default runtime config with that previous module)
 - `Gears.toml` (manifest to run the previous module with the config)
 - `.gears/` ignored by Git in .gitignore

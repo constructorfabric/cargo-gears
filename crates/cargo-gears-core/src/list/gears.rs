@@ -1,4 +1,4 @@
-use super::{SYSTEM_REGISTRY_MODULES, SystemRegistryModule};
+use super::{SYSTEM_REGISTRY_GEARS, SystemRegistryGear};
 use crate::common::{OutputFormat, Registry};
 use crate::gears_parser::{
     Capability, ConfigModule, ConfigModuleMetadata, NotFoundError, ParsedModule,
@@ -103,7 +103,7 @@ impl GearsParams {
                 self.verbose,
                 local_modules
                     .as_ref()
-                    .context("local modules should be collected when local output is enabled")?,
+                    .context("local gears should be collected when local output is enabled")?,
             ));
         }
 
@@ -164,8 +164,8 @@ fn collect_system_modules(
         None
     };
 
-    let mut modules = Vec::with_capacity(SYSTEM_REGISTRY_MODULES.len());
-    for module in SYSTEM_REGISTRY_MODULES {
+    let mut modules = Vec::with_capacity(SYSTEM_REGISTRY_GEARS.len());
+    for module in SYSTEM_REGISTRY_GEARS {
         let metadata = metadata_by_crate
             .as_ref()
             .map(|metadata| {
@@ -174,9 +174,9 @@ fn collect_system_modules(
                 })
             })
             .transpose()?;
-        let used = local_modules.is_some_and(|modules| modules.contains_key(module.module_name));
+        let used = local_modules.is_some_and(|modules| modules.contains_key(module.gear_name));
         let used = used
-            || manifest_system_modules.contains(module.module_name)
+            || manifest_system_modules.contains(module.gear_name)
             || manifest_system_modules.contains(module.crate_name);
         modules.push(listed_system_module(module, metadata, used));
     }
@@ -196,12 +196,12 @@ fn fetch_system_metadata(
 }
 
 fn listed_system_module(
-    module: &SystemRegistryModule,
+    module: &SystemRegistryGear,
     metadata: Option<&RegistryMetadata>,
     used: bool,
 ) -> ListedGear {
     ListedGear {
-        name: module.module_name.to_owned(),
+        name: module.gear_name.to_owned(),
         source: GearSource::System,
         crate_name: Some(module.crate_name.to_owned()),
         latest_version: metadata.map(|metadata| metadata.latest_version.clone()),
@@ -422,7 +422,7 @@ async fn fetch_all_registry_metadata(
         .context("failed to create registry HTTP client")?;
 
     let mut join_set = tokio::task::JoinSet::new();
-    for module in SYSTEM_REGISTRY_MODULES.iter().copied() {
+    for module in SYSTEM_REGISTRY_GEARS.iter().copied() {
         let cloned_client = client.clone();
         let permit_pool = semaphore.clone();
         join_set.spawn(async move {
@@ -449,7 +449,7 @@ async fn fetch_all_registry_metadata(
 async fn fetch_registry_metadata(
     client: &Client,
     registry: Registry,
-    module: SystemRegistryModule,
+    module: SystemRegistryGear,
 ) -> anyhow::Result<RegistryMetadata> {
     let crate_url = format!("https://{registry}/api/v1/crates/{}", module.crate_name);
     let crate_response = client
@@ -490,7 +490,7 @@ async fn fetch_registry_metadata(
 async fn fetch_gears_module_metadata(
     client: &Client,
     registry: Registry,
-    module: SystemRegistryModule,
+    module: SystemRegistryGear,
     latest_version: &str,
 ) -> anyhow::Result<ParsedModule> {
     let download_url = format!(
@@ -703,12 +703,12 @@ mod tests {
         let value = serde_json::to_value(&listing).expect("modules should serialize as JSON");
         let first_module = &value["modules"][0];
 
-        assert_eq!(listing.modules.len(), SYSTEM_REGISTRY_MODULES.len());
+        assert_eq!(listing.modules.len(), SYSTEM_REGISTRY_GEARS.len());
         assert_eq!(first_module["source"], "system");
-        assert_eq!(first_module["name"], SYSTEM_REGISTRY_MODULES[0].module_name);
+        assert_eq!(first_module["name"], SYSTEM_REGISTRY_GEARS[0].gear_name);
         assert_eq!(
             first_module["crate_name"],
-            SYSTEM_REGISTRY_MODULES[0].crate_name
+            SYSTEM_REGISTRY_GEARS[0].crate_name
         );
         assert_eq!(first_module["used"], false);
         assert!(first_module.get("latest_version").is_none());
