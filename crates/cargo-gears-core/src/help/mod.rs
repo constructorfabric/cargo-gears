@@ -1,6 +1,6 @@
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
+use schemars::{JsonSchema, schema_for};
 use std::fmt;
-use schemars::{schema_for, JsonSchema};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HelpParams {
@@ -38,11 +38,13 @@ impl fmt::Display for SchemaTarget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "clap", derive(clap::Args))]
 pub struct TopicParams {
     pub topic: Topic,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum Topic {
     Architecture,
     Cli,
@@ -149,8 +151,8 @@ fn to_json_schema<T: JsonSchema>() -> anyhow::Result<String> {
 
 fn schema_config(section: Option<&str>) -> anyhow::Result<String> {
     use crate::app_config::{
-        AppConfig, GlobalDatabaseConfig, ModuleConfig,
-        OpenTelemetryConfig, ServerConfig, LoggingConfig,
+        AppConfig, GlobalDatabaseConfig, LoggingConfig, GearConfig, OpenTelemetryConfig,
+        ServerConfig,
     };
     match section {
         None => to_json_schema::<AppConfig>(),
@@ -158,7 +160,7 @@ fn schema_config(section: Option<&str>) -> anyhow::Result<String> {
         Some("database") => to_json_schema::<GlobalDatabaseConfig>(),
         Some("logging") => to_json_schema::<LoggingConfig>(),
         Some("opentelemetry") => to_json_schema::<OpenTelemetryConfig>(),
-        Some("gears") => to_json_schema::<ModuleConfig>(),
+        Some("gears") => to_json_schema::<GearConfig>(),
         Some(other) => bail!(
             "unknown config section '{other}'; available: server, database, logging, opentelemetry, gears"
         ),

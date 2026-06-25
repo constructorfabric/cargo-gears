@@ -132,61 +132,13 @@ impl From<SrcArgs> for cargo_gears_core::source::SourceParams {
 #[derive(Args)]
 pub struct TopicArgs {
     /// Topic to display
-    topic: Topic,
-}
-
-#[derive(Clone, Copy, ValueEnum)]
-pub enum Topic {
-    Architecture,
-    Cli,
-    #[value(name = "clienthub")]
-    ClientHub,
-    Database,
-    #[value(name = "rest-errors")]
-    RestErrors,
-    Fips,
-    #[value(name = "gear-layout")]
-    GearLayout,
-    #[value(name = "gear-refs")]
-    GearRefs,
-    #[value(name = "gears-catalog")]
-    GearsCatalog,
-    #[value(name = "generated-server")]
-    GeneratedServer,
-    Lifecycle,
-    Manifest,
-    Otel,
-    #[value(name = "rest-api")]
-    RestApi,
-    Security,
+    topic: cargo_gears_core::help::Topic,
 }
 
 impl From<TopicArgs> for cargo_gears_core::help::TopicParams {
     fn from(args: TopicArgs) -> Self {
         Self {
             topic: args.topic.into(),
-        }
-    }
-}
-
-impl From<Topic> for cargo_gears_core::help::Topic {
-    fn from(topic: Topic) -> Self {
-        match topic {
-            Topic::Architecture => Self::Architecture,
-            Topic::Cli => Self::Cli,
-            Topic::ClientHub => Self::ClientHub,
-            Topic::Database => Self::Database,
-            Topic::RestErrors => Self::RestErrors,
-            Topic::Fips => Self::Fips,
-            Topic::GearLayout => Self::GearLayout,
-            Topic::GearRefs => Self::GearRefs,
-            Topic::GearsCatalog => Self::GearsCatalog,
-            Topic::GeneratedServer => Self::GeneratedServer,
-            Topic::Lifecycle => Self::Lifecycle,
-            Topic::Manifest => Self::Manifest,
-            Topic::Otel => Self::Otel,
-            Topic::RestApi => Self::RestApi,
-            Topic::Security => Self::Security,
         }
     }
 }

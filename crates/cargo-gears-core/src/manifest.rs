@@ -480,6 +480,7 @@ pub enum GearRef {
 pub struct GearRefLocal {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
     pub version: Option<VersionReq>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,
@@ -497,6 +498,7 @@ pub struct GearRefLocal {
 #[serde(deny_unknown_fields)]
 pub struct GearRefRemote {
     pub name: String,
+    #[schemars(with = "String")]
     pub version: VersionReq,
     pub package: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -654,7 +656,7 @@ pub struct TestPolicy {
 #[serde(deny_unknown_fields, default)]
 pub struct TemplateRegistry {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub module: Vec<TemplateDefinition>,
+    pub gear: Vec<TemplateDefinition>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub config: Vec<TemplateDefinition>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -688,7 +690,9 @@ pub enum TemplateSource {
     Embedded,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema,
+)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "kebab-case")]
 pub enum TestRunner {

@@ -356,7 +356,6 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "camino",
- "cargo-gears-macros",
  "cargo-generate",
  "cargo_metadata",
  "clap",

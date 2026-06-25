@@ -1,5 +1,3 @@
-pub use cargo_gears_macros::HelpSchema;
-
 pub mod app_config;
 pub mod build;
 pub mod common;

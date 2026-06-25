@@ -1,5 +1,5 @@
 use super::{load_config, save_config, validate_module_name};
-use crate::app_config::{AppConfig, DbConnConfig, ModuleConfig};
+use crate::app_config::{AppConfig, DbConnConfig, GearConfig};
 use crate::common::PathConfigParams;
 use crate::config::ensure_conn_payload;
 use anyhow::{Context, bail};
@@ -121,7 +121,7 @@ fn get_module_cfg_mut<'a>(
     config: &'a mut AppConfig,
     module: &str,
     config_path: &Path,
-) -> anyhow::Result<&'a mut ModuleConfig> {
+) -> anyhow::Result<&'a mut GearConfig> {
     config
         .gears
         .get_mut(module)

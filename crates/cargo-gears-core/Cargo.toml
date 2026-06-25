@@ -40,7 +40,6 @@ tempfile = { workspace = true }
 dylint = { workspace = true, optional = true }
 syn = { workspace = true }
 clap = { workspace = true, features = ["derive"], optional = true }
-cargo-gears-macros = { workspace = true }
 
 guppy = { workspace = true }
 camino = { workspace = true }

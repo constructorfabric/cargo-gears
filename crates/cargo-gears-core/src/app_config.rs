@@ -25,7 +25,7 @@ pub struct AppConfig {
     pub gears_dir: Option<String>,
     /// Per-gear configuration bag: `gear_name` -> gear config.
     #[serde(default)]
-    pub gears: BTreeMap<String, ModuleConfig>,
+    pub gears: BTreeMap<String, GearConfig>,
     /// Per-vendor configuration bag: `vendor_name` → arbitrary JSON/YAML value.
     /// Allows vendors to add their own typed configuration sections.
     #[serde(default)]
@@ -49,14 +49,22 @@ impl Default for AppConfig {
 /// Core server configuration.
 #[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct ServerConfig {
+    /// Server name
+    #[serde(default = "default_server_name")]
+    pub name: String,
     /// Server home directory.
     #[serde(default = "default_home_dir")]
     pub home_dir: PathBuf,
 }
 
+fn default_server_name() -> String {
+    "cf-gears".to_owned()
+}
+
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
+            name: default_server_name(),
             home_dir: default_home_dir(),
         }
     }
@@ -118,7 +126,7 @@ mod optional_level_serde {
     }
 
     #[allow(clippy::unnecessary_wraps)]
-    pub fn default() -> Option<Level> {
+    pub const fn default() -> Option<Level> {
         Some(Level::INFO)
     }
 }
@@ -129,8 +137,9 @@ pub struct Section {
     pub console_format: ConsoleFormat,
     #[serde(
         default = "optional_level_serde::default",
-        with = "optional_level_serde",
+        with = "optional_level_serde"
     )]
+    #[schemars(with = "String")]
     pub console_level: Option<tracing::Level>,
     #[serde(flatten)]
     pub section_file: Option<SectionFile>,
@@ -146,8 +155,9 @@ pub struct SectionFile {
     pub file: String,
     #[serde(
         default = "optional_level_serde::default",
-        with = "optional_level_serde",
+        with = "optional_level_serde"
     )]
+    #[schemars(with = "String")]
     pub file_level: Option<tracing::Level>,
 }
 
@@ -163,7 +173,7 @@ pub enum ConsoleFormat {
 
 /// Per-module configuration: database, config bag, runtime, and Cargo metadata
 #[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
-pub struct ModuleConfig {
+pub struct GearConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub database: Option<DbConnConfig>,
     #[serde(default = "default_module_config")]
@@ -174,7 +184,7 @@ pub struct ModuleConfig {
     pub metadata: Option<ConfigModuleMetadata>,
 }
 
-impl Default for ModuleConfig {
+impl Default for GearConfig {
     fn default() -> Self {
         Self {
             database: None,

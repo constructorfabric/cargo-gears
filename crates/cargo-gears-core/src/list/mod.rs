@@ -1,6 +1,7 @@
-mod modules;
+mod gears;
+mod templates;
 
-pub use modules::{GearsOutput, GearsParams};
+pub use gears::{GearsOutput, GearsParams};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ListCommand {

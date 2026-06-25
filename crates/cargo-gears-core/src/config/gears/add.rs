@@ -107,7 +107,7 @@ fn build_required_metadata(
 #[cfg(test)]
 mod tests {
     use super::{AddParams, build_required_metadata, upsert_module_config};
-    use crate::app_config::{AppConfig, ModuleConfig};
+    use crate::app_config::{AppConfig, GearConfig};
     use crate::common::PathConfigParams;
     use crate::gears_parser::{Capability, ConfigModule, ConfigModuleMetadata};
     use std::path::PathBuf;
@@ -160,7 +160,7 @@ mod tests {
         let mut config = AppConfig::default();
         config.gears.insert(
             "demo".to_owned(),
-            ModuleConfig {
+            GearConfig {
                 metadata: Some(ConfigModuleMetadata {
                     package: Some("cf-demo-existing".to_owned()),
                     version: Some("9.9.9".to_owned()),
@@ -170,7 +170,7 @@ mod tests {
                     deps: vec!["existing-dep".to_owned()],
                     capabilities: vec![Capability::Grpc],
                 }),
-                ..ModuleConfig::default()
+                ..GearConfig::default()
             },
         );
 
