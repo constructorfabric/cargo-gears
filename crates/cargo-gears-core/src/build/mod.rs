@@ -226,7 +226,7 @@ generated-dir = "generated-output"
 
 [apps.app.dev]
 config = "app-dev.yml"
-modules = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
+gears = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
 
 [apps.app.dev.build]
 name = "demo-server"

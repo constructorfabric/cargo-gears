@@ -96,7 +96,7 @@ mod tests {
         fs::write(temp.path().join("config/app-dev.yml"), "server: {}\n").expect("write config");
     }
 
-    const MINIMAL: &str = "[apps.app.dev]\nconfig = \"app-dev.yml\"\nmodules = []\n";
+    const MINIMAL: &str = "[apps.app.dev]\nconfig = \"app-dev.yml\"\ngears = []\n";
 
     #[test]
     fn parses_default_lint_args() {

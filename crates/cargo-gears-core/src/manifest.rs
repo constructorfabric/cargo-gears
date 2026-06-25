@@ -267,7 +267,7 @@ impl Manifest {
             .as_ref()
             .and_then(|build| build.name.clone())
             .unwrap_or_else(|| format!("{app}-{env}"));
-        let dependencies = resolve_dependencies(&workspace_base, &environment.modules)?;
+        let dependencies = resolve_dependencies(&workspace_base, &environment.gears)?;
         let generated_dir = resolve_relative_to(&workspace_base, &self.workspace.generated_dir);
 
         Ok(ResolvedManifest {
@@ -282,7 +282,7 @@ impl Manifest {
             build: environment.build.clone().unwrap_or_default(),
             lint: environment.lint.clone(),
             test: environment.test.clone(),
-            modules: environment.modules.clone(),
+            gears: environment.gears.clone(),
             dependencies,
         })
     }
@@ -304,19 +304,19 @@ fn resolve_relative_to(base: &Path, path: &Path) -> PathBuf {
 
 fn resolve_dependencies(
     workspace_root: &Path,
-    modules: &[ModuleRef],
+    gears: &[GearRef],
 ) -> anyhow::Result<CargoTomlDependencies> {
-    let local_modules = modules
+    let local_modules = gears
         .iter()
-        .any(|module| matches!(module, ModuleRef::Local(_)))
+        .any(|module| matches!(module, GearRef::Local(_)))
         .then(|| crate::gears_parser::get_module_name_from_crate(Some(workspace_root)))
         .transpose()?
         .unwrap_or_default();
     let mut dependencies = CargoTomlDependencies::new();
 
-    for module in modules {
+    for module in gears {
         let (name, metadata) = match module {
-            ModuleRef::Local(local) => {
+            GearRef::Local(local) => {
                 let discovered = local_modules.get(&local.name).with_context(|| {
                     format!("local module '{}' cannot be discovered", local.name)
                 })?;
@@ -335,7 +335,7 @@ fn resolve_dependencies(
                 }
                 (local.name.clone(), metadata)
             }
-            ModuleRef::Remote(remote) => (
+            GearRef::Remote(remote) => (
                 remote.name.clone(),
                 ConfigModuleMetadata {
                     package: Some(remote.package.clone()),
@@ -389,7 +389,7 @@ pub struct ResolvedManifest {
     pub build: BuildPolicy,
     pub lint: LintPolicy,
     pub test: TestPolicy,
-    pub modules: Vec<ModuleRef>,
+    pub gears: Vec<GearRef>,
     pub dependencies: CargoTomlDependencies,
 }
 
@@ -455,9 +455,9 @@ pub struct Environment {
     /// Lint policy overrides.
     #[serde(default)]
     pub lint: LintPolicy,
-    /// Modules to include in the generated server.
+    /// Gears to include in the generated server.
     #[serde(default)]
-    pub modules: Vec<ModuleRef>,
+    pub gears: Vec<GearRef>,
     /// Runtime policy overrides.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run: Option<RunPolicy>,
@@ -468,14 +468,14 @@ pub struct Environment {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(tag = "source", rename_all = "kebab-case")]
-pub enum ModuleRef {
-    Local(LocalModuleRef),
-    Remote(RemoteModuleRef),
+pub enum GearRef {
+    Local(GearRefLocal),
+    Remote(GearRefRemote),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct LocalModuleRef {
+pub struct GearRefLocal {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<VersionReq>,
@@ -493,7 +493,7 @@ pub struct LocalModuleRef {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct RemoteModuleRef {
+pub struct GearRefRemote {
     pub name: String,
     pub version: VersionReq,
     pub package: String,
@@ -761,7 +761,7 @@ generated-dir = "custom-generated"
 
 [apps.app.dev]
 config = "app-dev.yml"
-modules = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
+gears = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
 "#,
         );
         temp.write("config/app-dev.yml", "server: {}\n");
@@ -795,7 +795,7 @@ generated-dir = "target/generated"
 
 [apps.app.dev]
 config = "app-dev.yml"
-modules = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
+gears = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
 "#,
         );
         let manifest = Manifest::load(&temp.path().join(DEFAULT_MANIFEST_FILE)).unwrap();
@@ -831,7 +831,7 @@ generated-dir = "{}"
 
 [apps.app.dev]
 config = "app-dev.yml"
-modules = [{{ source = "remote", name = "module", package = "cf-module", version = "1.2" }}]
+gears = [{{ source = "remote", name = "module", package = "cf-module", version = "1.2" }}]
 "#,
                 absolute_generated_dir.display()
             ),
@@ -860,7 +860,7 @@ modules = [{{ source = "remote", name = "module", package = "cf-module", version
             r#"
 [apps.app.dev]
 config = "app-dev.yml"
-modules = []
+gears = []
 "#,
         );
         temp.write("workspace/config/app-dev.yml", "server: {}\n");

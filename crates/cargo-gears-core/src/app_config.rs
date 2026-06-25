@@ -112,12 +112,12 @@ impl Default for ModuleConfig {
 pub struct ModuleRuntime {
     #[serde(default, rename = "type")]
     pub mod_type: RuntimeKind,
-    /// Execution configuration for `OoP` modules.
+    /// Execution configuration for `OoP` gears.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub execution: Option<ExecutionConfig>,
 }
 
-/// Execution configuration for out-of-process modules
+/// Execution configuration for out-of-process gears
 #[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
 pub struct ExecutionConfig {
     /// Path to the executable. Supports absolute paths or `~` expansion.
@@ -162,7 +162,7 @@ pub struct GlobalDatabaseConfig {
     pub auto_provision: Option<bool>,
 }
 
-/// Reusable DB connection config for both global servers and modules
+/// Reusable DB connection config for both global servers and gears
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default, crate::HelpSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DbConnConfig {

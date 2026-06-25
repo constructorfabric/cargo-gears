@@ -10,7 +10,7 @@ fn parses_list_modules_into_core_command() {
     let command = parse_command(&[
         "gears",
         "ls",
-        "modules",
+        "gears",
         "--verbose",
         "--registry",
         "crates.io",
@@ -19,11 +19,11 @@ fn parses_list_modules_into_core_command() {
     assert_eq!(
         command,
         GearsCommand::List(cargo_gears_core::list::ListParams {
-            command: cargo_gears_core::list::ListCommand::Modules(
-                cargo_gears_core::list::ModulesParams {
+            command: cargo_gears_core::list::ListCommand::Gears(
+                cargo_gears_core::list::GearsParams {
                     path: None,
                     verbose: true,
-                    output: cargo_gears_core::list::ModulesOutput::all(),
+                    output: cargo_gears_core::list::GearsOutput::all(),
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                 },
@@ -34,16 +34,16 @@ fn parses_list_modules_into_core_command() {
 
 #[test]
 fn parses_list_modules_local_flag_into_core_command() {
-    let command = parse_command(&["gears", "ls", "modules", "--local"]);
+    let command = parse_command(&["gears", "ls", "gears", "--local"]);
 
     assert_eq!(
         command,
         GearsCommand::List(cargo_gears_core::list::ListParams {
-            command: cargo_gears_core::list::ListCommand::Modules(
-                cargo_gears_core::list::ModulesParams {
+            command: cargo_gears_core::list::ListCommand::Gears(
+                cargo_gears_core::list::GearsParams {
                     path: None,
                     verbose: false,
-                    output: cargo_gears_core::list::ModulesOutput::local(),
+                    output: cargo_gears_core::list::GearsOutput::local(),
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                 },
@@ -57,7 +57,7 @@ fn parses_list_modules_system_flag_into_core_command() {
     let command = parse_command(&[
         "gears",
         "ls",
-        "modules",
+        "gears",
         "--system",
         "--verbose",
         "--registry",
@@ -67,11 +67,11 @@ fn parses_list_modules_system_flag_into_core_command() {
     assert_eq!(
         command,
         GearsCommand::List(cargo_gears_core::list::ListParams {
-            command: cargo_gears_core::list::ListCommand::Modules(
-                cargo_gears_core::list::ModulesParams {
+            command: cargo_gears_core::list::ListCommand::Gears(
+                cargo_gears_core::list::GearsParams {
                     path: None,
                     verbose: true,
-                    output: cargo_gears_core::list::ModulesOutput::system(),
+                    output: cargo_gears_core::list::GearsOutput::system(),
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                 },

@@ -6,7 +6,7 @@ use anyhow::{Context, bail};
 use crate::app_config::{AppConfig, DbConnConfig};
 
 pub mod db;
-pub mod modules;
+pub mod gears;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ConfigParams {
@@ -21,7 +21,7 @@ impl ConfigParams {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ConfigCommand {
-    Mod(modules::ModulesParams),
+    Mod(gears::GearsParams),
     Db(Box<db::DbParams>),
 }
 

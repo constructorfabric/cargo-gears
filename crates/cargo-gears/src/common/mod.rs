@@ -112,7 +112,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.run]\n\
              otel = true\n\
              fips = true\n\
@@ -156,7 +156,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.run]\n\
              otel = true\n\
              fips = true\n\
@@ -197,7 +197,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.build]\n\
              profile = \"release\"\n",
         );
@@ -232,7 +232,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n",
+             gears = []\n",
         );
 
         let args = parse(&temp, &[]);
@@ -265,7 +265,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.run]\n\
              otel = true\n\
              fips = true\n\
@@ -313,7 +313,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.run]\n\
              otel = true\n\
              fips = true\n\
@@ -359,7 +359,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.build]\n\
              name = \"demo-server\"\n",
         );
@@ -393,7 +393,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.build]\n\
              name = \"demo-server\"\n",
         );
@@ -429,7 +429,7 @@ mod tests {
             &temp,
             "[apps.app.dev]\n\
              config = \"app-dev.yml\"\n\
-             modules = []\n\
+             gears = []\n\
              [apps.app.dev.build]\n\
              name = \"demo-server\"\n",
         );

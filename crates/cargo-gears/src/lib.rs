@@ -38,7 +38,7 @@ enum Commands {
     Help(help::HelpArgs),
     /// Orchestrate the linting process of the project
     Lint(lint::LintArgs),
-    /// Inspect workspace modules, system modules, and project state
+    /// Inspect workspace gears, system gears, and project state
     #[command(name = "ls")]
     List(list::ListArgs),
     /// Inspect and validate Gears.toml manifests

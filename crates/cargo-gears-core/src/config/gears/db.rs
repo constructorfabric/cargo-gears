@@ -33,7 +33,7 @@ impl ModuleDbParams {
 #[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
     pub path_config: PathConfigParams,
-    /// Module name under `modules.<module>`
+    /// Module name under `gears.<module>`
     pub module: String,
     pub conn: DbConnConfig,
 }
@@ -66,7 +66,7 @@ impl AddArgs {
 #[derive(Debug, Eq, PartialEq)]
 pub struct EditArgs {
     pub path_config: PathConfigParams,
-    /// Module name under `modules.<module>`
+    /// Module name under `gears.<module>`
     pub module: String,
     pub conn: DbConnConfig,
 }
@@ -95,7 +95,7 @@ impl EditArgs {
 #[derive(Debug, Eq, PartialEq)]
 pub struct RemoveArgs {
     pub path_config: PathConfigParams,
-    /// Module name under `modules.<module>`
+    /// Module name under `gears.<module>`
     pub module: String,
 }
 

@@ -1,10 +1,10 @@
 mod modules;
 
-pub use modules::{ModulesOutput, ModulesParams};
+pub use modules::{GearsOutput, GearsParams};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ListCommand {
-    Modules(ModulesParams),
+    Gears(GearsParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -15,7 +15,7 @@ pub struct ListParams {
 impl ListParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
-            ListCommand::Modules(args) => args.run(),
+            ListCommand::Gears(args) => args.run(),
         }
     }
 }
@@ -285,44 +285,44 @@ mod tests {
     fn list_modules_local_runs_successfully() {
         let temp_dir = scaffold_workspace(&[("crate-gamma", "gamma")]);
 
-        let args = ModulesParams {
+        let args = GearsParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
-            output: ModulesOutput::local(),
+            output: GearsOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
         };
 
-        args.run().expect("list modules --local should succeed");
+        args.run().expect("list gears --local should succeed");
     }
 
     #[test]
     fn list_modules_local_verbose_runs_successfully() {
         let temp_dir = scaffold_workspace(&[("crate-delta", "delta")]);
 
-        let args = ModulesParams {
+        let args = GearsParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: true,
-            output: ModulesOutput::local(),
+            output: GearsOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
         };
 
         args.run()
-            .expect("list modules --local --verbose should succeed");
+            .expect("list gears --local --verbose should succeed");
     }
 
     #[test]
     fn list_modules_system_runs_successfully() {
-        let args = ModulesParams {
+        let args = GearsParams {
             path: None,
             verbose: false,
-            output: ModulesOutput::system(),
+            output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
         };
 
-        args.run().expect("list modules --system should succeed");
+        args.run().expect("list gears --system should succeed");
     }
 
     #[test]
@@ -337,10 +337,10 @@ mod tests {
     fn list_modules_combines_system_and_local() {
         let temp_dir = scaffold_workspace(&[("crate-one", "one"), ("crate-two", "two")]);
 
-        let args = ModulesParams {
+        let args = GearsParams {
             path: Some(temp_dir.path().to_path_buf()),
             verbose: false,
-            output: ModulesOutput::all(),
+            output: GearsOutput::all(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
         };

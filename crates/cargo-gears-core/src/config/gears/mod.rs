@@ -5,26 +5,26 @@ pub mod db;
 pub mod remove;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct ModulesParams {
-    pub command: ModulesCommand,
+pub struct GearsParams {
+    pub command: GearsCommand,
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub enum ModulesCommand {
-    /// Add or update a module in the modules section (upsert)
+pub enum GearsCommand {
+    /// Add or update a gears in the gears section (upsert)
     Add(add::AddParams),
-    /// Manage module-level database config
+    /// Manage gears-level database config
     Db(Box<db::ModuleDbParams>),
-    /// Remove a module from the modules section
+    /// Remove a gears from the gears section
     Rm(remove::RemoveParams),
 }
 
-impl ModulesParams {
+impl GearsParams {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
-            ModulesCommand::Add(args) => args.run(),
-            ModulesCommand::Db(args) => args.run(),
-            ModulesCommand::Rm(args) => args.run(),
+            GearsCommand::Add(args) => args.run(),
+            GearsCommand::Db(args) => args.run(),
+            GearsCommand::Rm(args) => args.run(),
         }
     }
 }
