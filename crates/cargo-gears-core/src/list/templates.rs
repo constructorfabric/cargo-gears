@@ -34,7 +34,7 @@ pub const BUILTIN_TEMPLATES_GEARS: &[TemplateDefinition] = &[
     TemplateDefinition {
         name: Cow::Borrowed("api-gateway"),
         description: Cow::Borrowed(
-            "simple gateway required for the system to have rest api. Prefer to use the system module cf-gears-api-gateway",
+            "simple gateway required for the system to have rest api. Prefer to use the system gear cf-gears-api-gateway",
         ),
         source: source_path("Modules/api-gateway"),
     },

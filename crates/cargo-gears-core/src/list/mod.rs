@@ -25,70 +25,70 @@ impl ListParams {
 }
 
 #[derive(Clone, Copy)]
-pub struct SystemRegistryModule {
-    pub module_name: &'static str,
+pub struct SystemRegistryGear {
+    pub gear_name: &'static str,
     pub crate_name: &'static str,
 }
 
-pub const SYSTEM_REGISTRY_MODULES: &[SystemRegistryModule] = &[
-    SystemRegistryModule {
-        module_name: "credstore",
+pub const SYSTEM_REGISTRY_GEARS: &[SystemRegistryGear] = &[
+    SystemRegistryGear {
+        gear_name: "credstore",
         crate_name: "cf-gears-credstore",
     },
-    SystemRegistryModule {
-        module_name: "file-parser",
+    SystemRegistryGear {
+        gear_name: "file-parser",
         crate_name: "cf-gears-file-parser",
     },
-    SystemRegistryModule {
-        module_name: "api-gateway",
+    SystemRegistryGear {
+        gear_name: "api-gateway",
         crate_name: "cf-gears-api-gateway",
     },
-    SystemRegistryModule {
-        module_name: "authn-resolver",
+    SystemRegistryGear {
+        gear_name: "authn-resolver",
         crate_name: "cf-gears-authn-resolver",
     },
-    SystemRegistryModule {
-        module_name: "static-authn-plugin",
+    SystemRegistryGear {
+        gear_name: "static-authn-plugin",
         crate_name: "cf-gears-static-authn-plugin",
     },
-    SystemRegistryModule {
-        module_name: "authz-resolver",
+    SystemRegistryGear {
+        gear_name: "authz-resolver",
         crate_name: "cf-gears-authz-resolver",
     },
-    SystemRegistryModule {
-        module_name: "static-authz-plugin",
+    SystemRegistryGear {
+        gear_name: "static-authz-plugin",
         crate_name: "cf-gears-static-authz-plugin",
     },
-    SystemRegistryModule {
-        module_name: "grpc-hub",
+    SystemRegistryGear {
+        gear_name: "grpc-hub",
         crate_name: "cf-gears-grpc-hub",
     },
-    SystemRegistryModule {
-        module_name: "module-orchestrator",
-        crate_name: "cf-gears-module-orchestrator",
+    SystemRegistryGear {
+        gear_name: "gear-orchestrator",
+        crate_name: "cf-gears-gear-orchestrator",
     },
-    SystemRegistryModule {
-        module_name: "nodes-registry",
+    SystemRegistryGear {
+        gear_name: "nodes-registry",
         crate_name: "cf-gears-nodes-registry",
     },
-    SystemRegistryModule {
-        module_name: "oagw",
+    SystemRegistryGear {
+        gear_name: "oagw",
         crate_name: "cf-gears-oagw",
     },
-    SystemRegistryModule {
-        module_name: "single-tenant-tr-plugin",
+    SystemRegistryGear {
+        gear_name: "single-tenant-tr-plugin",
         crate_name: "cf-gears-single-tenant-tr-plugin",
     },
-    SystemRegistryModule {
-        module_name: "static-tr-plugin",
+    SystemRegistryGear {
+        gear_name: "static-tr-plugin",
         crate_name: "cf-gears-static-tr-plugin",
     },
-    SystemRegistryModule {
-        module_name: "tenant-resolver",
+    SystemRegistryGear {
+        gear_name: "tenant-resolver",
         crate_name: "cf-gears-tenant-resolver",
     },
-    SystemRegistryModule {
-        module_name: "types-registry",
+    SystemRegistryGear {
+        gear_name: "types-registry",
         crate_name: "cf-gears-types-registry",
     },
 ];
@@ -332,7 +332,7 @@ mod tests {
     #[test]
     fn system_modules_registry_is_not_empty() {
         assert!(
-            !SYSTEM_REGISTRY_MODULES.is_empty(),
+            !SYSTEM_REGISTRY_GEARS.is_empty(),
             "system registry should contain at least one module"
         );
     }
