@@ -1,77 +1,6 @@
-use anyhow::bail;
+use anyhow::{bail, Context};
 use std::fmt;
-use std::fmt::Write;
-
-// ---------------------------------------------------------------------------
-// HelpSchema trait — implemented by the derive macro
-// ---------------------------------------------------------------------------
-
-/// Metadata for a single struct field or enum variant, produced by the derive
-/// macro from doc comments and serde attributes.
-#[derive(Debug, Clone)]
-pub struct FieldHelp {
-    pub name: &'static str,
-    pub field_type: &'static str,
-    pub doc: &'static str,
-    pub optional: bool,
-    pub has_default: bool,
-}
-
-/// Trait implemented by `#[derive(HelpSchema)]` on schema types.
-/// Provides structured documentation harvested from doc comments and serde
-/// attributes at compile time.
-pub trait HelpSchema {
-    /// The Rust type name (e.g. `"Manifest"`).
-    fn help_name() -> &'static str;
-    /// Concatenated struct/enum-level doc comments.
-    fn help_doc() -> &'static str;
-    /// Per-field (or per-variant) metadata.
-    fn help_fields() -> Vec<FieldHelp>;
-
-    /// Render a human-readable help text from the harvested metadata.
-    #[must_use]
-    fn help_text() -> String {
-        let mut out = String::new();
-        out.push_str(Self::help_name());
-        out.push('\n');
-        let doc = Self::help_doc();
-        if !doc.is_empty() {
-            out.push('\n');
-            out.push_str(doc);
-            out.push('\n');
-        }
-        let fields = Self::help_fields();
-        if !fields.is_empty() {
-            out.push_str("\nFields:\n");
-            for f in &fields {
-                let qualifier = if f.optional {
-                    "optional"
-                } else if f.has_default {
-                    "default"
-                } else {
-                    "required"
-                };
-                let _ = writeln!(
-                    out,
-                    "  {:<24} {:<28} {}{}",
-                    f.name,
-                    f.field_type,
-                    qualifier,
-                    if f.doc.is_empty() {
-                        String::new()
-                    } else {
-                        format!("  — {}", f.doc)
-                    },
-                );
-            }
-        }
-        out
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Command types
-// ---------------------------------------------------------------------------
+use schemars::{schema_for, JsonSchema};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HelpParams {
@@ -200,73 +129,36 @@ impl TopicParams {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Schema helpers — delegate to HelpSchema implementations
-// ---------------------------------------------------------------------------
-
 fn schema_manifest(section: Option<&str>) -> anyhow::Result<String> {
-    use crate::manifest::{
-        BuildPolicy, Environment, LintPolicy, Manifest, RunPolicy, TemplateRegistry, TestPolicy,
-        Workspace,
-    };
+    use crate::manifest::{Environment, Manifest, TemplateRegistry, Workspace};
     match section {
-        None => Ok(Manifest::help_text()),
-        Some("workspace") => Ok(Workspace::help_text()),
-        Some("apps") => {
-            let mut out = Environment::help_text();
-            out.push('\n');
-            out.push_str(&RunPolicy::help_text());
-            out.push('\n');
-            out.push_str(&BuildPolicy::help_text());
-            out.push('\n');
-            out.push_str(&LintPolicy::help_text());
-            out.push('\n');
-            out.push_str(&TestPolicy::help_text());
-            Ok(out)
-        }
-        Some("templates") => Ok(TemplateRegistry::help_text()),
+        None => to_json_schema::<Manifest>(),
+        Some("workspace") => to_json_schema::<Workspace>(),
+        Some("apps") => to_json_schema::<Environment>(),
+        Some("templates") => to_json_schema::<TemplateRegistry>(),
         Some(other) => {
             bail!("unknown manifest section '{other}'; available: workspace, apps, templates")
         }
     }
 }
 
+fn to_json_schema<T: JsonSchema>() -> anyhow::Result<String> {
+    let sch = schema_for!(T);
+    serde_json::to_string(&sch).context("failed to serialize schema")
+}
+
 fn schema_config(section: Option<&str>) -> anyhow::Result<String> {
     use crate::app_config::{
-        AppConfig, DbConnConfig, Exporter, GlobalDatabaseConfig, MetricsConfig, ModuleConfig,
-        ModuleRuntime, OpenTelemetryConfig, PoolCfg, ServerConfig, TracingConfig,
+        AppConfig, GlobalDatabaseConfig, ModuleConfig,
+        OpenTelemetryConfig, ServerConfig, LoggingConfig,
     };
     match section {
-        None => Ok(AppConfig::help_text()),
-        Some("server") => Ok(ServerConfig::help_text()),
-        Some("database") => {
-            let mut out = GlobalDatabaseConfig::help_text();
-            out.push('\n');
-            out.push_str(&DbConnConfig::help_text());
-            out.push('\n');
-            out.push_str(&PoolCfg::help_text());
-            Ok(out)
-        }
-        Some("logging") => Ok("logging — Config Logging Section\n\n\
-             Map of subsystem name → logging settings (JSON/YAML value).\n\
-             The logging section is a free-form map; see config YAML examples."
-            .to_owned()),
-        Some("opentelemetry") => {
-            let mut out = OpenTelemetryConfig::help_text();
-            out.push('\n');
-            out.push_str(&Exporter::help_text());
-            out.push('\n');
-            out.push_str(&TracingConfig::help_text());
-            out.push('\n');
-            out.push_str(&MetricsConfig::help_text());
-            Ok(out)
-        }
-        Some("gears") => {
-            let mut out = ModuleConfig::help_text();
-            out.push('\n');
-            out.push_str(&ModuleRuntime::help_text());
-            Ok(out)
-        }
+        None => to_json_schema::<AppConfig>(),
+        Some("server") => to_json_schema::<ServerConfig>(),
+        Some("database") => to_json_schema::<GlobalDatabaseConfig>(),
+        Some("logging") => to_json_schema::<LoggingConfig>(),
+        Some("opentelemetry") => to_json_schema::<OpenTelemetryConfig>(),
+        Some("gears") => to_json_schema::<ModuleConfig>(),
         Some(other) => bail!(
             "unknown config section '{other}'; available: server, database, logging, opentelemetry, gears"
         ),
@@ -364,31 +256,5 @@ mod tests {
         for topic in topics {
             assert!(!topic.is_empty());
         }
-    }
-
-    #[test]
-    fn help_schema_manifest_has_fields() {
-        use crate::manifest::Manifest;
-        let fields = Manifest::help_fields();
-        assert!(!fields.is_empty());
-        assert!(fields.iter().any(|f| f.name == "workspace"));
-        assert!(fields.iter().any(|f| f.name == "apps"));
-    }
-
-    #[test]
-    fn help_schema_appconfig_has_fields() {
-        use crate::app_config::AppConfig;
-        let fields = AppConfig::help_fields();
-        assert!(!fields.is_empty());
-        assert!(fields.iter().any(|f| f.name == "server"));
-    }
-
-    #[test]
-    fn help_text_includes_doc_comments() {
-        use crate::manifest::Workspace;
-        let text = Workspace::help_text();
-        assert!(text.contains("Workspace"));
-        assert!(text.contains("Fields:"));
-        assert!(text.contains("config-dir"));
     }
 }

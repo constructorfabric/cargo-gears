@@ -1,13 +1,13 @@
 use crate::gears_parser::ConfigModuleMetadata;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value, json};
+use serde_json::{Map, Value};
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::time::Duration;
 
 /// Main application configuration with strongly-typed global sections
 /// and a flexible per-module configuration bag.
-#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct AppConfig {
     /// Core server configuration.
     pub server: ServerConfig,
@@ -47,7 +47,7 @@ impl Default for AppConfig {
 }
 
 /// Core server configuration.
-#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct ServerConfig {
     /// Server home directory.
     #[serde(default = "default_home_dir")]
@@ -63,7 +63,7 @@ impl Default for ServerConfig {
 }
 
 /// Logging configuration - maps subsystem names to their logging settings
-pub type LoggingConfig = BTreeMap<String, Value>;
+pub type LoggingConfig = BTreeMap<String, Section>;
 
 /// Create a default logging configuration
 #[must_use]
@@ -71,20 +71,98 @@ pub fn default_logging_config() -> LoggingConfig {
     let mut logging = BTreeMap::new();
     logging.insert(
         "default".to_owned(),
-        json!({
-            "console_level": "info",
-            "file": "logs/gears.log",
-            "file_level": "debug",
-            "max_age_days": 7,
-            "max_backups": 3,
-            "max_size_mb": 100
-        }),
+        Section {
+            console_level: Some(tracing::Level::INFO),
+            section_file: Some(SectionFile {
+                file: "logs/cf-gears.log".to_owned(),
+                file_level: Some(tracing::Level::DEBUG),
+            }),
+            console_format: ConsoleFormat::default(),
+            max_age_days: Some(7),
+            max_backups: Some(3),
+            max_size_mb: Some(100),
+        },
     );
     logging
 }
 
+mod optional_level_serde {
+    use serde::{Deserialize, Deserializer, Serializer};
+    use tracing::Level;
+
+    #[allow(clippy::ref_option, clippy::trivially_copy_pass_by_ref)]
+    pub fn serialize<S>(level: &Option<Level>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match level {
+            Some(l) => serializer.serialize_str(l.as_str()),
+            None => serializer.serialize_str("off"),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Level>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        match s.to_lowercase().as_str() {
+            "trace" => Ok(Some(Level::TRACE)),
+            "debug" => Ok(Some(Level::DEBUG)),
+            "info" => Ok(Some(Level::INFO)),
+            "warn" => Ok(Some(Level::WARN)),
+            "error" => Ok(Some(Level::ERROR)),
+            "off" | "none" => Ok(None),
+            _ => Err(serde::de::Error::custom(format!("invalid level: {s}"))),
+        }
+    }
+
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn default() -> Option<Level> {
+        Some(Level::INFO)
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, schemars::JsonSchema)]
+pub struct Section {
+    #[serde(default)]
+    pub console_format: ConsoleFormat,
+    #[serde(
+        default = "optional_level_serde::default",
+        with = "optional_level_serde",
+    )]
+    pub console_level: Option<tracing::Level>,
+    #[serde(flatten)]
+    pub section_file: Option<SectionFile>,
+    pub max_age_days: Option<u32>, // Not implemented yet
+    #[serde(default)]
+    pub max_backups: Option<usize>, // How many files to keep
+    #[serde(default)]
+    pub max_size_mb: Option<u64>, // Max size of the file in MB
+}
+
+#[derive(Debug, Serialize, Deserialize, schemars::JsonSchema, Clone)]
+pub struct SectionFile {
+    pub file: String,
+    #[serde(
+        default = "optional_level_serde::default",
+        with = "optional_level_serde",
+    )]
+    pub file_level: Option<tracing::Level>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ConsoleFormat {
+    /// Human-readable text output (default).
+    #[default]
+    Text,
+    /// Structured JSON output (useful for container log collectors).
+    Json,
+}
+
 /// Per-module configuration: database, config bag, runtime, and Cargo metadata
-#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct ModuleConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub database: Option<DbConnConfig>,
@@ -108,7 +186,7 @@ impl Default for ModuleConfig {
 }
 
 /// Runtime configuration for a module (local vs out-of-process)
-#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, Default, schemars::JsonSchema)]
 pub struct ModuleRuntime {
     #[serde(default, rename = "type")]
     pub mod_type: RuntimeKind,
@@ -118,7 +196,7 @@ pub struct ModuleRuntime {
 }
 
 /// Execution configuration for out-of-process gears
-#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, Default, schemars::JsonSchema)]
 pub struct ExecutionConfig {
     /// Path to the executable. Supports absolute paths or `~` expansion.
     pub executable_path: String,
@@ -134,7 +212,7 @@ pub struct ExecutionConfig {
 }
 
 /// Module runtime kind
-#[derive(Clone, Default, Deserialize, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum RuntimeKind {
     #[default]
@@ -151,7 +229,7 @@ fn default_module_config() -> Value {
 }
 
 /// Global database configuration with server-based DBs
-#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, Default, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GlobalDatabaseConfig {
     /// Server-based DBs (postgres/mysql/sqlite/etc.), keyed by server name.
@@ -163,7 +241,7 @@ pub struct GlobalDatabaseConfig {
 }
 
 /// Reusable DB connection config for both global servers and gears
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct DbConnConfig {
     /// Explicit database engine for this connection.
@@ -200,7 +278,7 @@ pub struct DbConnConfig {
 }
 
 /// Serializable engine selector for configuration
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, schemars::JsonSchema, PartialEq, Eq)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "lowercase")]
 pub enum DbEngineCfg {
@@ -210,7 +288,7 @@ pub enum DbEngineCfg {
 }
 
 /// Connection pool configuration
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Default, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PoolCfg {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -327,11 +405,11 @@ impl PoolCfg {
 ///
 /// Each vendor's section can be deserialized into a typed struct via
 /// [`AppConfig::vendor_config`] or [`AppConfig::vendor_config_or_default`].
-pub type VendorConfig = HashMap<String, serde_json::Value>;
+pub type VendorConfig = HashMap<String, Value>;
 
 /// Top-level `OpenTelemetry` configuration grouping resource identity,
 /// a shared default exporter, tracing settings and metrics settings.
-#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, Default, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct OpenTelemetryConfig {
     #[serde(default)]
@@ -346,7 +424,7 @@ pub struct OpenTelemetryConfig {
 }
 
 /// `OpenTelemetry` resource identity — attached to all traces and metrics
-#[derive(Clone, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct OpenTelemetryResource {
     /// Logical service name.
@@ -372,7 +450,7 @@ impl Default for OpenTelemetryResource {
 }
 
 /// Tracing configuration for `OpenTelemetry` distributed tracing
-#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, Default, schemars::JsonSchema)]
 pub struct TracingConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -389,7 +467,7 @@ pub struct TracingConfig {
 }
 
 /// Metrics configuration for `OpenTelemetry` metrics collection
-#[derive(Clone, Deserialize, Serialize, Default, crate::HelpSchema)]
+#[derive(Clone, Deserialize, Serialize, Default, schemars::JsonSchema)]
 pub struct MetricsConfig {
     #[serde(default)]
     pub enabled: bool,
@@ -399,7 +477,7 @@ pub struct MetricsConfig {
     pub cardinality_limit: Option<usize>,
 }
 
-#[derive(Clone, Copy, Default, Deserialize, Serialize)]
+#[derive(Clone, Copy, Default, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExporterKind {
     #[default]
@@ -408,7 +486,7 @@ pub enum ExporterKind {
 }
 
 /// Telemetry exporter (OTLP gRPC or HTTP).
-#[derive(Clone, Default, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Clone, Default, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct Exporter {
     #[serde(default)]
     pub kind: ExporterKind,
@@ -420,7 +498,7 @@ pub struct Exporter {
     pub timeout_ms: Option<u64>,
 }
 
-#[derive(Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum Sampler {
     ParentBasedAlwaysOn {},
@@ -432,13 +510,13 @@ pub enum Sampler {
     AlwaysOff {},
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct Propagation {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub w3c_trace_context: Option<bool>,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct HttpOpts {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub inject_request_id_header: Option<String>,
@@ -446,7 +524,7 @@ pub struct HttpOpts {
     pub record_headers: Option<Vec<String>>,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct LogsCorrelation {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub inject_trace_ids_into_logs: Option<bool>,

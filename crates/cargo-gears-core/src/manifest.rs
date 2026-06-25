@@ -154,9 +154,11 @@ fn print_value<T: Serialize>(format: common::OutputFormat, value: &T) -> anyhow:
 ///
 /// Drives build, run, lint, and test workflows. Declares workspace-level
 /// defaults and per-app/environment overrides.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+/// Also defines templates
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
+    /// Configuration for the
     #[serde(default)]
     pub workspace: Workspace,
     pub apps: Apps,
@@ -411,7 +413,7 @@ pub struct ManifestEntry {
 }
 
 /// Workspace-level defaults for paths and schema version.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Workspace {
     /// Schema version (currently always 1).
@@ -444,7 +446,7 @@ impl Default for Workspace {
 }
 
 /// Per-app/environment configuration.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Environment {
     /// Config YAML path relative to config-dir.
@@ -466,14 +468,14 @@ pub struct Environment {
     pub build: Option<BuildPolicy>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(tag = "source", rename_all = "kebab-case")]
 pub enum GearRef {
     Local(GearRefLocal),
     Remote(GearRefRemote),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GearRefLocal {
     pub name: String,
@@ -491,7 +493,7 @@ pub struct GearRefLocal {
     pub default_features: Option<bool>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct GearRefRemote {
     pub name: String,
@@ -510,7 +512,7 @@ pub struct GearRefRemote {
 }
 
 /// Runtime policy for watch, FIPS, and OpenTelemetry.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RunPolicy {
     #[serde(default)]
@@ -522,7 +524,7 @@ pub struct RunPolicy {
 }
 
 /// Watch-mode settings.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct WatchPolicy {
     /// Enable file watching in run mode.
@@ -547,7 +549,7 @@ impl Default for WatchPolicy {
 }
 
 /// Build policy controlling profile, name, and clean behavior.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct BuildPolicy {
     /// Override generated project name (default: <app>-<env>).
@@ -561,7 +563,7 @@ pub struct BuildPolicy {
     pub clean: Option<bool>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(from = "String", into = "String")]
 pub enum BuildProfile {
     Debug,
@@ -590,7 +592,7 @@ impl From<BuildProfile> for String {
 }
 
 /// Lint policy controlling clippy, fmt, dylint, and feature-set testing.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LintPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -617,7 +619,7 @@ impl Default for LintPolicy {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct Dylint {
     #[serde(default = "default_true")]
     pub enabled: bool,
@@ -626,7 +628,7 @@ pub struct Dylint {
 }
 
 /// Test policy controlling runner and feature-set testing.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TestPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -648,18 +650,25 @@ pub struct TestPolicy {
 }
 
 /// Optional registry of template sources for generate commands.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, default)]
 pub struct TemplateRegistry {
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub module: BTreeMap<String, TemplateSource>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub config: BTreeMap<String, TemplateSource>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub agents: BTreeMap<String, TemplateSource>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub module: Vec<TemplateDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub config: Vec<TemplateDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub agents: Vec<TemplateDefinition>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
+pub struct TemplateDefinition {
+    pub name: String,
+    pub description: String,
+    pub source: TemplateSource,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(tag = "source", rename_all = "kebab-case")]
 pub enum TemplateSource {
     Git {
@@ -679,7 +688,7 @@ pub enum TemplateSource {
     Embedded,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "kebab-case")]
 pub enum TestRunner {
@@ -690,7 +699,7 @@ pub enum TestRunner {
 
 pub type ModuleFeatureSet = Vec<FeatureSet>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(tag = "mode", rename_all = "kebab-case")]
 pub enum FeatureSet {
     DefaultFeatures,
