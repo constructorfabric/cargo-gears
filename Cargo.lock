@@ -339,7 +339,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-gears"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "cargo-gears-core",
@@ -352,7 +352,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-gears-core"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "camino",

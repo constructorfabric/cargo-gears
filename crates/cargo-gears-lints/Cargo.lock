@@ -400,7 +400,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-gears-lints"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-trait",
