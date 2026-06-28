@@ -261,6 +261,7 @@ manually:
 GEARS_CONFIG=/tmp/cf-demo/config/app1-dev.yml \
   cargo run --manifest-path /tmp/cf-demo/.gears/app1-dev/Cargo.toml
 ```
+
 :::
 
 ## deploy

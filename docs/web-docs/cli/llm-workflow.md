@@ -69,7 +69,7 @@ cargo gears help topic otel
 Available topics:
 
 | Topic | Scope |
-|---|---|
+| --- | --- |
 | `architecture` | Framework architecture, three-tier hierarchy, principles |
 | `cli` | CLI reference, guidelines, command overview |
 | `clienthub` | Typed ClientHub, plugins, GTS |

@@ -36,7 +36,7 @@ which apps, environments, modules, and policies (build, lint, run, test) the CLI
 should use. Runtime values live in separate YAML config files.
 
 | Question | Source |
-|---|---|
+| --- | --- |
 | Which app, environment, modules, feature sets, lint policy, build profile? | `Gears.toml` (manifest) |
 | What values does the server read at runtime? | Runtime YAML config |
 
