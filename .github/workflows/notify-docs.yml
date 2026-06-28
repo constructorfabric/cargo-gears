@@ -20,4 +20,4 @@ jobs:
             -f event_type=docs-sync \
             -f "client_payload[sha]=$GITHUB_SHA"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }}
