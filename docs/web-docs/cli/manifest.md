@@ -28,7 +28,7 @@ per-app/environment overrides. Runtime values live in separate YAML config files
 Workspace-level defaults for paths and schema version.
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `version` | `u32` | `1` | Schema version (currently always 1) |
 | `root` | `PathBuf` | _none_ | Workspace root override (relative to manifest directory) |
 | `config-dir` | `PathBuf` | `config` | Directory containing config YAML files |
@@ -48,7 +48,7 @@ generated-dir = ".gears"
 Each app is a map of environment names to environment configurations.
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `config` | `PathBuf` | _required_ | Config YAML path relative to `config-dir` |
 | `modules` | `Vec<ModuleRef>` | `[]` | Modules to include in the generated server |
 | `run` | `Option<RunPolicy>` | _none_ | Runtime policy overrides |
@@ -109,7 +109,7 @@ version = "0.4.2"
 Runtime policy for watch mode, FIPS, and OpenTelemetry.
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `watch` | `WatchPolicy` | _see below_ | Watch-mode settings |
 | `fips` | `bool` | `false` | Enable FIPS mode |
 | `otel` | `bool` | `false` | Enable OpenTelemetry |
@@ -117,7 +117,7 @@ Runtime policy for watch mode, FIPS, and OpenTelemetry.
 ### `[run.watch]` — WatchPolicy
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `enabled` | `bool` | `true` | Enable file watching in run mode |
 | `include` | `Vec<PathBuf>` | `[]` | Paths to watch (replaces default watch set) |
 | `exclude` | `Vec<PathBuf>` | `[]` | Paths to exclude from the effective watch set |
@@ -135,7 +135,7 @@ exclude = ["target/", ".gears/"]
 ## `[build]` — BuildPolicy
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `name` | `Option<String>` | _none_ | Override generated project name (default: `<app>-<env>`) |
 | `profile` | `Option<BuildProfile>` | _none_ | Build profile: `debug`, `release`, or custom string |
 | `clean` | `Option<bool>` | _none_ | Remove `Cargo.lock` before building |
@@ -149,7 +149,7 @@ clean = true
 ## `[lint]` — LintPolicy
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `ref` | `Option<String>` | _none_ | Reference another environment's lint policy |
 | `clippy` | `bool` | `true` | Run Clippy |
 | `fmt` | `bool` | `true` | Run `cargo fmt --check` |
@@ -159,7 +159,7 @@ clean = true
 ### `[lint.dylint]`
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `enabled` | `bool` | `true` | Enable Dylint rules |
 | `skip` | `Vec<String>` | `[]` | Rule names to skip (passed as allowed rustc lints) |
 
@@ -176,7 +176,7 @@ skip = ["de0301_no_infra_in_domain"]
 ## `[test]` — TestPolicy
 
 | Field | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `ref` | `Option<String>` | _none_ | Reference another environment's test policy |
 | `runner` | `TestRunner` | `nextest` | Test runner: `cargo` or `nextest` |
 | `feature-set` | `BTreeMap<String, ModuleFeatureSet>` | _empty_ | Per-module feature matrix |
