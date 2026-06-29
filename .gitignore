@@ -22,3 +22,9 @@ target
 
 # Devin
 .devin
+
+# Cached checkout of the web docs site for `make docs-preview` / `make docs-lint`
+.web-docs-preview/
+
+# Cached checkout of sibling docs sources (e.g. gears-rust) for `make docs-preview`
+.web-docs-sources/

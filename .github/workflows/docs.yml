@@ -1,0 +1,51 @@
+name: Docs
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['docs/web-docs/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdown_lint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: cargo-gears
+
+      - name: Checkout docs site
+        uses: actions/checkout@v4
+        with:
+          repository: constructorfabric/gears-rust-web-docs
+          ref: main
+          path: web-docs
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web-docs/pnpm-lock.yaml
+
+      - name: Install docs site deps
+        run: pnpm install --frozen-lockfile
+        working-directory: web-docs
+
+      # Sync only cargo-gears docs. gears-rust isn't checked out, so the sync skips
+      # it (../gears-rust is absent) and only this repo's markdown gets linted.
+      - name: Sync cargo-gears docs
+        run: CARGO_GEARS_PATH=../cargo-gears GEARS_RUST_PATH=../no-gears-rust pnpm sync
+        working-directory: web-docs
+
+      - name: Markdown lint
+        run: pnpm lint:md
+        working-directory: web-docs
