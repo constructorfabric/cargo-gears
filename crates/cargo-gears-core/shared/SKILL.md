@@ -1,11 +1,11 @@
 ---
 name: gears
 description: cli reference to help with the development of constructor fabric gears framework. It helps with the development of
-  the framework from its initialization, adding/removing modules, modifying configuration files,
+  the framework from its initialization, adding/removing gears, modifying configuration files,
   build and/or run project, lint the project and managing applications through its manifest.
   
   Always load this skill whenever you detect Gears.toml or you locate a reference to gears, cargo-gears, gears-toolkit, 
-  modules, plugins or packages that include the prefix cf- in its name.
+  gears, plugins or packages that include the prefix cf- in its name.
 ---
 
 # General Guidelines to follow
@@ -14,8 +14,8 @@ description: cli reference to help with the development of constructor fabric ge
 - When linting, use lint command of the cli to check if there are any lint errors.
   Do not try to run cargo check, clippy or fmt by your own.
 - Always verify that the application runs successfully after modifying the code.
-- Unless the user specifically mentions to use a custom module, prefer to use system modules
-  instead of implementing your own ones. Pay attention to the "deps" section of the modules, as the module will be
+- Unless the user specifically mentions to use a custom module, prefer to use system gears
+  instead of implementing your own ones. Pay attention to the "deps" section of the gears, as the module will be
   required to be added in order to be used.
 - Do not try to create a module from scratch, always use the generate module command to create a new module.
 
@@ -49,7 +49,7 @@ If so, prefer to use the ssh version instead of https to avoid authentication is
 cargo gears
 ├── generate
 │   ├── workspace
-│   ├── module
+│   ├── gear
 │   └── config
 ├── new
 ├── config
@@ -71,7 +71,8 @@ cargo gears
 │   └── topic
 ├── lint
 ├── ls
-│   └── modules
+│   ├── gears
+│   └── templates
 ├── manifest
 │   ├── validate
 │   └── ls
@@ -128,13 +129,14 @@ Generate workspace, module, and config scaffolding from built-in templates or ex
 Synopsis:
 
 ```bash
-cargo gears generate workspace <path> [--template <TEMPLATE>] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
+cargo gears generate workspace [<path>] [--template <TEMPLATE>] [--list] [--verbose] [--name <NAME>] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>] [--override]
 ```
 
 Arguments:
 
-- **[`<path>`]** Target directory to initialize
-- **[`-t, --template <TEMPLATE>`]** Workspace template name, defaults to `default`
+- **[`<path>`]** Target directory to initialize; not required with `--list`
+- **[`-t, --template <TEMPLATE>`]** Workspace template name, defaults to `basic-init`; `default` is accepted as a compatibility alias
+- **[`-l, --list`]** List built-in workspace templates plus manifest `templates.workspace` entries when a `Gears.toml` exists at the selected path
 - **[`-v, --verbose`]** Verbose output from `cargo-generate`
 - **[`-n, --name <NAME>`]** Override the generated project name; inferred from the final path segment by default
 - **[`--local-path <PATH>`]** Use a local template directory instead of the default Git template
@@ -149,7 +151,7 @@ Behavior:
 - **[fails on file path]** Errors if `<path>` already exists and is not a directory
 - **[uses directory name as project name]** The final path segment becomes the generated project name unless `--name` is
   provided
-- **[uses template registry]** `--template default` resolves to the built-in workspace template
+- **[uses template registry]** Template names resolve through the built-in registry and then manifest-defined templates
 - **[forces git init]** Template generation runs with Git initialization enabled
 
 Examples:
@@ -166,14 +168,18 @@ cargo gears generate workspace /tmp/cf-demo --git https://github.com/constructor
 cargo gears generate workspace /tmp/cf-demo --local-path ~/dev/cf-template-rust
 ```
 
-#### `generate module`
+```bash
+cargo gears generate workspace --list
+```
 
-Generate a module template inside an existing workspace's `modules/` directory and wire Cargo workspace dependencies.
+#### `generate gear`
+
+Generate a gear template inside an existing workspace's `gears/` directory and wire Cargo workspace dependencies.
 
 Synopsis:
 
 ```bash
-cargo gears generate module --template <TEMPLATE> [--name <NAME>] [--path <PATH>] [--verbose] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>]
+cargo gears generate gear [--template <TEMPLATE>] [--list] [--name <NAME>] [--path <PATH>] [--verbose] [--local-path <PATH>] [--git <URL>] [--subfolder <NAME>] [--branch <NAME>]
 ```
 
 Available built-in templates:
@@ -184,9 +190,10 @@ Available built-in templates:
 
 Arguments:
 
-- **[`-t, --template <TEMPLATE>`]** Module template name
-- **[`-n, --name <NAME>`]** Generated module folder/crate name; defaults to the template name. Prefer passing this when
-  the generated module should use the user's chosen name.
+- **[`-t, --template <TEMPLATE>`]** Gear template name; not required with `--list`
+- **[`-l, --list`]** List built-in gear templates plus manifest `templates.gear` entries when a `Gears.toml` exists at the selected path
+- **[`-n, --name <NAME>`]** Generated gear folder/crate name; defaults to the template name. Prefer passing this when
+  the generated gear should use the user's chosen name.
 - **[`-p, --path <PATH>`]** Workspace root, defaults to `.`
 - **[`-v, --verbose`]** Verbose template generation output
 - **[`--local-path <PATH>`]** Use a local template directory instead of the default Git template
@@ -196,27 +203,31 @@ Arguments:
 
 Behavior:
 
-- **[requires `modules/`]** Fails unless `<workspace>/modules` already exists
-- **[creates `modules/<name>`]** Uses `--name` when provided, otherwise the template name
-- **[prevents duplicate]** Fails if that module directory already exists
+- **[requires `gears/`]** Fails unless `<workspace>/gears` already exists
+- **[creates `gears/<name>`]** Uses `--name` when provided, otherwise the template name
+- **[prevents duplicate]** Fails if that gear directory already exists
 - **[updates workspace members]** Adds generated modules to `workspace.members`
-- **[promotes dependencies]** Moves new module dependency source/version metadata into `workspace.dependencies`
-- **[rewrites module Cargo files]** Rewrites module dependencies to `workspace = true`
+- **[promotes dependencies]** Moves new gear dependency source/version metadata into `workspace.dependencies`
+- **[rewrites gear Cargo files]** Rewrites gear dependencies to `workspace = true`
 - **[inherits workspace lints]** Adds `lints.workspace = true` to generated modules if needed
-- **[includes SDK crate when present]** If the generated module contains `sdk/`, it is also added as a workspace member
+- **[includes SDK crate when present]** If the generated gear contains `sdk/`, it is also added as a workspace member
 
 Examples:
 
 ```bash
-cargo gears generate module --template background-worker -p /tmp/cf-demo
+cargo gears generate gear --template background-worker -p /tmp/cf-demo
 ```
 
 ```bash
-cargo gears generate module --template background-worker --name jobs -p /tmp/cf-demo
+cargo gears generate gear --template background-worker --name jobs -p /tmp/cf-demo
 ```
 
 ```bash
-cargo gears generate module --template api-db-handler -p /tmp/cf-demo --local-path ~/dev/cf-template-rust --subfolder Modules/api-db-handler
+cargo gears generate gear --template rest-api -p /tmp/cf-demo
+```
+
+```bash
+cargo gears generate gear --list -p /tmp/cf-demo
 ```
 
 #### `generate config`
@@ -768,6 +779,7 @@ cargo gears manifest [-p <PATH>] [--manifest <Gears.toml>] ls [--format table|js
 Behavior:
 
 - **[path activation]** If `-p/--path` is provided, relative manifest paths are resolved from that workspace directory.
+- **[environment gears]** Manifest environments declare generation dependencies under the `gears` key.
 - **[validate]** Parses the manifest and resolves every app/environment entry.
 - **[ls]** Lists configured app/environment pairs with their resolved config paths and generated build names.
 - **[generated structure]** Use `build --dry-run` or `run --dry-run` to write and print the generated project structure.
@@ -963,7 +975,7 @@ dylint = { enabled = true, skip = ["de0301_no_infra_in_domain"] }
 
 ### `ls`
 
-Inspect workspace modules, system modules, and project state.
+Inspect workspace modules, system modules, templates, and project state.
 
 #### `ls modules`
 
@@ -1016,6 +1028,37 @@ cargo gears ls modules --local
 
 ```bash
 cargo gears ls modules --system --verbose
+```
+
+#### `ls templates`
+
+List all available generation templates.
+
+Synopsis:
+
+```bash
+cargo gears ls templates [-p <PATH>]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory used to find `Gears.toml`; defaults to `.`
+
+Behavior:
+
+- **[built-in templates]** Always prints built-in workspace and gear templates with their names and descriptions
+- **[manifest templates]** Also prints manifest `templates.workspace` and `templates.gear` entries when `Gears.toml`
+  exists at the selected path
+- **[config-independent]** Does not require a `-c/--config` file
+
+Examples:
+
+```bash
+cargo gears ls templates
+```
+
+```bash
+cargo gears ls templates -p /tmp/cf-demo
 ```
 
 ### `test`

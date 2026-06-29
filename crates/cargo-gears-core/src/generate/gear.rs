@@ -1,17 +1,16 @@
 use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency};
+use crate::list::templates::{self, TemplateKind};
 use anyhow::{Context, bail};
 use cargo_generate::{GenerateArgs, TemplatePath, generate};
 use semver::{Comparator, Op, Version, VersionReq};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use super::{DEFAULT_BRANCH, DEFAULT_GIT_URL};
-
 #[derive(Debug, Eq, PartialEq)]
-pub struct ModuleParams {
+pub struct GearParams {
     /// Template name (e.g. "background-worker").
     pub template: String,
-    /// Module name; defaults to the template name when absent.
+    /// Gear name; defaults to the template name when absent.
     pub name: Option<String>,
     /// Path to the workspace root (defaults to current directory).
     pub path: PathBuf,
@@ -25,6 +24,8 @@ pub struct ModuleParams {
     pub subfolder: Option<String>,
     /// Branch of the git repo.
     pub branch: Option<String>,
+    /// List available templates.
+    pub list: bool,
 }
 
 struct StagedModuleWrite {
@@ -32,16 +33,19 @@ struct StagedModuleWrite {
     doc: toml_edit::DocumentMut,
 }
 
-impl ModuleParams {
+impl GearParams {
     pub fn run(&self) -> anyhow::Result<()> {
-        ensure_modules_directory(&self.path)?;
+        if self.list {
+            return templates::print_templates(Some(TemplateKind::Gear), &self.path);
+        }
 
-        let generated_modules = self.generate_module()?;
-        println!("Modules {generated_modules:?} created");
+        ensure_gears_directory(&self.path)?;
 
-        let (dependencies, staged_writes) =
-            prepare_generated_modules(&self.path, &generated_modules)?;
-        update_workspace_cargo_toml(&self.path, &generated_modules, dependencies)?;
+        let generated_gears = self.generate_gear()?;
+        println!("Gears {generated_gears:?} created");
+
+        let (dependencies, staged_writes) = prepare_generated_gears(&self.path, &generated_gears)?;
+        update_workspace_cargo_toml(&self.path, &generated_gears, dependencies)?;
 
         for staged in &staged_writes {
             save_toml_document(&staged.cargo_toml_path, &staged.doc)?;
@@ -50,86 +54,90 @@ impl ModuleParams {
         Ok(())
     }
 
-    /// Effective module name: explicit `--name` or the template name.
-    fn module_name(&self) -> &str {
+    /// Effective gear name: explicit `--name` or the template name.
+    fn gear_name(&self) -> &str {
         self.name.as_deref().unwrap_or(&self.template)
     }
 
-    fn generate_module(&self) -> anyhow::Result<Vec<String>> {
-        let module_name = self.module_name();
-        let modules_path = self.path.join("modules");
-        let module_path = modules_path.join(module_name);
-        if module_path.exists() {
-            bail!("module {module_name} already exists");
+    fn generate_gear(&self) -> anyhow::Result<Vec<String>> {
+        let gear_name = self.gear_name();
+        let gears_path = self.path.join("gears");
+        let gear_path = gears_path.join(gear_name);
+        if gear_path.exists() {
+            bail!("gear {gear_name} already exists");
         }
 
-        let resolved = self.resolve_template();
+        let resolved = self.resolve_template()?;
 
         generate(GenerateArgs {
             template_path: resolved,
-            destination: Some(modules_path),
-            name: Some(module_name.to_string()),
+            destination: Some(gears_path),
+            name: Some(gear_name.to_string()),
             quiet: !self.verbose,
             verbose: self.verbose,
             no_workspace: true,
             ..GenerateArgs::default()
         })
-        .with_context(|| format!("can't generate module '{module_name}'"))?;
+        .with_context(|| format!("can't generate gear '{gear_name}'"))?;
 
-        let mut generated = vec![format!("modules/{module_name}")];
+        let mut generated = vec![format!("gears/{gear_name}")];
 
-        let sdk_template = module_path.join("sdk");
+        let sdk_template = gear_path.join("sdk");
         if sdk_template.exists() {
-            generated.push(format!("modules/{module_name}/sdk"));
+            generated.push(format!("gears/{gear_name}/sdk"));
         }
 
         Ok(generated)
     }
 
-    fn resolve_template(&self) -> TemplatePath {
+    fn resolve_template(&self) -> anyhow::Result<TemplatePath> {
         if let Some(local) = &self.local_path {
-            return TemplatePath {
+            return Ok(TemplatePath {
                 path: Some(local.clone()),
                 auto_path: self.subfolder.clone(),
                 ..TemplatePath::default()
-            };
+            });
         }
 
-        let subfolder = self
-            .subfolder
-            .clone()
-            .unwrap_or_else(|| format!("Modules/{}", self.template));
-
-        TemplatePath {
-            git: Some(self.git.as_deref().unwrap_or(DEFAULT_GIT_URL).to_owned()),
-            branch: Some(self.branch.as_deref().unwrap_or(DEFAULT_BRANCH).to_owned()),
-            auto_path: Some(subfolder),
-            ..TemplatePath::default()
+        let mut template =
+            templates::resolve_template_path(TemplateKind::Gear, &self.template, &self.path)?;
+        if let Some(git) = &self.git {
+            template.git = Some(git.clone());
         }
+        if let Some(branch) = &self.branch {
+            template.branch = Some(branch.clone());
+            template.tag = None;
+            template.revision = None;
+        }
+        if let Some(subfolder) = &self.subfolder {
+            template.auto_path = Some(subfolder.clone());
+        }
+
+        Ok(template)
     }
 }
 
-fn ensure_modules_directory(workspace_root: &Path) -> anyhow::Result<()> {
-    let modules_dir = workspace_root.join("modules");
-    if modules_dir.exists() {
+fn ensure_gears_directory(workspace_root: &Path) -> anyhow::Result<()> {
+    let gears_dir = workspace_root.join("gears");
+    if gears_dir.exists() {
         return Ok(());
     }
 
     bail!(
-        "modules directory does not exist at {}. Make sure you are in a workspace initialized with 'generate workspace' or 'new'.",
-        modules_dir.display()
+        "gears directory does not exist at {}. Make sure you are in a workspace initialized with 'generate workspace' or 'new'.",
+        gears_dir.display()
     );
 }
 
-fn prepare_generated_modules(
+fn prepare_generated_gears(
     workspace_root: &Path,
-    generated_modules: &[String],
+    generated_gears: &[String],
 ) -> anyhow::Result<(CargoTomlDependencies, Vec<StagedModuleWrite>)> {
     let mut dependencies = CargoTomlDependencies::new();
     let mut staged_writes = Vec::new();
 
-    for module in generated_modules {
-        let module_path = workspace_root.join(module);
+    for gear in generated_gears {
+        let module_path = workspace_root.join(gear);
         let mut doc = get_cargo_toml(&module_path)?;
         for (name, incoming) in get_dependencies(&doc, &module_path, workspace_root)? {
             let Some(existing) = dependencies.get_mut(&name) else {
@@ -189,11 +197,11 @@ fn merge_dependency_metadata(existing: &mut CargoTomlDependency, incoming: &Carg
 
 fn update_workspace_cargo_toml(
     workspace_root: &Path,
-    generated_modules: &[String],
+    generated_gears: &[String],
     dependencies: CargoTomlDependencies,
 ) -> anyhow::Result<()> {
     let mut workspace_doc = get_cargo_toml(workspace_root)?;
-    add_modules_to_workspace(&mut workspace_doc, generated_modules)?;
+    add_members_to_workspace(&mut workspace_doc, generated_gears)?;
     add_dependencies_to_workspace(&mut workspace_doc, dependencies)?;
     let cargo_toml_path = workspace_root.join("Cargo.toml");
     save_toml_document(&cargo_toml_path, &workspace_doc)
@@ -290,23 +298,23 @@ fn workspace_relative_dependency_path(
         })?;
 
     let relative_str = relative.to_string_lossy().replace('\\', "/");
-    if !relative_str.starts_with("modules/") {
+    if !relative_str.starts_with("gears/") {
         bail!(
-            "incorrect path for dependency '{raw_path}': expected path under 'modules/', got '{relative_str}'",
+            "incorrect path for dependency '{raw_path}': expected path under 'gears/', got '{relative_str}'",
         );
     }
 
     Ok(relative_str)
 }
 
-fn add_modules_to_workspace(
+fn add_members_to_workspace(
     doc: &mut toml_edit::DocumentMut,
-    modules: &[String],
+    gears: &[String],
 ) -> anyhow::Result<()> {
     let members = doc["workspace"]["members"]
         .as_array_mut()
         .context("workspace.members is not an array")?;
-    for m in modules {
+    for m in gears {
         let s = m.as_str();
         if !members
             .iter()
@@ -779,15 +787,15 @@ mod tests {
         .expect("module cargo toml");
 
         let workspace_root = std::env::current_dir().expect("current_dir");
-        let module_dir = workspace_root.join("modules").join("api-gateway");
+        let gear_dir = workspace_root.join("gears").join("api-gateway");
 
         let dependencies =
-            get_dependencies(&doc, &module_dir, &workspace_root).expect("get_dependencies");
+            get_dependencies(&doc, &gear_dir, &workspace_root).expect("get_dependencies");
 
         let sdk_dep = dependencies
             .get("module_sdk")
             .expect("module_sdk dependency");
-        assert_eq!(sdk_dep.path.as_deref(), Some("modules/api-gateway/sdk"));
+        assert_eq!(sdk_dep.path.as_deref(), Some("gears/api-gateway/sdk"));
     }
 
     #[test]
@@ -802,10 +810,10 @@ mod tests {
         .expect("module cargo toml");
 
         let workspace_root = std::env::current_dir().expect("current_dir");
-        let module_dir = workspace_root.join("modules").join("api-gateway");
+        let gear_dir = workspace_root.join("gears").join("api-gateway");
 
         let dependencies =
-            get_dependencies(&doc, &module_dir, &workspace_root).expect("get_dependencies");
+            get_dependencies(&doc, &gear_dir, &workspace_root).expect("get_dependencies");
 
         assert_eq!(
             dependencies

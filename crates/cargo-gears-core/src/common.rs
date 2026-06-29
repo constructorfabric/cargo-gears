@@ -80,63 +80,6 @@ pub fn workspace_root() -> anyhow::Result<PathBuf> {
     env::current_dir().context("can't determine current working directory")
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub struct BuildRunParams {
-    /// Path to the module workspace root
-    pub path: Option<PathBuf>,
-    pub manifest: crate::manifest::ManifestSelection,
-    /// Use OpenTelemetry tracing
-    pub otel: Option<bool>,
-    /// Enable FIPS mode
-    pub fips: Option<bool>,
-    /// Build/run in release mode
-    pub release: Option<bool>,
-    /// Remove Cargo.lock at the start of the execution
-    pub clean: Option<bool>,
-    /// Generate and print the project structure without building or running
-    pub dry_run: bool,
-    /// Override the generated server and binary name
-    pub name: Option<String>,
-}
-
-impl BuildRunParams {
-    pub fn clean_build(&self, resolved: &crate::manifest::ResolvedManifest) -> anyhow::Result<()> {
-        if self.clean.unwrap_or_else(|| {
-            resolved
-                .build
-                .clean
-                .unwrap_or_else(|| self.release_build(resolved))
-        }) {
-            remove_from_file_structure(
-                &resolved.generated_dir,
-                &resolved.generated_name,
-                "Cargo.lock",
-            )?;
-        }
-        Ok(())
-    }
-
-    #[must_use]
-    pub fn release_build(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
-        self.release.unwrap_or({
-            matches!(
-                resolved.build.profile,
-                Some(crate::manifest::BuildProfile::Release)
-            )
-        })
-    }
-
-    #[must_use]
-    pub fn otel_enabled(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
-        self.otel.unwrap_or(resolved.run.otel)
-    }
-
-    #[must_use]
-    pub fn fips_enabled(&self, resolved: &crate::manifest::ResolvedManifest) -> bool {
-        self.fips.unwrap_or(resolved.run.fips)
-    }
-}
-
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum Registry {
@@ -232,7 +175,7 @@ pub fn get_config(workspace_root: &Path, config_path: &Path) -> anyhow::Result<A
     let mut config = get_config_from_path(config_path)?;
     let mut members = get_module_name_from_crate(Some(workspace_root))?;
 
-    config.modules.iter_mut().for_each(|module| {
+    config.gears.iter_mut().for_each(|module| {
         if let Some(module_metadata) = members.remove(module.0.as_str()) {
             let config_metadata = std::mem::take(&mut module.1.metadata).unwrap_or_default();
             module.1.metadata = Some(merge_module_metadata(
@@ -510,10 +453,65 @@ fn prepare_cargo_server_main(dependencies: &CargoTomlDependencies) -> String {
     CARGO_SERVER_MAIN.replace("{{dependencies}}", &dependencies)
 }
 
+/// Shared resolved parameters for build and run operations.
+#[derive(Debug, Eq, PartialEq)]
+pub struct BuildRunParams {
+    pub(crate) workspace_root: PathBuf,
+    pub(crate) generated_dir: PathBuf,
+    pub(crate) generated_name: String,
+    pub(crate) config_path: PathBuf,
+    pub(crate) dependencies: CargoTomlDependencies,
+    pub(crate) otel: bool,
+    pub(crate) fips: bool,
+    pub(crate) release: bool,
+    pub(crate) clean: bool,
+    pub(crate) dry_run: bool,
+}
+
+impl BuildRunParams {
+    #[must_use]
+    pub const fn otel(&self) -> bool {
+        self.otel
+    }
+
+    #[must_use]
+    pub const fn fips(&self) -> bool {
+        self.fips
+    }
+
+    #[must_use]
+    pub const fn release(&self) -> bool {
+        self.release
+    }
+
+    #[must_use]
+    pub const fn clean(&self) -> bool {
+        self.clean
+    }
+
+    #[must_use]
+    pub fn generated_name(&self) -> &str {
+        &self.generated_name
+    }
+}
+
+/// Helper function to resolve boolean flags with enable/disable pairs.
+///
+/// Returns Some(true) if enable is explicitly set, Some(false) if disable is explicitly set,
+/// or None if neither flag was provided (use manifest default).
+#[must_use]
+pub const fn ordered_bool(enable: Option<bool>, disable: Option<bool>) -> Option<bool> {
+    match (enable, disable) {
+        (Some(true), _) => Some(true), // Enable flag takes precedence
+        (Some(false) | None, Some(true)) => Some(false), // Disable explicitly set
+        _ => None,                     // Neither flag provided or both false, use manifest default
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        BuildRunParams, cargo_command, generate_server_structure, generated_project_dir,
+        cargo_command, generate_server_structure, generated_project_dir,
         make_absolute_paths_relative, merge_module_metadata, prepare_cargo_server_main,
         resolve_generated_project_name,
     };
@@ -521,11 +519,7 @@ mod tests {
         Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata,
         test_utils::TempDirExt,
     };
-    use crate::manifest::{
-        BuildPolicy, BuildProfile, LintPolicy, ManifestSelection, ResolvedManifest, RunPolicy,
-        TestPolicy,
-    };
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use tempfile::TempDir;
 
     fn write_package(temp_dir: &TempDir, relative_path: &str, package_name: &str) {
@@ -555,7 +549,7 @@ path = "src/lib.rs"
             version: None,
             features: vec!["grpc".to_owned(), "otel".to_owned()],
             default_features: Some(false),
-            path: Some("modules/custom-path".to_owned()),
+            path: Some("gears/custom-path".to_owned()),
             deps: vec![],
             capabilities: vec![],
         };
@@ -564,7 +558,7 @@ path = "src/lib.rs"
             version: Some("0.5.0".to_owned()),
             features: vec![],
             default_features: None,
-            path: Some("modules/demo".to_owned()),
+            path: Some("gears/demo".to_owned()),
             deps: vec!["authz".to_owned()],
             capabilities: vec![Capability::Grpc],
         };
@@ -574,7 +568,7 @@ path = "src/lib.rs"
         assert_eq!(merged.version.as_deref(), Some("0.5.0"));
         assert_eq!(merged.features, vec!["grpc", "otel"]);
         assert_eq!(merged.default_features, Some(false));
-        assert_eq!(merged.path.as_deref(), Some("modules/custom-path"));
+        assert_eq!(merged.path.as_deref(), Some("gears/custom-path"));
         assert_eq!(merged.deps, vec!["authz"]);
         assert_eq!(merged.capabilities, vec![Capability::Grpc]);
     }
@@ -628,52 +622,6 @@ path = "src/lib.rs"
 
         assert_eq!(args, vec!["run", "-F", "otel", "-F", "fips", "-r"]);
         assert_eq!(command.get_current_dir(), Some(cargo_dir));
-    }
-
-    #[test]
-    fn build_run_args_use_cli_boolean_overrides_before_manifest_policy() {
-        let resolved = ResolvedManifest {
-            app: "app".to_owned(),
-            env: "dev".to_owned(),
-            manifest_path: PathBuf::from("/workspace/Gears.toml"),
-            workspace_root: PathBuf::from("/workspace"),
-            generated_dir: PathBuf::from("/workspace/.generated"),
-            config_path: PathBuf::from("/workspace/config.yml"),
-            generated_name: "app-dev".to_owned(),
-            run: RunPolicy {
-                fips: true,
-                otel: true,
-                ..RunPolicy::default()
-            },
-            build: BuildPolicy {
-                profile: Some(BuildProfile::Release),
-                clean: Some(true),
-                ..BuildPolicy::default()
-            },
-            lint: LintPolicy::default(),
-            test: TestPolicy::default(),
-            modules: vec![],
-            dependencies: CargoTomlDependencies::default(),
-        };
-        let args = BuildRunParams {
-            path: None,
-            manifest: ManifestSelection {
-                manifest: PathBuf::from("Gears.toml"),
-                app: Some("app".to_owned()),
-                env: Some("dev".to_owned()),
-            },
-            otel: Some(false),
-            fips: Some(false),
-            release: Some(false),
-            clean: Some(false),
-            dry_run: false,
-            name: None,
-        };
-
-        assert!(!args.otel_enabled(&resolved));
-        assert!(!args.fips_enabled(&resolved));
-        assert!(!args.release_build(&resolved));
-        assert!(args.clean_build(&resolved).is_ok());
     }
 
     #[test]

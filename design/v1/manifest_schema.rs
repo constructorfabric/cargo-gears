@@ -49,7 +49,7 @@ pub struct Environment {
     pub config: PathBuf,
     pub test: TestPolicy,
     pub lint: LintPolicy,
-    pub modules: Vec<ModuleRef>,
+    pub gears: Vec<ModuleRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run: Option<RunPolicy>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -189,12 +189,21 @@ pub struct TestPolicy {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, default)]
 pub struct TemplateRegistry {
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub module: BTreeMap<String, TemplateSource>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub config: BTreeMap<String, TemplateSource>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub agents: BTreeMap<String, TemplateSource>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub workspace: Vec<TemplateDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gear: Vec<TemplateDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub config: Vec<TemplateDefinition>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub agents: Vec<TemplateDefinition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct TemplateDefinition {
+    pub name: String,
+    pub description: String,
+    pub source: TemplateSource,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -279,7 +288,7 @@ mod tests {
             r#"
 [apps.app1.dev]
 config = "app1-dev.yml"
-modules = []
+gears = []
 "#,
         )
         .unwrap_err();

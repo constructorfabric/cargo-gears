@@ -3,6 +3,7 @@ use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModu
 use anyhow::{Context, bail};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -154,20 +155,22 @@ fn print_value<T: Serialize>(format: common::OutputFormat, value: &T) -> anyhow:
 ///
 /// Drives build, run, lint, and test workflows. Declares workspace-level
 /// defaults and per-app/environment overrides.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+/// Also defines templates
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct Manifest {
+pub struct Manifest<'a> {
+    /// Configuration for the
     #[serde(default)]
     pub workspace: Workspace,
     pub apps: Apps,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub templates: Option<TemplateRegistry>,
+    pub templates: Option<TemplateRegistry<'a>>,
 }
 
 pub type Apps = BTreeMap<String, Environments>;
 pub type Environments = BTreeMap<String, Environment>;
 
-impl Manifest {
+impl Manifest<'_> {
     pub fn load(path: &Path) -> anyhow::Result<Self> {
         let manifest = fs::read_to_string(path)
             .with_context(|| format!("manifest not available at {}", path.display()))?;
@@ -267,7 +270,7 @@ impl Manifest {
             .as_ref()
             .and_then(|build| build.name.clone())
             .unwrap_or_else(|| format!("{app}-{env}"));
-        let dependencies = resolve_dependencies(&workspace_base, &environment.modules)?;
+        let dependencies = resolve_dependencies(&workspace_base, &environment.gears)?;
         let generated_dir = resolve_relative_to(&workspace_base, &self.workspace.generated_dir);
 
         Ok(ResolvedManifest {
@@ -282,7 +285,7 @@ impl Manifest {
             build: environment.build.clone().unwrap_or_default(),
             lint: environment.lint.clone(),
             test: environment.test.clone(),
-            modules: environment.modules.clone(),
+            gears: environment.gears.clone(),
             dependencies,
         })
     }
@@ -304,19 +307,19 @@ fn resolve_relative_to(base: &Path, path: &Path) -> PathBuf {
 
 fn resolve_dependencies(
     workspace_root: &Path,
-    modules: &[ModuleRef],
+    gears: &[GearRef],
 ) -> anyhow::Result<CargoTomlDependencies> {
-    let local_modules = modules
+    let local_modules = gears
         .iter()
-        .any(|module| matches!(module, ModuleRef::Local(_)))
+        .any(|module| matches!(module, GearRef::Local(_)))
         .then(|| crate::gears_parser::get_module_name_from_crate(Some(workspace_root)))
         .transpose()?
         .unwrap_or_default();
     let mut dependencies = CargoTomlDependencies::new();
 
-    for module in modules {
+    for module in gears {
         let (name, metadata) = match module {
-            ModuleRef::Local(local) => {
+            GearRef::Local(local) => {
                 let discovered = local_modules.get(&local.name).with_context(|| {
                     format!("local module '{}' cannot be discovered", local.name)
                 })?;
@@ -327,13 +330,21 @@ fn resolve_dependencies(
                 if let Some(version) = &local.version {
                     metadata.version = version_req_to_metadata(version);
                 }
+                if !local.features.is_empty() {
+                    metadata.features.clone_from(&local.features);
+                }
+                if local.default_features.is_some() {
+                    metadata.default_features = local.default_features;
+                }
                 (local.name.clone(), metadata)
             }
-            ModuleRef::Remote(remote) => (
+            GearRef::Remote(remote) => (
                 remote.name.clone(),
                 ConfigModuleMetadata {
                     package: Some(remote.package.clone()),
                     version: version_req_to_metadata(&remote.version),
+                    features: remote.features.clone(),
+                    default_features: remote.default_features,
                     ..Default::default()
                 },
             ),
@@ -381,7 +392,7 @@ pub struct ResolvedManifest {
     pub build: BuildPolicy,
     pub lint: LintPolicy,
     pub test: TestPolicy,
-    pub modules: Vec<ModuleRef>,
+    pub gears: Vec<GearRef>,
     pub dependencies: CargoTomlDependencies,
 }
 
@@ -403,7 +414,7 @@ pub struct ManifestEntry {
 }
 
 /// Workspace-level defaults for paths and schema version.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Workspace {
     /// Schema version (currently always 1).
@@ -436,7 +447,7 @@ impl Default for Workspace {
 }
 
 /// Per-app/environment configuration.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Environment {
     /// Config YAML path relative to config-dir.
@@ -447,9 +458,9 @@ pub struct Environment {
     /// Lint policy overrides.
     #[serde(default)]
     pub lint: LintPolicy,
-    /// Modules to include in the generated server.
+    /// Gears to include in the generated server.
     #[serde(default)]
-    pub modules: Vec<ModuleRef>,
+    pub gears: Vec<GearRef>,
     /// Runtime policy overrides.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub run: Option<RunPolicy>,
@@ -458,35 +469,53 @@ pub struct Environment {
     pub build: Option<BuildPolicy>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(tag = "source", rename_all = "kebab-case")]
-pub enum ModuleRef {
-    Local(LocalModuleRef),
-    Remote(RemoteModuleRef),
+pub enum GearRef {
+    Local(GearRefLocal),
+    Remote(GearRefRemote),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct LocalModuleRef {
+pub struct GearRefLocal {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "Option<String>")]
     pub version: Option<VersionReq>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<String>,
+    #[serde(
+        default,
+        rename = "default-features",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_features: Option<bool>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
-pub struct RemoteModuleRef {
+pub struct GearRefRemote {
     pub name: String,
+    #[schemars(with = "String")]
     pub version: VersionReq,
     pub package: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub registry: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<String>,
+    #[serde(
+        default,
+        rename = "default-features",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_features: Option<bool>,
 }
 
 /// Runtime policy for watch, FIPS, and OpenTelemetry.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RunPolicy {
     #[serde(default)]
@@ -498,7 +527,7 @@ pub struct RunPolicy {
 }
 
 /// Watch-mode settings.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct WatchPolicy {
     /// Enable file watching in run mode.
@@ -523,7 +552,7 @@ impl Default for WatchPolicy {
 }
 
 /// Build policy controlling profile, name, and clean behavior.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct BuildPolicy {
     /// Override generated project name (default: <app>-<env>).
@@ -537,7 +566,7 @@ pub struct BuildPolicy {
     pub clean: Option<bool>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(from = "String", into = "String")]
 pub enum BuildProfile {
     Debug,
@@ -566,7 +595,7 @@ impl From<BuildProfile> for String {
 }
 
 /// Lint policy controlling clippy, fmt, dylint, and feature-set testing.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LintPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -593,7 +622,7 @@ impl Default for LintPolicy {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 pub struct Dylint {
     #[serde(default = "default_true")]
     pub enabled: bool,
@@ -602,7 +631,7 @@ pub struct Dylint {
 }
 
 /// Test policy controlling runner and feature-set testing.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TestPolicy {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -624,38 +653,49 @@ pub struct TestPolicy {
 }
 
 /// Optional registry of template sources for generate commands.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, crate::HelpSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields, default)]
-pub struct TemplateRegistry {
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub module: BTreeMap<String, TemplateSource>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub config: BTreeMap<String, TemplateSource>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub agents: BTreeMap<String, TemplateSource>,
+pub struct TemplateRegistry<'a> {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub workspace: Vec<TemplateDefinition<'a>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub gear: Vec<TemplateDefinition<'a>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub config: Vec<TemplateDefinition<'a>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub agents: Vec<TemplateDefinition<'a>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
+pub struct TemplateDefinition<'a> {
+    pub name: Cow<'a, str>,
+    pub description: Cow<'a, str>,
+    pub source: TemplateSource<'a>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(tag = "source", rename_all = "kebab-case")]
-pub enum TemplateSource {
+pub enum TemplateSource<'a> {
     Git {
-        url: String,
+        url: Cow<'a, str>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        revision: Option<String>,
+        revision: Option<Cow<'a, str>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        tag: Option<String>,
+        tag: Option<Cow<'a, str>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        branch: Option<String>,
+        branch: Option<Cow<'a, str>>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        subfolder: Option<String>,
+        subfolder: Option<Cow<'a, str>>,
     },
     Local {
-        path: String,
+        path: Cow<'a, str>,
     },
     Embedded,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema,
+)]
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[serde(rename_all = "kebab-case")]
 pub enum TestRunner {
@@ -666,7 +706,7 @@ pub enum TestRunner {
 
 pub type ModuleFeatureSet = Vec<FeatureSet>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(tag = "mode", rename_all = "kebab-case")]
 pub enum FeatureSet {
     DefaultFeatures,
@@ -737,7 +777,7 @@ generated-dir = "custom-generated"
 
 [apps.app.dev]
 config = "app-dev.yml"
-modules = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
+gears = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
 "#,
         );
         temp.write("config/app-dev.yml", "server: {}\n");
@@ -771,7 +811,7 @@ generated-dir = "target/generated"
 
 [apps.app.dev]
 config = "app-dev.yml"
-modules = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
+gears = [{ source = "remote", name = "module", package = "cf-module", version = "1.2" }]
 "#,
         );
         let manifest = Manifest::load(&temp.path().join(DEFAULT_MANIFEST_FILE)).unwrap();
@@ -807,7 +847,7 @@ generated-dir = "{}"
 
 [apps.app.dev]
 config = "app-dev.yml"
-modules = [{{ source = "remote", name = "module", package = "cf-module", version = "1.2" }}]
+gears = [{{ source = "remote", name = "module", package = "cf-module", version = "1.2" }}]
 "#,
                 absolute_generated_dir.display()
             ),
@@ -836,7 +876,7 @@ modules = [{{ source = "remote", name = "module", package = "cf-module", version
             r#"
 [apps.app.dev]
 config = "app-dev.yml"
-modules = []
+gears = []
 "#,
         );
         temp.write("workspace/config/app-dev.yml", "server: {}\n");

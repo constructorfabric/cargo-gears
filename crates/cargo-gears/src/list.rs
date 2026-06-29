@@ -9,21 +9,29 @@ pub struct ListArgs {
 
 #[derive(Subcommand)]
 pub enum ListCommand {
-    /// List modules
-    Modules(ModulesArgs),
+    /// List gears available
+    Gears(GearsArgs),
+    /// List templates available
+    Templates(TemplatesArgs),
 }
 
 #[derive(Args)]
-pub struct ModulesArgs {
+pub struct TemplatesArgs {
     #[command(flatten)]
     workspace: WorkspacePath,
-    /// Show all information related to the modules (fetches registry metadata for system modules)
+}
+
+#[derive(Args)]
+pub struct GearsArgs {
+    #[command(flatten)]
+    workspace: WorkspacePath,
+    /// Show all information related to the gears (fetches registry metadata for system gears)
     #[arg(short = 'v', long)]
     verbose: bool,
-    /// Only list built-in system modules from the registry
+    /// Only list built-in system gears from the registry
     #[arg(long, action = ArgAction::SetTrue)]
     system: bool,
-    /// Only list workspace-discovered modules
+    /// Only list workspace-discovered gears
     #[arg(long, action = ArgAction::SetTrue)]
     local: bool,
     /// Registry to query for system-crate metadata
@@ -51,21 +59,30 @@ impl From<ListArgs> for cargo_gears_core::list::ListParams {
 impl From<ListCommand> for cargo_gears_core::list::ListCommand {
     fn from(command: ListCommand) -> Self {
         match command {
-            ListCommand::Modules(args) => Self::Modules(args.into()),
+            ListCommand::Gears(args) => Self::Gears(args.into()),
+            ListCommand::Templates(args) => Self::Templates(args.into()),
         }
     }
 }
 
-impl From<ModulesArgs> for cargo_gears_core::list::ModulesParams {
-    fn from(args: ModulesArgs) -> Self {
+impl From<TemplatesArgs> for cargo_gears_core::list::TemplatesParams {
+    fn from(args: TemplatesArgs) -> Self {
+        Self {
+            path: args.workspace.path,
+        }
+    }
+}
+
+impl From<GearsArgs> for cargo_gears_core::list::GearsParams {
+    fn from(args: GearsArgs) -> Self {
         let output = if args.system || args.local {
             match (args.system, args.local) {
-                (true, false) => cargo_gears_core::list::ModulesOutput::system(),
-                (false, true) => cargo_gears_core::list::ModulesOutput::local(),
-                _ => cargo_gears_core::list::ModulesOutput::all(),
+                (true, false) => cargo_gears_core::list::GearsOutput::system(),
+                (false, true) => cargo_gears_core::list::GearsOutput::local(),
+                _ => cargo_gears_core::list::GearsOutput::all(),
             }
         } else {
-            cargo_gears_core::list::ModulesOutput::all()
+            cargo_gears_core::list::GearsOutput::all()
         };
 
         Self {

@@ -31,6 +31,7 @@ fn cargo_command(plan: &TestPlan, run: &TestRun) -> anyhow::Result<Command> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::manifest::TestRunner;
     use crate::test::FeatureSelection;
     use std::path::PathBuf;
 
@@ -39,6 +40,9 @@ mod tests {
         let plan = TestPlan {
             workspace_root: PathBuf::from("/workspace"),
             config_path: PathBuf::from("/workspace/config/app-dev.yml"),
+            runner: TestRunner::Cargo,
+            coverage: false,
+            custom_command: None,
             runs: vec![],
         };
         let run = TestRun {

@@ -8,7 +8,7 @@ use crate::lint_utils::is_in_api_rest_folder;
 dylint_linting::declare_pre_expansion_lint! {
     /// DE0203: DTOs Must Use api_dto Macro
     ///
-    /// All DTO types in `api/rest` MUST use the `#[gears_toolkit_macros::api_dto(...)]` macro.
+    /// All DTO types in `api/rest` MUST use the `#[cf_gears_toolkit_macros::api_dto(...)]` macro.
     /// The macro ensures consistent serialization behavior by automatically adding
     /// serde derives, ToSchema, and snake_case renaming.
     ///
@@ -26,7 +26,7 @@ dylint_linting::declare_pre_expansion_lint! {
     ///
     /// ```rust,ignore
     /// // src/api/rest/dto.rs
-    /// #[gears_toolkit_macros::api_dto(request, response)]  // ✅ Uses api_dto macro
+    /// #[cf_gears_toolkit_macros::api_dto(request, response)]  // ✅ Uses api_dto macro
     /// pub struct UserDto {
     ///     pub id: String,
     /// }
@@ -73,6 +73,6 @@ fn check_dto_uses_api_dto(cx: &EarlyContext<'_>, item: &Item) {
     // Report missing api_dto macro
     cx.span_lint(DE0203_DTOS_MUST_USE_API_DTO, item.span, |diag| {
         diag.primary_message("api/rest DTO type must use the api_dto macro (DE0203)");
-        diag.help("Use #[gears_toolkit_macros::api_dto(request)] for request DTOs, #[gears_toolkit_macros::api_dto(response)] for response DTOs, or #[gears_toolkit_macros::api_dto(request, response)] for both");
+        diag.help("Use #[cf_gears_toolkit_macros::api_dto(request)] for request DTOs, #[cf_gears_toolkit_macros::api_dto(response)] for response DTOs, or #[cf_gears_toolkit_macros::api_dto(request, response)] for both");
     });
 }

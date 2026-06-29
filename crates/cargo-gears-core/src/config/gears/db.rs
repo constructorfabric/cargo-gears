@@ -1,5 +1,5 @@
 use super::{load_config, save_config, validate_module_name};
-use crate::app_config::{AppConfig, DbConnConfig, ModuleConfig};
+use crate::app_config::{AppConfig, DbConnConfig, GearConfig};
 use crate::common::PathConfigParams;
 use crate::config::ensure_conn_payload;
 use anyhow::{Context, bail};
@@ -33,7 +33,7 @@ impl ModuleDbParams {
 #[derive(Debug, Eq, PartialEq)]
 pub struct AddArgs {
     pub path_config: PathConfigParams,
-    /// Module name under `modules.<module>`
+    /// Module name under `gears.<module>`
     pub module: String,
     pub conn: DbConnConfig,
 }
@@ -45,7 +45,7 @@ impl AddArgs {
                 validate_module_db_payload(&self.module, &self.conn)?;
 
                 let mut config = load_config(config_path)?;
-                if !config.modules.contains_key(&self.module) {
+                if !config.gears.contains_key(&self.module) {
                     bail!(
                         "module '{}' not found in {}; use `config mod add` first",
                         self.module,
@@ -66,7 +66,7 @@ impl AddArgs {
 #[derive(Debug, Eq, PartialEq)]
 pub struct EditArgs {
     pub path_config: PathConfigParams,
-    /// Module name under `modules.<module>`
+    /// Module name under `gears.<module>`
     pub module: String,
     pub conn: DbConnConfig,
 }
@@ -95,7 +95,7 @@ impl EditArgs {
 #[derive(Debug, Eq, PartialEq)]
 pub struct RemoveArgs {
     pub path_config: PathConfigParams,
-    /// Module name under `modules.<module>`
+    /// Module name under `gears.<module>`
     pub module: String,
 }
 
@@ -121,9 +121,9 @@ fn get_module_cfg_mut<'a>(
     config: &'a mut AppConfig,
     module: &str,
     config_path: &Path,
-) -> anyhow::Result<&'a mut ModuleConfig> {
+) -> anyhow::Result<&'a mut GearConfig> {
     config
-        .modules
+        .gears
         .get_mut(module)
         .with_context(|| format!("module '{module}' not found in {}", config_path.display()))
 }

@@ -1,4 +1,4 @@
-use crate::common::{self, PathConfigParams};
+use crate::common::PathConfigParams;
 use anyhow::{Context, bail};
 use std::fmt;
 use std::fs;
@@ -27,27 +27,12 @@ impl DeployParams {
     pub fn run(&self) -> anyhow::Result<()> {
         self.path_config
             .with_workspace_dir(|workspace_path, config_path| {
-                let (manifest_path, artifact_name) = if let Some(manifest) = &self.manifest {
-                    let manifest_path = resolve_manifest(manifest)?;
-                    let artifact_name = manifest_package_name(&manifest_path)?;
-                    (manifest_path, artifact_name)
-                } else {
-                    let project_name = common::resolve_generated_project_name(config_path, None)?;
-                    let dependencies =
-                        common::get_config(workspace_path, config_path)?.create_dependencies()?;
-                    let generated_dir = workspace_path.join(common::DEFAULT_GENERATED_DIR);
-                    common::generate_server_structure(
-                        workspace_path,
-                        &generated_dir,
-                        &project_name,
-                        &dependencies,
-                    )?;
-                    (
-                        common::generated_project_dir(&generated_dir, &project_name)
-                            .join("Cargo.toml"),
-                        project_name,
-                    )
-                };
+                let manifest = self
+                    .manifest
+                    .as_ref()
+                    .context("a Cargo manifest (--manifest) is required for deploy")?;
+                let manifest_path = resolve_manifest(manifest)?;
+                let artifact_name = manifest_package_name(&manifest_path)?;
 
                 let workspace_root = workspace_path
                     .canonicalize()

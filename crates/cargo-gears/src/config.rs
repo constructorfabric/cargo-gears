@@ -23,14 +23,14 @@ impl From<ConfigArgs> for cargo_gears_core::config::ConfigParams {
 
 #[derive(Subcommand)]
 pub enum ConfigCommand {
-    Mod(ConfigModulesArgs),
+    Gear(ConfigGearsArgs),
     Db(Box<ConfigDbArgs>),
 }
 
 impl From<ConfigCommand> for cargo_gears_core::config::ConfigCommand {
     fn from(command: ConfigCommand) -> Self {
         match command {
-            ConfigCommand::Mod(args) => Self::Mod(args.into()),
+            ConfigCommand::Gear(args) => Self::Mod(args.into()),
             ConfigCommand::Db(args) => Self::Db(Box::new((*args).into())),
         }
     }
@@ -128,13 +128,13 @@ impl From<ConfigDbRemoveArgs> for cargo_gears_core::config::db::RemoveArgs {
 }
 
 #[derive(Args)]
-pub struct ConfigModulesArgs {
+pub struct ConfigGearsArgs {
     #[command(subcommand)]
-    command: ConfigModulesCommand,
+    command: ConfigGearsCommand,
 }
 
-impl From<ConfigModulesArgs> for cargo_gears_core::config::modules::ModulesParams {
-    fn from(args: ConfigModulesArgs) -> Self {
+impl From<ConfigGearsArgs> for cargo_gears_core::config::gears::GearsParams {
+    fn from(args: ConfigGearsArgs) -> Self {
         Self {
             command: args.command.into(),
         }
@@ -142,21 +142,21 @@ impl From<ConfigModulesArgs> for cargo_gears_core::config::modules::ModulesParam
 }
 
 #[derive(Subcommand)]
-pub enum ConfigModulesCommand {
-    /// Add or update a module in the modules section (upsert)
+pub enum ConfigGearsCommand {
+    /// Add or update a gear in the gears section (upsert)
     Add(ConfigModuleAddArgs),
-    /// Manage module-level database config
+    /// Manage gear-level database config
     Db(Box<ConfigModuleDbArgs>),
-    /// Remove a module from the modules section
+    /// Remove a gear from the gears section
     Rm(ConfigModuleRemoveArgs),
 }
 
-impl From<ConfigModulesCommand> for cargo_gears_core::config::modules::ModulesCommand {
-    fn from(command: ConfigModulesCommand) -> Self {
+impl From<ConfigGearsCommand> for cargo_gears_core::config::gears::GearsCommand {
+    fn from(command: ConfigGearsCommand) -> Self {
         match command {
-            ConfigModulesCommand::Add(args) => Self::Add(args.into()),
-            ConfigModulesCommand::Db(args) => Self::Db(Box::new((*args).into())),
-            ConfigModulesCommand::Rm(args) => Self::Rm(args.into()),
+            ConfigGearsCommand::Add(args) => Self::Add(args.into()),
+            ConfigGearsCommand::Db(args) => Self::Db(Box::new((*args).into())),
+            ConfigGearsCommand::Rm(args) => Self::Rm(args.into()),
         }
     }
 }
@@ -167,32 +167,16 @@ pub struct ConfigModuleAddArgs {
     path_config: PathConfigArgs,
     /// Module name
     module: String,
-    /// Module package name for metadata
-    #[arg(long)]
-    package: Option<String>,
-    /// Module package version for metadata
-    #[arg(long = "module-version")]
-    module_version: Option<String>,
-    /// Whether Cargo default features should be enabled
-    #[arg(long)]
-    default_features: Option<bool>,
-    /// Feature to include in metadata (repeatable)
-    #[arg(short = 'F', long = "feature", value_delimiter = ',')]
-    features: Vec<String>,
     /// Dependency name to include in metadata.deps (repeatable)
     #[arg(long = "dep")]
     deps: Vec<String>,
 }
 
-impl From<ConfigModuleAddArgs> for cargo_gears_core::config::modules::add::AddParams {
+impl From<ConfigModuleAddArgs> for cargo_gears_core::config::gears::add::AddParams {
     fn from(args: ConfigModuleAddArgs) -> Self {
         Self {
             path_config: args.path_config.into(),
             module: args.module,
-            package: args.package,
-            module_version: args.module_version,
-            default_features: args.default_features,
-            features: args.features,
             deps: args.deps,
         }
     }
@@ -204,7 +188,7 @@ pub struct ConfigModuleDbArgs {
     command: ConfigModuleDbCommand,
 }
 
-impl From<ConfigModuleDbArgs> for cargo_gears_core::config::modules::db::ModuleDbParams {
+impl From<ConfigModuleDbArgs> for cargo_gears_core::config::gears::db::ModuleDbParams {
     fn from(args: ConfigModuleDbArgs) -> Self {
         Self {
             command: args.command.into(),
@@ -222,7 +206,7 @@ enum ConfigModuleDbCommand {
     Rm(ConfigModuleDbRemoveArgs),
 }
 
-impl From<ConfigModuleDbCommand> for cargo_gears_core::config::modules::db::ModuleDbCommand {
+impl From<ConfigModuleDbCommand> for cargo_gears_core::config::gears::db::ModuleDbCommand {
     fn from(command: ConfigModuleDbCommand) -> Self {
         match command {
             ConfigModuleDbCommand::Add(args) => Self::Add(args.into()),
@@ -242,7 +226,7 @@ struct ConfigModuleDbAddArgs {
     conn: DbConnConfig,
 }
 
-impl From<ConfigModuleDbAddArgs> for cargo_gears_core::config::modules::db::AddArgs {
+impl From<ConfigModuleDbAddArgs> for cargo_gears_core::config::gears::db::AddArgs {
     fn from(args: ConfigModuleDbAddArgs) -> Self {
         Self {
             path_config: args.path_config.into(),
@@ -262,7 +246,7 @@ struct ConfigModuleDbEditArgs {
     conn: DbConnConfig,
 }
 
-impl From<ConfigModuleDbEditArgs> for cargo_gears_core::config::modules::db::EditArgs {
+impl From<ConfigModuleDbEditArgs> for cargo_gears_core::config::gears::db::EditArgs {
     fn from(args: ConfigModuleDbEditArgs) -> Self {
         Self {
             path_config: args.path_config.into(),
@@ -280,7 +264,7 @@ struct ConfigModuleDbRemoveArgs {
     module: String,
 }
 
-impl From<ConfigModuleDbRemoveArgs> for cargo_gears_core::config::modules::db::RemoveArgs {
+impl From<ConfigModuleDbRemoveArgs> for cargo_gears_core::config::gears::db::RemoveArgs {
     fn from(args: ConfigModuleDbRemoveArgs) -> Self {
         Self {
             path_config: args.path_config.into(),
@@ -297,7 +281,7 @@ pub struct ConfigModuleRemoveArgs {
     module: String,
 }
 
-impl From<ConfigModuleRemoveArgs> for cargo_gears_core::config::modules::remove::RemoveParams {
+impl From<ConfigModuleRemoveArgs> for cargo_gears_core::config::gears::remove::RemoveParams {
     fn from(args: ConfigModuleRemoveArgs) -> Self {
         Self {
             path_config: args.path_config.into(),

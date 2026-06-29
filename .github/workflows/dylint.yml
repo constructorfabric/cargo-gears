@@ -1,0 +1,28 @@
+name: Dylint checks
+
+on:
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - 'crates/cargo-gears-lints/*'
+      - 'crates/cargo-gears-lints/**/*'
+
+jobs:
+  test:
+    name: Dylint libs checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/cargo-gears-lints
+    steps:
+      - uses: actions/checkout@v6
+      - uses: Swatinem/rust-cache@v2
+
+      - run: rustup install
+      - run: cargo fmt --check
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-dylint,dylint-link
+      # too many issues
+      # - run: cargo clippy --workspace -- -D warnings
+      - run: cargo test

@@ -1,6 +1,6 @@
 Module Schema
 
-A Gears module is a Rust crate inside the workspace's modules/ directory.
+A Gears module is a Rust crate inside the workspace's gears/ directory.
 Module metadata is discovered from Cargo.toml and workspace metadata.
 
 Module Cargo.toml structure:

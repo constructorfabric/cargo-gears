@@ -1,37 +1,6 @@
-mod common;
-
 use cargo_gears::Cli;
-use cargo_gears_core::GearsCommand;
-use cargo_gears_core::manifest::ManifestSelection;
 use clap::Parser;
 use std::ffi::OsString;
-use std::path::PathBuf;
-
-use common::parse_command;
-
-#[test]
-fn parses_lint_into_core_command() {
-    let command = parse_command(&[
-        "gears", "lint", "--app", "app1", "--env", "dev", "--fmt", "--strict", "--clippy",
-    ]);
-
-    assert_eq!(
-        command,
-        GearsCommand::Lint(cargo_gears_core::lint::LintParams {
-            all: false,
-            path: None,
-            manifest: ManifestSelection {
-                manifest: PathBuf::from("Gears.toml"),
-                app: Some("app1".to_owned()),
-                env: Some("dev".to_owned()),
-            },
-            fmt: true,
-            clippy: true,
-            strict: true,
-            dylint: false,
-        })
-    );
-}
 
 #[test]
 fn path_parsing_does_not_change_current_directory() -> anyhow::Result<()> {
@@ -53,4 +22,19 @@ fn path_parsing_does_not_change_current_directory() -> anyhow::Result<()> {
     // CWD must remain unchanged after parsing
     assert_eq!(std::env::current_dir()?, original_dir);
     Ok(())
+}
+
+#[test]
+fn try_from_returns_error_for_lint_command() {
+    use cargo_gears_core::GearsCommand;
+    use std::convert::TryFrom;
+
+    let cli = Cli::try_parse_from(["gears", "lint", "--app", "app1", "--env", "dev"])
+        .expect("should parse");
+    let result = GearsCommand::try_from(cli);
+    assert!(result.is_err());
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "manifest-based commands should be resolved in Cli::run()"
+    );
 }

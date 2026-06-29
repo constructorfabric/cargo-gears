@@ -119,8 +119,8 @@ fn is_gears_module_path(attr: &Attribute) -> bool {
     let path = attr.path();
     let segments: Vec<_> = path.segments.iter().map(|s| s.ident.to_string()).collect();
 
-    (segments.len() == 1 && segments[0] == "module")
-        || (segments.len() == 2 && segments[0] == "gears_toolkit" && segments[1] == "module")
+    (segments.len() == 1 && segments[0] == "gear")
+        || (segments.len() == 2 && segments[0] == "toolkit" && segments[1] == "gear")
 }
 
 fn parse_module_args(attr: &Attribute) -> anyhow::Result<ModuleInfo> {
@@ -239,9 +239,9 @@ mod tests {
     use crate::gears_parser::Capability;
 
     #[test]
-    fn parses_module_with_lifecycle_meta() {
+    fn parses_gear_with_lifecycle_meta() {
         let content = r#"
-            #[gears_toolkit::module(
+            #[toolkit::gear(
                 name = "grpc-hub",
                 capabilities = [stateful, system, grpc_hub],
                 lifecycle(entry = "serve", await_ready)
@@ -263,9 +263,25 @@ mod tests {
     }
 
     #[test]
+    fn parses_toolkit_gear_attribute() {
+        let content = r#"
+            #[toolkit::gear(
+                name = "bookmarks",
+                capabilities = [db, rest]
+            )]
+            pub struct BookmarkModule;
+        "#;
+
+        let parsed = parse_module_rs_source(content).expect("module should parse");
+        assert_eq!(parsed.name, "bookmarks");
+        assert!(parsed.deps.is_empty());
+        assert_eq!(parsed.capabilities, vec![Capability::Db, Capability::Rest]);
+    }
+
+    #[test]
     fn parses_deps_list() {
         let content = r#"
-            #[module(name = "demo", deps = ["authz", "tenant-resolver"])]
+            #[toolkit::gear(name = "demo", deps = ["authz", "tenant-resolver"])]
             pub struct Demo;
         "#;
 
@@ -278,7 +294,7 @@ mod tests {
     #[test]
     fn parses_capabilities_from_strings() {
         let content = r#"
-            #[module(name = "demo", capabilities = ["db", "rest_host"])]
+            #[toolkit::gear(name = "demo", capabilities = ["db", "rest_host"])]
             pub struct Demo;
         "#;
 

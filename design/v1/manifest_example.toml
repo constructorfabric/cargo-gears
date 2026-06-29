@@ -6,7 +6,7 @@ generated-dir = ".gears" # default
 
 [apps.app1.dev]
 config = "app1-dev.yml" # relative from config_dir
-modules = [
+gears = [
     {
         name = "module1",
         source = "local", # local | remote
@@ -74,7 +74,7 @@ mode = "all-features"
 
 [apps.app1.prod]
 config = "app1-prod.yml"
-modules = [
+gears = [
     {
         name = "module1",
         source = "local", # local | remote | registry
@@ -101,17 +101,17 @@ build = {
 lint = { ref = "dev", }
 test = { ref = "dev", }
 
-[templates.module.background-worker]
-source = "git"
-url = "ssh://github.com/username/repository.git"
-revision = "eb5a0f5d"
+[[templates.gear]]
+name = "background-worker"
+description = "Background worker gear template"
+source = { source = "git", url = "ssh://github.com/username/repository.git", revision = "eb5a0f5d" }
 
-[templates.config.grpc-service]
-source = "local"
-path = "templates/grpc-service"
+[[templates.config]]
+name = "grpc-service"
+description = "gRPC service config template"
+source = { source = "local", path = "templates/grpc-service" }
 
-[templates.agents.custom-agent]
-source = "git"
-url = "ssh://github.com/constructorfabric/cf-template-rust.git"
-tag = "0.2"
-subfolder = "Agents/custom-agent"
+[[templates.agents]]
+name = "custom-agent"
+description = "Custom agent template"
+source = { source = "git", url = "ssh://github.com/constructorfabric/cf-template-rust.git", tag = "0.2", subfolder = "Agents/custom-agent" }

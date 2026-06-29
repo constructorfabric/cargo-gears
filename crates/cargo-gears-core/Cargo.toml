@@ -27,6 +27,8 @@ proc-macro2 = { workspace = true }
 serde = { workspace = true }
 serde-saphyr = { workspace = true }
 serde_json = { workspace = true }
+schemars = { workspace = true }
+tracing = { workspace = true }
 reqwest = { workspace = true }
 tokio = { workspace = true }
 flate2 = { workspace = true }
@@ -38,7 +40,6 @@ tempfile = { workspace = true }
 dylint = { workspace = true, optional = true }
 syn = { workspace = true }
 clap = { workspace = true, features = ["derive"], optional = true }
-cargo-gears-macros = { workspace = true }
 
 guppy = { workspace = true }
 camino = { workspace = true }

@@ -9,23 +9,15 @@ use std::path::PathBuf;
 use common::parse_command;
 
 #[test]
-fn parses_config_module_add_into_core_command() {
+fn parses_config_gear_add_into_core_command() {
     let command = parse_command(&[
         "gears",
         "config",
-        "mod",
+        "gear",
         "add",
         "api-gateway",
         "-c",
         "config.yml",
-        "--package",
-        "cf-api-gateway",
-        "--module-version",
-        "1.0.0",
-        "--default-features",
-        "false",
-        "-F",
-        "grpc,otel",
         "--dep",
         "authz",
         "--dep",
@@ -36,18 +28,14 @@ fn parses_config_module_add_into_core_command() {
         command,
         GearsCommand::Config(cargo_gears_core::config::ConfigParams {
             command: cargo_gears_core::config::ConfigCommand::Mod(
-                cargo_gears_core::config::modules::ModulesParams {
-                    command: cargo_gears_core::config::modules::ModulesCommand::Add(
-                        cargo_gears_core::config::modules::add::AddParams {
+                cargo_gears_core::config::gears::GearsParams {
+                    command: cargo_gears_core::config::gears::GearsCommand::Add(
+                        cargo_gears_core::config::gears::add::AddParams {
                             path_config: PathConfigParams {
                                 path: None,
                                 config: Some(PathBuf::from("config.yml")),
                             },
                             module: "api-gateway".to_owned(),
-                            package: Some("cf-api-gateway".to_owned()),
-                            module_version: Some("1.0.0".to_owned()),
-                            default_features: Some(false),
-                            features: vec!["grpc".to_owned(), "otel".to_owned()],
                             deps: vec!["authz".to_owned(), "tenant".to_owned()],
                         },
                     ),
@@ -133,11 +121,11 @@ fn parses_config_db_add_into_core_command() {
 }
 
 #[test]
-fn parses_config_module_db_edit_into_core_command() {
+fn parses_config_gear_db_edit_into_core_command() {
     let command = parse_command(&[
         "gears",
         "config",
-        "mod",
+        "gear",
         "db",
         "edit",
         "api-gateway",
@@ -153,11 +141,11 @@ fn parses_config_module_db_edit_into_core_command() {
         command,
         GearsCommand::Config(cargo_gears_core::config::ConfigParams {
             command: cargo_gears_core::config::ConfigCommand::Mod(
-                cargo_gears_core::config::modules::ModulesParams {
-                    command: cargo_gears_core::config::modules::ModulesCommand::Db(Box::new(
-                        cargo_gears_core::config::modules::db::ModuleDbParams {
-                            command: cargo_gears_core::config::modules::db::ModuleDbCommand::Edit(
-                                cargo_gears_core::config::modules::db::EditArgs {
+                cargo_gears_core::config::gears::GearsParams {
+                    command: cargo_gears_core::config::gears::GearsCommand::Db(Box::new(
+                        cargo_gears_core::config::gears::db::ModuleDbParams {
+                            command: cargo_gears_core::config::gears::db::ModuleDbCommand::Edit(
+                                cargo_gears_core::config::gears::db::EditArgs {
                                     path_config: PathConfigParams {
                                         path: None,
                                         config: Some(PathBuf::from("config.yml")),
