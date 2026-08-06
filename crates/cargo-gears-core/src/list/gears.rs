@@ -1,8 +1,8 @@
 use super::{SYSTEM_REGISTRY_GEARS, SystemRegistryGear};
 use crate::common::{OutputFormat, Registry};
 use crate::gears_parser::{
-    ConfigModule, ConfigModuleMetadata, NotFoundError, ParsedModule, get_module_name_from_crate,
-    parse_module_rs_source,
+    Capability, ConfigModule, ConfigModuleMetadata, NotFoundError, ParsedModule, Provision,
+    get_module_name_from_crate, parse_module_rs_source,
 };
 use crate::manifest::{GearRef, Manifest};
 use anyhow::{Context, bail};
@@ -214,7 +214,14 @@ fn listed_system_module(
             .map(|metadata| metadata.deps.clone())
             .unwrap_or_default(),
         capabilities: metadata
-            .map(|metadata| metadata.capabilities.clone())
+            .map(|metadata| {
+                metadata
+                    .capabilities
+                    .iter()
+                    .map(ToString::to_string)
+                    .chain(metadata.provisions.iter().map(ToString::to_string))
+                    .collect()
+            })
             .unwrap_or_default(),
     }
 }
@@ -383,7 +390,8 @@ struct RegistryMetadata {
     latest_version: String,
     features: Vec<String>,
     deps: Vec<String>,
-    capabilities: Vec<String>,
+    capabilities: Vec<Capability>,
+    provisions: Vec<Provision>,
 }
 
 #[derive(Deserialize)]
@@ -477,12 +485,8 @@ async fn fetch_registry_metadata(
         latest_version,
         features,
         deps: module_metadata.deps,
-        capabilities: module_metadata
-            .capabilities
-            .iter()
-            .map(ToString::to_string)
-            .chain(module_metadata.provisions.iter().map(ToString::to_string))
-            .collect(),
+        capabilities: module_metadata.capabilities,
+        provisions: module_metadata.provisions,
     })
 }
 
