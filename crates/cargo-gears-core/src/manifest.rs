@@ -1,10 +1,13 @@
 use crate::common;
-use crate::gears_parser::{CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata};
+use crate::gears_parser::{
+    Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata, Provision,
+};
+use crate::list::{SYSTEM_REGISTRY_GEARS, system_gear_for_provision};
 use anyhow::{Context, bail};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -317,6 +320,12 @@ fn resolve_dependencies(
         .unwrap_or_default();
     let mut dependencies = CargoTomlDependencies::new();
 
+    // Collect capabilities from local gears for auto-resolution.
+    let mut local_capabilities: Vec<Capability> = Vec::new();
+
+    // Track which system gears are already explicitly declared.
+    let mut declared_system_packages: BTreeSet<String> = BTreeSet::new();
+
     for module in gears {
         let (name, metadata) = match module {
             GearRef::Local(local) => {
@@ -324,6 +333,8 @@ fn resolve_dependencies(
                     format!("local module '{}' cannot be discovered", local.name)
                 })?;
                 let mut metadata = discovered.metadata.clone();
+                // Collect capabilities from this local gear.
+                local_capabilities.extend_from_slice(&metadata.capabilities);
                 if let Some(package) = &local.package {
                     metadata.package = Some(package.clone());
                 }
@@ -338,16 +349,19 @@ fn resolve_dependencies(
                 }
                 (local.name.clone(), metadata)
             }
-            GearRef::Remote(remote) => (
-                remote.name.clone(),
-                ConfigModuleMetadata {
-                    package: Some(remote.package.clone()),
-                    version: version_req_to_metadata(&remote.version),
-                    features: remote.features.clone(),
-                    default_features: remote.default_features,
-                    ..Default::default()
-                },
-            ),
+            GearRef::Remote(remote) => {
+                declared_system_packages.insert(remote.package.clone());
+                (
+                    remote.name.clone(),
+                    ConfigModuleMetadata {
+                        package: Some(remote.package.clone()),
+                        version: version_req_to_metadata(&remote.version),
+                        features: remote.features.clone(),
+                        default_features: remote.default_features,
+                        ..Default::default()
+                    },
+                )
+            }
         };
 
         let package = metadata.package.clone().with_context(|| {
@@ -370,7 +384,62 @@ fn resolve_dependencies(
         );
     }
 
+    // Auto-resolve system gears required by local gear capabilities.
+    auto_resolve_system_gears(
+        &local_capabilities,
+        &declared_system_packages,
+        &mut dependencies,
+    );
+
     Ok(dependencies)
+}
+
+/// Inspects local gear capabilities and auto-injects any missing system gears
+/// needed to satisfy them (e.g. `Rest` → `RestHost` provision → `api-gateway`).
+fn auto_resolve_system_gears(
+    local_capabilities: &[Capability],
+    declared_system_packages: &BTreeSet<String>,
+    dependencies: &mut CargoTomlDependencies,
+) {
+    for capability in local_capabilities {
+        // Map the requirement to the provision it needs.
+        let Some(provision) = capability.provision() else {
+            continue;
+        };
+        // Skip if any explicitly declared system gear already provides it.
+        if provision_already_declared(provision, declared_system_packages) {
+            continue;
+        }
+        let Some(system_gear) = system_gear_for_provision(&provision) else {
+            continue;
+        };
+        let dependency_name = system_gear.crate_name.replace('-', "_");
+        if dependencies.contains_key(&dependency_name) {
+            continue;
+        }
+        println!(
+            "Auto-resolved system gear '{}' for '{}' capability",
+            system_gear.gear_name, capability
+        );
+        dependencies.insert(
+            dependency_name,
+            CargoTomlDependency {
+                package: Some(system_gear.crate_name.to_owned()),
+                ..Default::default()
+            },
+        );
+    }
+}
+
+/// Returns `true` if any explicitly declared system gear already offers the
+/// given [`Provision`], meaning auto-resolution should not inject one.
+fn provision_already_declared(
+    provision: Provision,
+    declared_system_packages: &BTreeSet<String>,
+) -> bool {
+    SYSTEM_REGISTRY_GEARS.iter().any(|gear| {
+        gear.provides.contains(&provision) && declared_system_packages.contains(gear.crate_name)
+    })
 }
 
 fn version_req_to_metadata(version: &VersionReq) -> Option<String> {

@@ -12,16 +12,30 @@ pub struct ConfigModule {
     pub metadata: ConfigModuleMetadata,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
+/// A capability **requirement** declared by a gear (e.g. `rest`, `db`).
+///
+/// See also [`Provision`] for the provider side.
+// NOTE: the upstream `gears-rust` runtime conflates requirements and provisions
+// into a single `Capability` enum
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Capability {
     Db,
     Rest,
-    RestHost,
-    Stateful,
-    System,
-    GrpcHub,
     Grpc,
+    Stateful,
+}
+
+impl Capability {
+    /// Returns the [`Provision`] that satisfies this capability, if any.
+    #[must_use]
+    pub const fn provision(&self) -> Option<Provision> {
+        match self {
+            Self::Rest => Some(Provision::RestHost),
+            Self::Grpc => Some(Provision::GrpcHub),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for Capability {
@@ -29,11 +43,33 @@ impl fmt::Display for Capability {
         let name = match self {
             Self::Db => "db",
             Self::Rest => "rest",
-            Self::RestHost => "rest_host",
-            Self::Stateful => "stateful",
-            Self::System => "system",
-            Self::GrpcHub => "grpc_hub",
             Self::Grpc => "grpc",
+            Self::Stateful => "stateful",
+        };
+        f.write_str(name)
+    }
+}
+
+/// A capability **provision** offered by a system gear (e.g. `rest_host`, `grpc_hub`).
+///
+/// These describe what a gear *provides* to the platform — "I host REST
+/// endpoints", "I am a gRPC hub", etc. They are the provider side of the
+/// capability contract.
+///
+/// See also [`Capability`] for the requirement side.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Provision {
+    RestHost,
+    GrpcHub,
+    System,
+}
+
+impl fmt::Display for Provision {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = match self {
+            Self::RestHost => "rest_host",
+            Self::GrpcHub => "grpc_hub",
+            Self::System => "system",
         };
         f.write_str(name)
     }
