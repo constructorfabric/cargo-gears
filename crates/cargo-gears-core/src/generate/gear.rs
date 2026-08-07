@@ -193,6 +193,10 @@ fn merge_dependency_metadata(existing: &mut CargoTomlDependency, incoming: &Carg
     if existing.package.is_none() && incoming.package.is_some() {
         existing.package.clone_from(&incoming.package);
     }
+
+    if existing.registry.is_none() && incoming.registry.is_some() {
+        existing.registry.clone_from(&incoming.registry);
+    }
 }
 
 /// Removes workspace members whose directories no longer exist on disk.
@@ -405,6 +409,12 @@ fn add_dependencies_to_workspace(
                 "path",
                 metadata.path.as_deref(),
             )?;
+            maybe_apply_workspace_dep_source_key(
+                existing_dep,
+                &name,
+                "registry",
+                metadata.registry.as_deref(),
+            )?;
             continue;
         }
         workspace_deps.insert(
@@ -439,6 +449,10 @@ fn build_workspace_dep_inline_table(
             "warning: no version specified for dependency '{dependency_name}', using wildcard '*'"
         );
         dep_table.insert("version", "*".into());
+    }
+
+    if let Some(registry) = metadata.registry {
+        dep_table.insert("registry", registry.into());
     }
 
     dep_table
