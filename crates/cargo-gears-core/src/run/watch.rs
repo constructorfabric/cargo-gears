@@ -76,12 +76,9 @@ impl WatchPlan {
         Ok(())
     }
 
-    pub(in crate::run) fn action_for_event(
-        &self,
-        event: &Event,
-    ) -> anyhow::Result<Option<WatchAction>> {
+    pub(in crate::run) fn action_for_event(&self, event: &Event) -> Option<WatchAction> {
         if !is_relevant_event(event.kind) {
-            return Ok(None);
+            return None;
         }
 
         self.action_for_paths(event.paths.iter().map(PathBuf::as_path))
@@ -90,16 +87,14 @@ impl WatchPlan {
     fn action_for_paths<'a>(
         &self,
         paths: impl IntoIterator<Item = &'a Path>,
-    ) -> anyhow::Result<Option<WatchAction>> {
-        let action = paths
+    ) -> Option<WatchAction> {
+        paths
             .into_iter()
-            .map(|path| canonicalize_watch_path(&self.workspace_path, path))
-            .collect::<anyhow::Result<Vec<_>>>()?
-            .into_iter()
+            // Skip paths that no longer exist (e.g. temp files from atomic writes).
+            .filter_map(|path| canonicalize_watch_path(&self.workspace_path, path).ok())
             .filter(|path| !is_excluded(path, &self.excluded_paths))
             .filter_map(|path| self.action_for_path(&path))
-            .max();
-        Ok(action)
+            .max()
     }
 
     fn action_for_path(&self, path: &Path) -> Option<WatchAction> {
@@ -341,16 +336,15 @@ mod tests {
         let cargo_manifest = workspace.join("Cargo.toml");
         let gears_manifest = workspace.join("Gears.toml");
         assert_eq!(
-            plan.action_for_paths([cargo_manifest.as_path()]).unwrap(),
+            plan.action_for_paths([cargo_manifest.as_path()]),
             Some(WatchAction::Regenerate)
         );
         assert_eq!(
-            plan.action_for_paths([gears_manifest.as_path()]).unwrap(),
+            plan.action_for_paths([gears_manifest.as_path()]),
             Some(WatchAction::Regenerate)
         );
         assert_eq!(
-            plan.action_for_paths([Path::new("crates/local-module/src/lib.rs")])
-                .unwrap(),
+            plan.action_for_paths([Path::new("crates/local-module/src/lib.rs")]),
             Some(WatchAction::Restart)
         );
     }
@@ -381,12 +375,9 @@ mod tests {
         assert_plan_paths_are_absolute(&plan);
 
         let source_file = workspace.join("src/main.rs");
+        assert_eq!(plan.action_for_paths([Path::new("Cargo.toml")]), None);
         assert_eq!(
-            plan.action_for_paths([Path::new("Cargo.toml")]).unwrap(),
-            None
-        );
-        assert_eq!(
-            plan.action_for_paths([source_file.as_path()]).unwrap(),
+            plan.action_for_paths([source_file.as_path()]),
             Some(WatchAction::Restart)
         );
     }
@@ -415,7 +406,7 @@ mod tests {
         assert_plan_paths_are_absolute(&plan);
 
         assert_eq!(
-            plan.action_for_paths([Path::new("Cargo.toml")]).unwrap(),
+            plan.action_for_paths([Path::new("Cargo.toml")]),
             Some(WatchAction::Regenerate)
         );
     }
@@ -446,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn missing_event_path_returns_canonicalization_error() {
+    fn missing_event_path_is_silently_skipped() {
         let temp = TempDir::new().unwrap();
         let workspace = temp.path();
         fs::create_dir_all(workspace.join("src")).unwrap();
@@ -468,11 +459,11 @@ mod tests {
         )
         .unwrap();
 
-        let err = plan
-            .action_for_paths([Path::new("src/missing.rs")])
-            .unwrap_err();
+        // Ephemeral/missing event paths (e.g. temp files from atomic writes) are
+        // silently skipped instead of causing an error.
+        let action = plan.action_for_paths([Path::new("src/missing.rs")]);
 
-        assert!(err.to_string().contains("can't canonicalize watch path"));
+        assert_eq!(action, None);
     }
 
     #[test]
@@ -509,12 +500,11 @@ mod tests {
 
         let cargo_manifest = workspace.join("Cargo.toml");
         assert_eq!(
-            plan.action_for_paths([Path::new("crates/local-module/src/lib.rs")])
-                .unwrap(),
+            plan.action_for_paths([Path::new("crates/local-module/src/lib.rs")]),
             None
         );
         assert_eq!(
-            plan.action_for_paths([cargo_manifest.as_path()]).unwrap(),
+            plan.action_for_paths([cargo_manifest.as_path()]),
             Some(WatchAction::Regenerate)
         );
     }

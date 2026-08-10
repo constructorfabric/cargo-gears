@@ -127,7 +127,7 @@ impl RunLoop {
                         }
                     };
 
-                    match watch_plan.action_for_event(&event)? {
+                    match watch_plan.action_for_event(&event) {
                         Some(WatchAction::Regenerate) => {
                             _ = signal_tx.send(RunSignal::Stop);
                             runner_handle
