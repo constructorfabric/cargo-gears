@@ -1,4 +1,5 @@
 mod build;
+mod clean;
 mod common;
 mod config;
 mod deploy;
@@ -51,6 +52,8 @@ enum Commands {
     Run(run::RunArgs),
     /// Same as run but stops at the build step
     Build(build::BuildArgs),
+    /// Remove the generated server project and its workspace member entry
+    Clean(clean::CleanArgs),
     /// Build a Docker image for the generated or provided server manifest
     Deploy(deploy::DeployArgs),
 }
@@ -62,6 +65,7 @@ impl Cli {
             Commands::Lint(lint) => lint.resolve()?.run(),
             Commands::Test(test) => test.resolve()?.run(),
             Commands::Build(build) => build.resolve()?.run(),
+            Commands::Clean(clean) => clean.resolve()?.run(),
             Commands::Run(run) => run.resolve_and_run(),
             // Non-manifest commands: pass through to core.
             other => cargo_gears_core::GearsCommand::try_from(other)?.run(),
@@ -90,7 +94,11 @@ impl TryFrom<Commands> for cargo_gears_core::GearsCommand {
             Commands::Tools(tools) => Ok(Self::Tools(tools.into())),
             Commands::Deploy(deploy) => Ok(Self::Deploy(deploy.into())),
             // Manifest-based commands should be resolved in Cli::run(), not converted here.
-            Commands::Lint(_) | Commands::Test(_) | Commands::Build(_) | Commands::Run(_) => {
+            Commands::Lint(_)
+            | Commands::Test(_)
+            | Commands::Build(_)
+            | Commands::Clean(_)
+            | Commands::Run(_) => {
                 anyhow::bail!("manifest-based commands should be resolved in Cli::run()")
             }
         }

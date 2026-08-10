@@ -20,12 +20,57 @@ pub struct ManifestSelection {
     pub env: Option<String>,
 }
 
+/// Lightweight manifest target info without dependency resolution.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManifestTarget {
+    pub workspace_root: PathBuf,
+    pub generated_dir: PathBuf,
+    pub generated_name: String,
+}
+
 impl ManifestSelection {
     pub fn resolve(&self, workspace_root: &Path) -> anyhow::Result<ResolvedManifest> {
         let manifest_path = resolve_manifest_path(workspace_root, &self.manifest)?;
         let manifest = Manifest::load(&manifest_path)?;
         let (app, env) = resolve_app_env(&manifest, self.app.as_deref(), self.env.as_deref())?;
         manifest.resolve(workspace_root, &manifest_path, &app, &env, None)
+    }
+
+    /// Resolve just the generated target paths without dependency resolution.
+    ///
+    /// Useful for commands like `clean` that only need to know where the
+    /// generated project lives, not what dependencies it has.
+    pub fn resolve_target(&self, workspace_root: &Path) -> anyhow::Result<ManifestTarget> {
+        let manifest_path = resolve_manifest_path(workspace_root, &self.manifest)?;
+        let manifest = Manifest::load(&manifest_path)?;
+        let (app, env) = resolve_app_env(&manifest, self.app.as_deref(), self.env.as_deref())?;
+
+        let environment = manifest
+            .apps
+            .get(&app)
+            .with_context(|| format!("manifest app '{app}' does not exist"))?
+            .get(&env)
+            .with_context(|| format!("manifest environment '{app}.{env}' does not exist"))?;
+
+        let manifest_dir = manifest_path
+            .parent()
+            .context("manifest path has no parent")?;
+        let workspace_base = manifest.workspace.root.as_ref().map_or_else(
+            || workspace_root.to_path_buf(),
+            |root| resolve_relative_to(manifest_dir, root),
+        );
+        let generated_name = environment
+            .build
+            .as_ref()
+            .and_then(|build| build.name.clone())
+            .unwrap_or_else(|| format!("{app}-{env}"));
+        let generated_dir = resolve_relative_to(&workspace_base, &manifest.workspace.generated_dir);
+
+        Ok(ManifestTarget {
+            workspace_root: workspace_base,
+            generated_dir,
+            generated_name,
+        })
     }
 }
 
