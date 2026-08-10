@@ -195,6 +195,60 @@ fn merge_dependency_metadata(existing: &mut CargoTomlDependency, incoming: &Carg
     }
 }
 
+/// Removes workspace members whose directories no longer exist on disk.
+///
+/// This handles the case where a user deletes the generated directory
+/// (e.g. `.gears/`) while it's still listed as a workspace member.
+/// Must run before `cargo metadata` to avoid "No such file or directory" errors.
+pub(crate) fn remove_stale_workspace_members(
+    workspace_root: &Path,
+    generated_dir: &Path,
+) -> anyhow::Result<()> {
+    let cargo_toml_path = workspace_root.join("Cargo.toml");
+    let Ok(content) = fs::read_to_string(&cargo_toml_path) else {
+        return Ok(());
+    };
+    let mut doc: toml_edit::DocumentMut = content
+        .parse()
+        .with_context(|| format!("can't parse {}", cargo_toml_path.display()))?;
+
+    let Some(members) = doc
+        .get_mut("workspace")
+        .and_then(|ws| ws.get_mut("members"))
+        .and_then(toml_edit::Item::as_array_mut)
+    else {
+        return Ok(());
+    };
+
+    let generated_prefix = generated_dir
+        .strip_prefix(workspace_root)
+        .ok()
+        .map(|p| p.to_string_lossy().into_owned());
+    let Some(prefix) = generated_prefix else {
+        return Ok(());
+    };
+
+    let mut removed = false;
+    members.retain(|v| {
+        let Some(s) = v.as_str() else { return true };
+        if !s.starts_with(&prefix) {
+            return true;
+        }
+        let member_dir = workspace_root.join(s);
+        if member_dir.join("Cargo.toml").exists() {
+            return true;
+        }
+        removed = true;
+        false
+    });
+
+    if removed {
+        save_toml_document(&cargo_toml_path, &doc)?;
+    }
+
+    Ok(())
+}
+
 pub(crate) fn update_workspace_cargo_toml(
     workspace_root: &Path,
     generated_gears: &[String],
