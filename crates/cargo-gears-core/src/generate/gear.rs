@@ -195,7 +195,7 @@ fn merge_dependency_metadata(existing: &mut CargoTomlDependency, incoming: &Carg
     }
 }
 
-fn update_workspace_cargo_toml(
+pub(crate) fn update_workspace_cargo_toml(
     workspace_root: &Path,
     generated_gears: &[String],
     dependencies: CargoTomlDependencies,

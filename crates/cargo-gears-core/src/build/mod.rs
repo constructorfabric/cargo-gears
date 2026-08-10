@@ -163,14 +163,6 @@ impl BuildParamsBuilder {
 
 impl BuildParams {
     pub fn run(&self) -> anyhow::Result<()> {
-        if self.build_run_args.clean {
-            common::remove_from_file_structure(
-                &self.build_run_args.generated_dir,
-                &self.build_run_args.generated_name,
-                "Cargo.lock",
-            )?;
-        }
-
         let generated = common::generate_server_structure(
             &self.build_run_args.workspace_root,
             &self.build_run_args.generated_dir,
@@ -233,6 +225,12 @@ name = "demo-server"
 "#,
         )
         .expect("manifest should be written");
+        // Root Cargo.toml needed for workspace member registration
+        fs::write(
+            temp.path().join("Cargo.toml"),
+            "[workspace]\nmembers = []\nresolver = \"3\"\n",
+        )
+        .expect("root Cargo.toml should be written");
         fs::create_dir_all(temp.path().join("config")).expect("config dir should be created");
         fs::write(temp.path().join("config/app-dev.yml"), "server: {}\n")
             .expect("config should be written");
@@ -264,9 +262,16 @@ name = "demo-server"
 
         let generated_project = temp.path().join("generated-output/demo-server");
         assert!(generated_project.join("Cargo.toml").is_file());
-        assert!(generated_project.join(".cargo/config.toml").is_file());
         assert!(generated_project.join("src/main.rs").is_file());
         assert!(!temp.path().join("demo-server/Cargo.toml").exists());
         assert!(!temp.path().join(".gears/demo-server/Cargo.toml").exists());
+
+        // Root Cargo.toml should list the generated project as a workspace member
+        let root_manifest = fs::read_to_string(temp.path().join("Cargo.toml"))
+            .expect("root Cargo.toml should be readable");
+        assert!(
+            root_manifest.contains("generated-output/demo-server"),
+            "root Cargo.toml should include the generated project as a member"
+        );
     }
 }
