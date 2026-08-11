@@ -78,6 +78,9 @@ pub fn define_endpoints() {
     // Should not trigger DE0801 - API endpoint version
     // AIP-136 custom method on a path parameter instance
     OperationBuilder::post("/tests/v1/orders/{id}:reset").handler(update_product);
+    // Should not trigger DE0801 - API endpoint version
+    // AIP-136 custom method with a pure kebab-case verb
+    OperationBuilder::post("/tests/v1/events:bulk-export");
 }
 
 fn main() {}

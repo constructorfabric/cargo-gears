@@ -135,18 +135,17 @@ fn is_valid_version(segment: &str) -> bool {
     after_v.chars().all(|c| c.is_ascii_digit())
 }
 
-/// Check if a segment is a path parameter like {id}
+/// Check if a segment is a path parameter like {id} (the placeholder name must be non-empty)
 fn is_path_param(segment: &str) -> bool {
-    segment.starts_with('{') && segment.ends_with('}')
+    segment.starts_with('{') && segment.ends_with('}') && segment.len() > 2
 }
 
-/// Check if a segment is a valid lowerCamelCase or kebab-case custom method verb,
-/// as used in the AIP-136 `resource:customMethod` suffix (e.g. `batch`, `getOrCreate`).
+/// Check if a segment is a valid custom method verb, as used in the AIP-136
+/// `resource:customMethod` suffix (e.g. `batch`, `getOrCreate`, `bulk-export`).
+///
+/// A verb must be either pure lowerCamelCase (letters/digits, no dashes) or pure
+/// kebab-case (lowercase letters, digits, dashes) - the two styles cannot be mixed.
 fn is_valid_custom_method_verb(verb: &str) -> bool {
-    if verb.is_empty() || verb.starts_with('-') || verb.ends_with('-') {
-        return false;
-    }
-
     let mut chars = verb.chars();
     let Some(first) = chars.next() else {
         return false;
@@ -155,11 +154,18 @@ fn is_valid_custom_method_verb(verb: &str) -> bool {
         return false;
     }
 
-    verb.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+    if verb.contains('-') {
+        !verb.ends_with('-')
+            && verb
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    } else {
+        verb.chars().all(|c| c.is_ascii_alphanumeric())
+    }
 }
 
 /// Check if a segment follows the AIP-136 custom method shape: a resource (either
-/// a bare `{param}` or kebab-case name) followed by `:{verb}` (e.g. `events:batch`,
+/// a `{param}` or kebab-case name) followed by `:{verb}` (e.g. `events:batch`,
 /// `{id}:reset`).
 fn is_valid_custom_method_segment(segment: &str) -> bool {
     let Some((resource, verb)) = segment.split_once(':') else {
@@ -207,11 +213,14 @@ fn validate_api_path(path: &str) -> Result<(), PathValidationError> {
     }
 
     // Validate all remaining segments (resources and sub-resources)
-    for segment in &segments[2..] {
+    let resource_segments = &segments[2..];
+    let last_index = resource_segments.len() - 1;
+    for (index, segment) in resource_segments.iter().enumerate() {
         if is_path_param(segment) {
             continue;
         }
-        if is_valid_custom_method_segment(segment) {
+        // AIP-136 custom methods (resource:verb) are only valid as the final segment
+        if index == last_index && is_valid_custom_method_segment(segment) {
             continue;
         }
         if !is_valid_kebab_case(segment) {

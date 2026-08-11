@@ -98,6 +98,18 @@ pub fn define_endpoints() {
     // AIP-136 custom method suffix with an invalid resource name
     // Should trigger DE0801 - API endpoint version
     OperationBuilder::post("/some-service/v1/Events:batch");
+
+    // AIP-136 custom method suffix that mixes kebab-case and camelCase in the verb
+    // Should trigger DE0801 - API endpoint version
+    OperationBuilder::post("/some-service/v1/events:foo-Bar");
+
+    // AIP-136 custom method suffix on an empty path parameter name
+    // Should trigger DE0801 - API endpoint version
+    OperationBuilder::post("/some-service/v1/orders/{}:reset").handler(dummy_handler);
+
+    // AIP-136 custom method suffix that is not the final path segment
+    // Should trigger DE0801 - API endpoint version
+    OperationBuilder::post("/some-service/v1/events:batch/details");
 }
 
 fn main() {}

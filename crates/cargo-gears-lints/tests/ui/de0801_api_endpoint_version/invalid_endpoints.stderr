@@ -143,5 +143,32 @@ LL |     OperationBuilder::post("/some-service/v1/Events:batch");
    = help: resource names must be kebab-case (lowercase letters, numbers, dashes)
    = note: resource names must not start or end with a dash
 
-error: aborting due to 16 previous errors
+error: API endpoint `/some-service/v1/events:foo-Bar` has invalid resource name `events:foo-Bar` (DE0801)
+  --> $DIR/invalid_endpoints.rs:104:28
+   |
+LL |     OperationBuilder::post("/some-service/v1/events:foo-Bar");
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: resource names must be kebab-case (lowercase letters, numbers, dashes)
+   = note: resource names must not start or end with a dash
+
+error: API endpoint `/some-service/v1/orders/{}:reset` has invalid resource name `{}:reset` (DE0801)
+  --> $DIR/invalid_endpoints.rs:108:28
+   |
+LL |     OperationBuilder::post("/some-service/v1/orders/{}:reset").handler(dummy_handler);
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: resource names must be kebab-case (lowercase letters, numbers, dashes)
+   = note: resource names must not start or end with a dash
+
+error: API endpoint `/some-service/v1/events:batch/details` has invalid resource name `events:batch` (DE0801)
+  --> $DIR/invalid_endpoints.rs:112:28
+   |
+LL |     OperationBuilder::post("/some-service/v1/events:batch/details");
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: resource names must be kebab-case (lowercase letters, numbers, dashes)
+   = note: resource names must not start or end with a dash
+
+error: aborting due to 19 previous errors
 

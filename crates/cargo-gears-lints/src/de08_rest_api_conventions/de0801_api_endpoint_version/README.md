@@ -39,8 +39,13 @@ Without this structure:
    - Path parameters like `{id}` are allowed
    - Examples: `users`, `user-profiles`, `orders/{order-id}`
    - AIP-136 custom methods are allowed as a `resource:verb` suffix on a
-     kebab-case resource or a `{param}`, e.g. `events:batch`, `{id}:reset`
-     (see https://google.aip.dev/136)
+     kebab-case resource or a non-empty `{param}`, e.g. `events:batch`,
+     `{id}:reset` (see https://google.aip.dev/136). The suffix is only
+     valid on the final path segment. `verb` must be non-empty, start with
+     a lowercase ASCII letter, and be either pure lowerCamelCase (no
+     dashes, e.g. `getOrCreate`) or pure kebab-case (lowercase letters,
+     digits, and dashes only, e.g. `bulk-export`) - the two styles cannot
+     be mixed (e.g. `foo-Bar` is invalid)
 
 ### Example
 
