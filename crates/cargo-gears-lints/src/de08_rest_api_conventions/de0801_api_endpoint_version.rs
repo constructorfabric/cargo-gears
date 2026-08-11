@@ -140,6 +140,36 @@ fn is_path_param(segment: &str) -> bool {
     segment.starts_with('{') && segment.ends_with('}')
 }
 
+/// Check if a segment is a valid lowerCamelCase or kebab-case custom method verb,
+/// as used in the AIP-136 `resource:customMethod` suffix (e.g. `batch`, `getOrCreate`).
+fn is_valid_custom_method_verb(verb: &str) -> bool {
+    if verb.is_empty() || verb.starts_with('-') || verb.ends_with('-') {
+        return false;
+    }
+
+    let mut chars = verb.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    if !first.is_ascii_lowercase() {
+        return false;
+    }
+
+    verb.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+}
+
+/// Check if a segment follows the AIP-136 custom method shape: a resource (either
+/// a bare `{param}` or kebab-case name) followed by `:{verb}` (e.g. `events:batch`,
+/// `{id}:reset`).
+fn is_valid_custom_method_segment(segment: &str) -> bool {
+    let Some((resource, verb)) = segment.split_once(':') else {
+        return false;
+    };
+
+    let valid_resource = is_path_param(resource) || is_valid_kebab_case(resource);
+    valid_resource && is_valid_custom_method_verb(verb)
+}
+
 /// Validate that a path follows the format: /{service-name}/v{N}/{resource}
 fn validate_api_path(path: &str) -> Result<(), PathValidationError> {
     let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
@@ -179,6 +209,9 @@ fn validate_api_path(path: &str) -> Result<(), PathValidationError> {
     // Validate all remaining segments (resources and sub-resources)
     for segment in &segments[2..] {
         if is_path_param(segment) {
+            continue;
+        }
+        if is_valid_custom_method_segment(segment) {
             continue;
         }
         if !is_valid_kebab_case(segment) {

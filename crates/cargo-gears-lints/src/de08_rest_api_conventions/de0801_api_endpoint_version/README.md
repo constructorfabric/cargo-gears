@@ -38,6 +38,9 @@ Without this structure:
    - Must be kebab-case
    - Path parameters like `{id}` are allowed
    - Examples: `users`, `user-profiles`, `orders/{order-id}`
+   - AIP-136 custom methods are allowed as a `resource:verb` suffix on a
+     kebab-case resource or a `{param}`, e.g. `events:batch`, `{id}:reset`
+     (see https://google.aip.dev/136)
 
 ### Example
 
@@ -86,6 +89,15 @@ OperationBuilder::post("/user-service/v2/users/{id}/profile")
 // Different versions coexist
 OperationBuilder::get("/api-gateway/v1/health");
 OperationBuilder::get("/api-gateway/v2/health");
+
+// AIP-136 custom methods on a bare collection resource
+OperationBuilder::post("/my-service/v1/events:batch")
+    .handler(batch_events);
+OperationBuilder::get("/my-service/v1/events:stream");
+
+// AIP-136 custom methods on a path parameter instance
+OperationBuilder::post("/my-service/v1/orders/{id}:reset")
+    .handler(reset_order);
 ```
 
 ### Configuration

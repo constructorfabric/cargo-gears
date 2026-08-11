@@ -116,5 +116,32 @@ LL |     OperationBuilder::post("/my-service/v1")
    = help: add resource: /{service-name}/v{N}/{resource}
    = note: at least one resource segment is required after version
 
-error: aborting due to 13 previous errors
+error: API endpoint `/some-service/v1/events:` has invalid resource name `events:` (DE0801)
+  --> $DIR/invalid_endpoints.rs:92:28
+   |
+LL |     OperationBuilder::post("/some-service/v1/events:");
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: resource names must be kebab-case (lowercase letters, numbers, dashes)
+   = note: resource names must not start or end with a dash
+
+error: API endpoint `/some-service/v1/events:Batch` has invalid resource name `events:Batch` (DE0801)
+  --> $DIR/invalid_endpoints.rs:96:28
+   |
+LL |     OperationBuilder::post("/some-service/v1/events:Batch");
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: resource names must be kebab-case (lowercase letters, numbers, dashes)
+   = note: resource names must not start or end with a dash
+
+error: API endpoint `/some-service/v1/Events:batch` has invalid resource name `Events:batch` (DE0801)
+  --> $DIR/invalid_endpoints.rs:100:28
+   |
+LL |     OperationBuilder::post("/some-service/v1/Events:batch");
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: resource names must be kebab-case (lowercase letters, numbers, dashes)
+   = note: resource names must not start or end with a dash
+
+error: aborting due to 16 previous errors
 

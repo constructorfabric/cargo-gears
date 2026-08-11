@@ -66,6 +66,18 @@ pub fn define_endpoints() {
     // Should not trigger DE0801 - API endpoint version
     // Path parameters in various positions
     OperationBuilder::get("/api-service/v5/users/{user-id}/orders/{order-id}").handler(list_users);
+
+    // Should not trigger DE0801 - API endpoint version
+    // AIP-136 custom method on a bare collection resource
+    OperationBuilder::post("/tests/v1/events:batch").handler(create_order);
+    // Should not trigger DE0801 - API endpoint version
+    OperationBuilder::get("/tests/v1/events:stream");
+    // Should not trigger DE0801 - API endpoint version
+    // AIP-136 custom method with a lowerCamelCase verb
+    OperationBuilder::post("/tests/v1/events:getOrCreate");
+    // Should not trigger DE0801 - API endpoint version
+    // AIP-136 custom method on a path parameter instance
+    OperationBuilder::post("/tests/v1/orders/{id}:reset").handler(update_product);
 }
 
 fn main() {}
