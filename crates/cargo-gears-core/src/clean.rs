@@ -67,10 +67,35 @@ impl CleanParamsBuilder {
 
 impl CleanParams {
     pub fn run(&self) -> anyhow::Result<()> {
+        // Run `cargo clean` first to remove build artifacts.
+        // If it fails due to a broken workspace (e.g. missing generated
+        // member), warn and continue -- fixing that is our job.
+        match common::cargo_cmd() {
+            Ok(mut cmd) => {
+                cmd.arg("clean").current_dir(&self.workspace_root);
+                let output = cmd.output().context("failed to spawn cargo clean")?;
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    if Self::is_workspace_error(&stderr) {
+                        eprintln!("warning: cargo clean failed (broken workspace), continuing");
+                    } else {
+                        anyhow::bail!(
+                            "cargo clean exited with {}: {}",
+                            output.status,
+                            stderr.trim()
+                        );
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("warning: {e}, skipping cargo clean");
+            }
+        }
+
         let project_dir = common::generated_project_dir(&self.generated_dir, &self.generated_name);
 
-        // Delete the generated project directory first, so that the
-        // stale-member cleanup sees it as missing and removes the entry.
+        // 1. Delete the generated project directory, so that the
+        //    stale-member cleanup sees it as missing and removes the entry.
         if project_dir.exists() {
             fs::remove_dir_all(&project_dir).with_context(|| {
                 format!(
@@ -81,10 +106,10 @@ impl CleanParams {
             println!("removed {}", project_dir.display());
         }
 
-        // Remove the (now-stale) member from workspace Cargo.toml
+        // 2. Remove the (now-stale) member from workspace Cargo.toml.
         remove_stale_workspace_members(&self.workspace_root, &self.generated_dir)?;
 
-        // Remove the generated dir if it's now empty
+        // 3. Remove the generated dir if it is now empty.
         if self.generated_dir.exists()
             && fs::read_dir(&self.generated_dir).is_ok_and(|mut d| d.next().is_none())
         {
@@ -96,7 +121,29 @@ impl CleanParams {
             })?;
         }
 
+        // 4. Run `cargo clean` to remove build artifacts. The workspace
+        //    is now consistent, so this should succeed.
+        let mut cmd = common::cargo_cmd()?;
+        cmd.arg("clean").current_dir(&self.workspace_root);
+        let status = cmd.status().context("failed to run cargo clean")?;
+        if !status.success() {
+            anyhow::bail!("cargo clean exited with {status}");
+        }
+
         Ok(())
+    }
+
+    /// Returns `true` when the `cargo clean` stderr looks like a broken
+    /// workspace (missing member, unreadable manifest, etc.) -- exactly
+    /// the kind of state `gears clean` is meant to fix.
+    fn is_workspace_error(stderr: &str) -> bool {
+        let markers = [
+            "failed to load manifest",
+            "failed to read",
+            "workspace member",
+            "No such file or directory",
+        ];
+        markers.iter().any(|m| stderr.contains(m))
     }
 }
 
@@ -193,5 +240,20 @@ gears = []
         params.run().unwrap();
         // Second clean should not error
         params.run().unwrap();
+    }
+
+    #[test]
+    fn is_workspace_error_detects_missing_manifest() {
+        let stderr = "error: failed to load manifest for workspace member \
+                       `/tmp/foo/.gears/app-dev`\n\nCaused by:\n  \
+                       failed to read `/tmp/foo/.gears/app-dev/Cargo.toml`\n\n\
+                       Caused by:\n  No such file or directory (os error 2)\n";
+        assert!(CleanParams::is_workspace_error(stderr));
+    }
+
+    #[test]
+    fn is_workspace_error_rejects_unrelated_failure() {
+        let stderr = "error: Permission denied (os error 13)\n";
+        assert!(!CleanParams::is_workspace_error(stderr));
     }
 }

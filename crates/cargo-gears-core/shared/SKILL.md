@@ -853,7 +853,8 @@ cargo gears build -p /tmp/cf-demo --app app1 --env prod --dry-run
 
 ### `clean`
 
-Remove the generated server project and its workspace member entry from the root `Cargo.toml`.
+Superset of `cargo clean`: removes build artifacts, the generated server project, and its workspace member entry
+from the root `Cargo.toml`.
 
 Synopsis:
 
@@ -869,6 +870,10 @@ Arguments:
 
 Behavior:
 
+- **[runs `cargo clean` first]** Removes build artifacts from the workspace `target/` directory. If this fails due to
+  a broken workspace (e.g. missing generated member), the error is ignored and cleanup continues -- fixing such
+  broken state is the purpose of this command. Other `cargo clean` failures (permissions, disk errors, etc.) are
+  propagated as errors.
 - **[resolves target without dependencies]** Reads `Gears.toml` to determine the generated project directory and name
   without resolving module dependencies or running `cargo metadata`
 - **[deletes generated project]** Removes `<generated-dir>/<name>/` (e.g. `.gears/products-dev/`)
@@ -876,6 +881,9 @@ Behavior:
   `Cargo.toml`
 - **[cleans up empty generated dir]** If the generated directory (e.g. `.gears/`) is empty after removal, it is also
   deleted
+- **[runs `cargo clean` last]** After fixing the workspace, runs `cargo clean` to remove build artifacts from the
+  `target/` directory. By running last, the workspace is guaranteed to be consistent so `cargo clean` succeeds
+  even when the generated member was previously missing or broken.
 - **[idempotent]** Running `clean` when the generated project does not exist is a no-op
 
 Examples:
