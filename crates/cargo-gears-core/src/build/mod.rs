@@ -182,9 +182,7 @@ impl BuildParams {
             "build",
             &cargo_dir,
             &self.build_run_args.config_path,
-            self.build_run_args.otel,
-            self.build_run_args.fips,
-            self.build_run_args.release,
+            self.build_run_args.cargo_flags(),
         )?
         .status()
         .context("failed to run cargo build")?;
