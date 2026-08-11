@@ -34,6 +34,7 @@ pub(super) struct RunLoop {
 pub(super) static OTEL: AtomicBool = AtomicBool::new(false);
 pub(super) static FIPS: AtomicBool = AtomicBool::new(false);
 pub(super) static RELEASE: AtomicBool = AtomicBool::new(false);
+pub(super) static LOCKED: AtomicBool = AtomicBool::new(false);
 
 impl RunLoop {
     pub(super) const fn new(
@@ -159,6 +160,7 @@ fn cargo_run(path: &Path, config_path: &Path) -> anyhow::Result<Command> {
         otel: OTEL.load(std::sync::atomic::Ordering::Relaxed),
         fips: FIPS.load(std::sync::atomic::Ordering::Relaxed),
         release: RELEASE.load(std::sync::atomic::Ordering::Relaxed),
+        locked: LOCKED.load(std::sync::atomic::Ordering::Relaxed),
     };
     common::cargo_command("run", path, config_path, flags)
 }

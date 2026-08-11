@@ -148,6 +148,7 @@ pub struct CargoFlags {
     pub otel: bool,
     pub fips: bool,
     pub release: bool,
+    pub locked: bool,
 }
 
 pub fn cargo_command(
@@ -167,6 +168,9 @@ pub fn cargo_command(
     }
     if flags.release {
         cmd.arg("-r");
+    }
+    if flags.locked {
+        cmd.arg("--locked");
     }
     cmd.current_dir(path);
     Ok(cmd)
@@ -510,6 +514,7 @@ pub struct BuildRunParams {
     pub(crate) otel: bool,
     pub(crate) fips: bool,
     pub(crate) release: bool,
+    pub(crate) locked: bool,
     pub(crate) clean: bool,
     pub(crate) dry_run: bool,
 }
@@ -531,6 +536,11 @@ impl BuildRunParams {
     }
 
     #[must_use]
+    pub const fn locked(&self) -> bool {
+        self.locked
+    }
+
+    #[must_use]
     pub const fn clean(&self) -> bool {
         self.clean
     }
@@ -546,6 +556,7 @@ impl BuildRunParams {
             otel: self.otel,
             fips: self.fips,
             release: self.release,
+            locked: self.locked,
         }
     }
 }
@@ -672,6 +683,7 @@ path = "src/lib.rs"
             otel: true,
             fips: true,
             release: true,
+            locked: false,
         };
         let command = cargo_command("run", cargo_dir, config_path, flags)
             .expect("cargo_command should succeed when CARGO is set");
@@ -682,6 +694,25 @@ path = "src/lib.rs"
 
         assert_eq!(args, vec!["run", "-F", "otel", "-F", "fips", "-r"]);
         assert_eq!(command.get_current_dir(), Some(cargo_dir));
+    }
+
+    #[test]
+    fn cargo_command_passes_locked_flag() {
+        let config_path = Path::new("/tmp/config.yml");
+        let cargo_dir = Path::new("/tmp/generated");
+
+        let flags = CargoFlags {
+            locked: true,
+            ..CargoFlags::default()
+        };
+        let command = cargo_command("build", cargo_dir, config_path, flags)
+            .expect("cargo_command should succeed when CARGO is set");
+        let args = command
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+
+        assert_eq!(args, vec!["build", "--locked"]);
     }
 
     #[test]

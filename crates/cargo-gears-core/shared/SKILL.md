@@ -700,7 +700,7 @@ Generate a server project under the manifest `<workspace.generated-dir>/<name>` 
 Synopsis:
 
 ```bash
-cargo gears run [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--watch|--no-watch] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
+cargo gears run [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--watch|--no-watch] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--locked] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
@@ -713,6 +713,7 @@ Arguments:
 - **[`--otel` / `--no-otel`]** Override manifest OpenTelemetry policy on or off
 - **[`--fips` / `--no-fips`]** Override manifest FIPS policy on or off
 - **[`-r, --release` / `--no-release`]** Override manifest build profile to release or non-release
+- **[`--locked`]** Require `Cargo.lock` is up to date; passed as `--locked` to `cargo run`
 - **[`--clean` / `--no-clean`]** Override manifest clean policy on or off
 - **[`--dry-run`]** Generate the project structure and print the generated files without building or running
 
@@ -792,7 +793,7 @@ Generate a server project under the manifest `<workspace.generated-dir>/<name>` 
 Synopsis:
 
 ```bash
-cargo gears build [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--clean|--no-clean] [--dry-run]
+cargo gears build [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--name <NAME>] [--otel|--no-otel] [--fips|--no-fips] [--release|--no-release] [--locked] [--clean|--no-clean] [--dry-run]
 ```
 
 Arguments:
@@ -804,6 +805,7 @@ Arguments:
 - **[`--otel` / `--no-otel`]** Override manifest OpenTelemetry policy on or off
 - **[`--fips` / `--no-fips`]** Override manifest FIPS policy on or off
 - **[`-r, --release` / `--no-release`]** Override manifest build profile to release or non-release
+- **[`--locked`]** Require `Cargo.lock` is up to date; passed as `--locked` to `cargo build`
 - **[`--clean` / `--no-clean`]** Override manifest clean policy on or off
 - **[`--dry-run`]** Generate the project structure and print the generated files without building
 
@@ -1239,7 +1241,7 @@ cargo gears ls modules [-p <workspace>] [--system] [--local] [--verbose] [--regi
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint] [-P <spec>]... [--list]
 cargo gears tools --all
-cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch]
-cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>]
+cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch] [--locked]
+cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--locked]
 cargo gears deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
 ```

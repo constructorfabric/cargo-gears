@@ -69,6 +69,9 @@ pub struct BuildRunArgs {
     /// Do not remove Cargo.lock at the start of the execution
     #[arg(long = "no-clean", action = ArgAction::SetTrue, conflicts_with = "clean")]
     pub(crate) no_clean: bool,
+    /// Require Cargo.lock is up to date
+    #[arg(long, action = ArgAction::SetTrue)]
+    pub(crate) locked: bool,
     /// Print the resolved generation model without building or running
     #[arg(long)]
     pub(crate) dry_run: bool,
@@ -137,6 +140,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -147,6 +151,73 @@ mod tests {
         assert!(!resolved.build_run_args.fips());
         assert!(!resolved.build_run_args.release());
         assert!(!resolved.build_run_args.clean());
+        assert!(!resolved.build_run_args.locked());
+    }
+
+    #[test]
+    fn locked_flag_is_forwarded_to_build_params() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             gears = []\n",
+        );
+
+        let args = parse(&temp, &["--locked"]);
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .name(args.name)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
+
+        assert!(resolved.build_run_args.locked());
+    }
+
+    #[test]
+    fn locked_defaults_to_false() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(
+            &temp,
+            "[apps.app.dev]\n\
+             config = \"app-dev.yml\"\n\
+             gears = []\n",
+        );
+
+        let args = parse(&temp, &[]);
+
+        let resolved = BuildParamsBuilder::new(args.manifest.manifest_path.manifest)
+            .workspace_path(args.workspace.path)
+            .app(args.manifest.app)
+            .env(args.manifest.env)
+            .name(args.name)
+            .otel(args.otel.then_some(true))
+            .no_otel(args.no_otel.then_some(true))
+            .fips(args.fips.then_some(true))
+            .no_fips(args.no_fips.then_some(true))
+            .release(args.release.then_some(true))
+            .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
+            .clean(args.clean.then_some(true))
+            .no_clean(args.no_clean.then_some(true))
+            .dry_run(args.dry_run)
+            .build()
+            .expect("resolve");
+
+        assert!(!resolved.build_run_args.locked());
     }
 
     #[test]
@@ -178,6 +249,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -215,6 +287,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -248,6 +321,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -292,6 +366,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -337,6 +412,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -377,6 +453,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -411,6 +488,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)
@@ -447,6 +525,7 @@ mod tests {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)

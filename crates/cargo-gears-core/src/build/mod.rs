@@ -22,6 +22,7 @@ pub struct BuildParamsBuilder {
     no_fips: Option<bool>,
     release: Option<bool>,
     no_release: Option<bool>,
+    locked: bool,
     clean: Option<bool>,
     no_clean: Option<bool>,
     dry_run: bool,
@@ -42,6 +43,7 @@ impl BuildParamsBuilder {
             no_fips: None,
             release: None,
             no_release: None,
+            locked: false,
             clean: None,
             no_clean: None,
             dry_run: false,
@@ -109,6 +111,12 @@ impl BuildParamsBuilder {
     }
 
     #[must_use]
+    pub const fn locked(mut self, locked: bool) -> Self {
+        self.locked = locked;
+        self
+    }
+
+    #[must_use]
     pub const fn clean(mut self, clean: Option<bool>) -> Self {
         self.clean = clean;
         self
@@ -154,6 +162,7 @@ impl BuildParamsBuilder {
                 otel,
                 fips,
                 release,
+                locked: self.locked,
                 clean,
                 dry_run: self.dry_run,
             },
@@ -251,6 +260,7 @@ name = "demo-server"
                 otel: false,
                 fips: false,
                 release: false,
+                locked: false,
                 clean: false,
                 dry_run: true,
             },
