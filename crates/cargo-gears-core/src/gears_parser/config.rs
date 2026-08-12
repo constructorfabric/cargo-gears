@@ -125,6 +125,8 @@ pub struct CargoTomlDependency {
     pub default_features: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub registry: Option<String>,
 }
 
 #[derive(Serialize)]

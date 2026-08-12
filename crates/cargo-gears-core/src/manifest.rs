@@ -332,7 +332,7 @@ fn resolve_dependencies(
     let mut declared_system_packages: BTreeSet<String> = BTreeSet::new();
 
     for module in gears {
-        let (name, metadata) = match module {
+        let (name, metadata, registry) = match module {
             GearRef::Local(local) => {
                 let discovered = local_modules.get(&local.name).with_context(|| {
                     format!("local module '{}' cannot be discovered", local.name)
@@ -352,7 +352,7 @@ fn resolve_dependencies(
                 if local.default_features.is_some() {
                     metadata.default_features = local.default_features;
                 }
-                (local.name.clone(), metadata)
+                (local.name.clone(), metadata, None)
             }
             GearRef::Remote(remote) => {
                 declared_system_packages.insert(remote.package.clone());
@@ -365,6 +365,7 @@ fn resolve_dependencies(
                         default_features: remote.default_features,
                         ..Default::default()
                     },
+                    remote.registry.clone(),
                 )
             }
         };
@@ -385,6 +386,7 @@ fn resolve_dependencies(
                 features: metadata.features.into_iter().collect(),
                 default_features: metadata.default_features,
                 path: metadata.path,
+                registry,
             },
         );
     }
@@ -1037,6 +1039,43 @@ config = "prod.yml"
         .unwrap();
         let err = resolve_app_env(&manifest, None, None).unwrap_err();
         assert!(err.to_string().contains("no 'dev' environment"));
+    }
+
+    #[test]
+    fn resolve_dependencies_includes_registry_for_remote_gears() {
+        let temp = TempDir::new().unwrap();
+        let gears = vec![GearRef::Remote(GearRefRemote {
+            name: "my-plugin".to_owned(),
+            version: "~1.0".parse().unwrap(),
+            package: "my-plugin-crate".to_owned(),
+            registry: Some("my-registry".to_owned()),
+            features: vec![],
+            default_features: None,
+        })];
+
+        let deps = resolve_dependencies(temp.path(), &gears).unwrap();
+        let dep = deps.get("my_plugin_crate").unwrap();
+
+        assert_eq!(dep.package.as_deref(), Some("my-plugin-crate"));
+        assert_eq!(dep.registry.as_deref(), Some("my-registry"));
+    }
+
+    #[test]
+    fn resolve_dependencies_omits_registry_when_not_specified() {
+        let temp = TempDir::new().unwrap();
+        let gears = vec![GearRef::Remote(GearRefRemote {
+            name: "my-plugin".to_owned(),
+            version: "~1.0".parse().unwrap(),
+            package: "my-plugin-crate".to_owned(),
+            registry: None,
+            features: vec![],
+            default_features: None,
+        })];
+
+        let deps = resolve_dependencies(temp.path(), &gears).unwrap();
+        let dep = deps.get("my_plugin_crate").unwrap();
+
+        assert!(dep.registry.is_none());
     }
 
     #[test]
