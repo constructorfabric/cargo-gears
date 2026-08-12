@@ -273,8 +273,13 @@ impl Manifest<'_> {
             .as_ref()
             .and_then(|build| build.name.clone())
             .unwrap_or_else(|| format!("{app}-{env}"));
-        let dependencies = resolve_dependencies(&workspace_base, &environment.gears)?;
         let generated_dir = resolve_relative_to(&workspace_base, &self.workspace.generated_dir);
+
+        // Remove any stale generated workspace members before cargo metadata
+        // runs, so that deleted directories don't cause "No such file" errors.
+        crate::generate::gear::remove_stale_workspace_members(&workspace_base, &generated_dir)?;
+
+        let dependencies = resolve_dependencies(&workspace_base, &environment.gears)?;
 
         Ok(ResolvedManifest {
             app: app.to_owned(),

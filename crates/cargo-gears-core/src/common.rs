@@ -1,8 +1,8 @@
 use crate::app_config::AppConfig;
 use crate::config::validate_name;
 use crate::gears_parser::{
-    CargoToml, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata, Package,
-    get_dependencies, get_module_name_from_crate,
+    CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata, get_dependencies,
+    get_module_name_from_crate,
 };
 use anyhow::Context;
 use serde::Serialize;
@@ -115,11 +115,6 @@ pub const DEFAULT_GENERATED_DIR: &str = ".gears";
 
 pub const CONFIG_PATH_ENV_VAR: &str = "GEARS_CONFIG";
 
-const CARGO_CONFIG_TOML: &str = r#"[build]
-target-dir = "../../target"
-build-dir = "../../target"
-"#;
-
 const CARGO_SERVER_MAIN: &str = r#"
 use anyhow::{Context, Result};
 use toolkit::bootstrap::{AppConfig, /* run_migrate, */ run_server};
@@ -221,14 +216,6 @@ fn merge_module_metadata(
     }
 }
 
-static FEATURES: LazyLock<HashMap<String, Vec<String>>> = LazyLock::new(|| {
-    let mut res = HashMap::with_capacity(2);
-    res.insert("default".to_owned(), vec![]);
-    res.insert("otel".to_owned(), vec!["cf-gears-toolkit/otel".to_owned()]);
-    res.insert("fips".to_owned(), vec!["cf-gears-toolkit/fips".to_owned()]);
-    res
-});
-
 static CARGO_DEPS: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     let mut res = HashMap::with_capacity(5);
     res.insert("cf-gears-toolkit".to_owned(), "cf-gears-toolkit".to_owned());
@@ -277,39 +264,58 @@ pub fn generate_server_structure(
         .to_str()
         .context("workspace path is not valid UTF-8")?
         .to_owned();
-    let mut dependencies: CargoTomlDependencies = current_dependencies
-        .iter()
-        .map(|(name, dep)| (name.clone(), make_absolute_paths_relative(dep, &workspace)))
-        .collect();
+
+    // Collect all dependencies (gear deps + required deps like toolkit, tokio, anyhow)
+    let mut dependencies: CargoTomlDependencies = current_dependencies.clone();
     dependencies.extend(create_required_deps()?);
-    let cargo_toml = CargoToml {
-        package: Package {
-            name: project_name.to_owned(),
-            ..Default::default()
-        },
-        dependencies,
-        features: FEATURES.clone(),
-        ..Default::default()
-    };
-    let cargo_toml_str =
-        toml::to_string(&cargo_toml).context("something went wrong when transforming to toml")?;
+
+    // Build workspace deps: paths relative to workspace root, no features
+    // (features are member-specific and go in the generated Cargo.toml)
+    let workspace_deps: CargoTomlDependencies = dependencies
+        .iter()
+        .map(|(name, dep)| {
+            let mut ws_dep = make_path_workspace_relative(dep, &workspace);
+            ws_dep.features.clear();
+            (name.clone(), ws_dep)
+        })
+        .collect();
+
+    // Compute member path relative to workspace root
+    let project_dir = generated_project_dir(generated_dir, project_name);
+    let member_path = project_dir
+        .strip_prefix(workspace_root)
+        .with_context(|| {
+            format!(
+                "generated directory {} must be under workspace root {}",
+                project_dir.display(),
+                workspace_root.display()
+            )
+        })?
+        .to_string_lossy()
+        .into_owned();
+
+    // Update root Cargo.toml: add workspace member + workspace dependencies
+    crate::generate::gear::update_workspace_cargo_toml(
+        workspace_root,
+        &[member_path],
+        workspace_deps,
+    )?;
+
+    // Build the generated Cargo.toml with workspace = true deps
+    let cargo_toml_str = build_workspace_member_cargo_toml(project_name, &dependencies);
     let main_rs = prepare_cargo_server_main(current_dependencies);
 
-    let files = [
-        ("Cargo.toml", cargo_toml_str),
-        (".cargo/config.toml", CARGO_CONFIG_TOML.to_owned()),
-        ("src/main.rs", main_rs),
-    ]
-    .into_iter()
-    .map(|(relative_path, contents)| {
-        create_file_structure(generated_dir, project_name, relative_path, &contents)?;
-        Ok(GeneratedProjectFile {
-            relative_path: PathBuf::from(relative_path),
-            path: generated_project_dir(generated_dir, project_name).join(relative_path),
-            contents,
+    let files = [("Cargo.toml", cargo_toml_str), ("src/main.rs", main_rs)]
+        .into_iter()
+        .map(|(relative_path, contents)| {
+            create_file_structure(generated_dir, project_name, relative_path, &contents)?;
+            Ok(GeneratedProjectFile {
+                relative_path: PathBuf::from(relative_path),
+                path: generated_project_dir(generated_dir, project_name).join(relative_path),
+                contents,
+            })
         })
-    })
-    .collect::<anyhow::Result<Vec<_>>>()?;
+        .collect::<anyhow::Result<Vec<_>>>()?;
 
     Ok(GeneratedProjectStructure {
         name: project_name.to_owned(),
@@ -339,8 +345,8 @@ pub struct GeneratedProjectFile {
     pub contents: String,
 }
 
-// Transforms absolute paths into relative paths, ugly but works
-fn make_absolute_paths_relative(dep: &CargoTomlDependency, workspace: &str) -> CargoTomlDependency {
+/// Transforms absolute dependency paths into paths relative to the workspace root.
+fn make_path_workspace_relative(dep: &CargoTomlDependency, workspace: &str) -> CargoTomlDependency {
     let mut dep = dep.clone();
     if let Some(path) = &dep.path {
         let workspace_path = Path::new(workspace);
@@ -359,22 +365,68 @@ fn make_absolute_paths_relative(dep: &CargoTomlDependency, workspace: &str) -> C
                         .map(Path::to_path_buf)
                 })
         } else {
-            // Workspace-relative paths are written relative to the workspace
-            // root, so they need the same ../.. prefix as stripped absolute
-            // paths when rewritten into the generated project.
             Some(dependency_path.to_path_buf())
         };
 
         if let Some(stripped) = stripped {
-            dep.path = Some(
-                Path::new("../..")
-                    .join(stripped)
-                    .to_string_lossy()
-                    .into_owned(),
-            );
+            dep.path = Some(stripped.to_string_lossy().into_owned());
         }
     }
     dep
+}
+
+/// Builds a Cargo.toml for the generated server as a workspace member.
+///
+/// Each dependency uses `workspace = true` with optional member-specific features.
+fn build_workspace_member_cargo_toml(
+    project_name: &str,
+    dependencies: &CargoTomlDependencies,
+) -> String {
+    let mut doc = toml_edit::DocumentMut::new();
+
+    // [package]
+    let mut package = toml_edit::Table::new();
+    package.insert("name", toml_edit::value(project_name));
+    package.insert("version", toml_edit::value("0.0.1"));
+    package.insert("edition", toml_edit::value("2024"));
+    doc.insert("package", toml_edit::Item::Table(package));
+
+    // [dependencies] — all use workspace = true
+    let mut deps_table = toml_edit::Table::new();
+    for (name, dep) in dependencies {
+        let mut inline = toml_edit::InlineTable::new();
+        inline.insert("workspace", true.into());
+        if !dep.features.is_empty() {
+            let features: toml_edit::Array = dep.features.iter().map(String::as_str).collect();
+            inline.insert("features", features.into());
+        }
+        if dep.default_features == Some(false) {
+            inline.insert("default-features", false.into());
+        }
+        deps_table.insert(name, toml_edit::value(inline));
+    }
+    doc.insert("dependencies", toml_edit::Item::Table(deps_table));
+
+    // [features]
+    let mut features = toml_edit::Table::new();
+    let default_arr = toml_edit::Array::new();
+    features.insert("default", toml_edit::value(default_arr));
+    let otel_arr: toml_edit::Array = std::iter::once("cf-gears-toolkit/otel").collect();
+    features.insert("otel", toml_edit::value(otel_arr));
+    let fips_arr: toml_edit::Array = std::iter::once("cf-gears-toolkit/fips").collect();
+    features.insert("fips", toml_edit::value(fips_arr));
+    doc.insert("features", toml_edit::Item::Table(features));
+
+    // [lints]
+    let mut lints = toml_edit::Table::new();
+    lints.insert("workspace", toml_edit::value(true));
+    doc.insert("lints", toml_edit::Item::Table(lints));
+
+    let mut serialized = doc.to_string();
+    if !serialized.ends_with('\n') {
+        serialized.push('\n');
+    }
+    serialized
 }
 
 #[must_use]
@@ -404,18 +456,6 @@ fn create_file_structure(
         .context("can't create file")?;
     file.write_all(contents.as_bytes())
         .context("can't write to file")
-}
-
-pub(crate) fn remove_from_file_structure(
-    generated_dir: &Path,
-    project_name: &str,
-    relative_path: &str,
-) -> anyhow::Result<()> {
-    let path = generated_project_dir(generated_dir, project_name).join(relative_path);
-    if path.exists() {
-        fs::remove_file(path).context("can't remove file")?;
-    }
-    Ok(())
 }
 
 pub fn resolve_generated_project_name(
@@ -512,7 +552,7 @@ pub const fn ordered_bool(enable: Option<bool>, disable: Option<bool>) -> Option
 mod tests {
     use super::{
         cargo_command, generate_server_structure, generated_project_dir,
-        make_absolute_paths_relative, merge_module_metadata, prepare_cargo_server_main,
+        make_path_workspace_relative, merge_module_metadata, prepare_cargo_server_main,
         resolve_generated_project_name,
     };
     use crate::gears_parser::{
@@ -625,13 +665,13 @@ path = "src/lib.rs"
     }
 
     #[test]
-    fn make_absolute_paths_relative_rewrites_workspace_paths() {
+    fn make_path_workspace_relative_rewrites_absolute_paths() {
         let dependency = CargoTomlDependency {
             path: Some("/tmp/workspace/crates/local-module".to_owned()),
             ..Default::default()
         };
 
-        let rewritten = make_absolute_paths_relative(&dependency, "/tmp/workspace");
+        let rewritten = make_path_workspace_relative(&dependency, "/tmp/workspace");
         let rewritten_path = Path::new(
             rewritten
                 .path
@@ -641,23 +681,23 @@ path = "src/lib.rs"
 
         assert!(!rewritten_path.is_absolute());
         assert!(rewritten_path.is_relative());
-        assert_eq!(rewritten.path.as_deref(), Some("../../crates/local-module"));
+        assert_eq!(rewritten.path.as_deref(), Some("crates/local-module"));
     }
 
     #[test]
-    fn make_absolute_paths_relative_rewrites_workspace_relative_paths() {
+    fn make_path_workspace_relative_keeps_relative_paths() {
         let dependency = CargoTomlDependency {
             path: Some("crates/local-module".to_owned()),
             ..Default::default()
         };
 
-        let rewritten = make_absolute_paths_relative(&dependency, "/tmp/workspace");
+        let rewritten = make_path_workspace_relative(&dependency, "/tmp/workspace");
 
-        assert_eq!(rewritten.path.as_deref(), Some("../../crates/local-module"));
+        assert_eq!(rewritten.path.as_deref(), Some("crates/local-module"));
     }
 
     #[test]
-    fn generate_server_structure_writes_existing_relative_dependency_paths() {
+    fn generate_server_structure_produces_workspace_member() {
         let temp_dir = TempDir::new().expect("temp dir should be created");
 
         write_package(&temp_dir, "crates/anyhow", "anyhow");
@@ -681,8 +721,9 @@ resolver = "3"
             let workspace_root = temp_dir.path();
 
             let current_dependencies = CargoTomlDependencies::from([(
-                "local-module".to_owned(),
+                "local_module".to_owned(),
                 CargoTomlDependency {
+                    package: Some("local-module".to_owned()),
                     path: Some(
                         temp_dir
                             .path()
@@ -694,7 +735,7 @@ resolver = "3"
                 },
             )]);
 
-            let generated_dir = workspace_root.join("custom-generated-dir");
+            let generated_dir = workspace_root.join(".gears");
             let generated = generate_server_structure(
                 workspace_root,
                 &generated_dir,
@@ -702,23 +743,18 @@ resolver = "3"
                 &current_dependencies,
             )?;
 
+            // Should produce only 2 files: Cargo.toml and src/main.rs
             assert_eq!(generated.name, "generated");
             assert_eq!(generated.dir, generated_dir.join("generated"));
-            assert_eq!(generated.files.len(), 3);
+            assert_eq!(generated.files.len(), 2);
             assert!(
                 generated
                     .files
                     .iter()
                     .all(|file| file.path.starts_with(generated_dir.join("generated")))
             );
-            assert!(
-                generated
-                    .files
-                    .iter()
-                    .any(|file| file.relative_path == Path::new("Cargo.toml")
-                        && file.contents.contains("local-module"))
-            );
 
+            // Generated Cargo.toml should use workspace = true for all dependencies
             let generated_project_dir = generated_project_dir(&generated_dir, "generated");
             let generated_manifest =
                 std::fs::read_to_string(generated_project_dir.join("Cargo.toml"))?;
@@ -727,38 +763,60 @@ resolver = "3"
                 .get("dependencies")
                 .and_then(toml::Value::as_table)
                 .expect("generated Cargo.toml should contain dependencies");
-            let mut path_dependency_count = 0;
 
             for (name, dependency) in dependencies {
-                let Some(path) = dependency
+                let dep_table = dependency
                     .as_table()
-                    .and_then(|table| table.get("path"))
-                    .and_then(toml::Value::as_str)
-                else {
-                    continue;
-                };
-
-                path_dependency_count += 1;
-                let dependency_path = Path::new(path);
-                assert!(
-                    !dependency_path.is_absolute(),
-                    "dependency {name} path should not be absolute: {path}"
+                    .unwrap_or_else(|| panic!("dependency {name} should be a table"));
+                assert_eq!(
+                    dep_table.get("workspace").and_then(toml::Value::as_bool),
+                    Some(true),
+                    "dependency {name} should have workspace = true"
                 );
                 assert!(
-                    dependency_path.is_relative(),
-                    "dependency {name} path should be relative: {path}"
+                    dep_table.get("version").is_none(),
+                    "dependency {name} should not have a version (inherited from workspace)"
                 );
                 assert!(
-                    generated_project_dir.join(dependency_path).exists(),
-                    "dependency {name} path should exist: {path}"
+                    dep_table.get("path").is_none(),
+                    "dependency {name} should not have a path (inherited from workspace)"
                 );
             }
 
-            assert!(path_dependency_count > 0);
+            // Should contain local-module dependency
+            assert!(
+                dependencies.contains_key("local_module"),
+                "generated Cargo.toml should contain local_module"
+            );
+
+            // Should NOT contain a [workspace] section
+            assert!(
+                cargo_toml.get("workspace").is_none(),
+                "generated Cargo.toml should not have its own [workspace] section"
+            );
+
+            // Root Cargo.toml should now include the generated project as a member
+            let root_manifest = std::fs::read_to_string(workspace_root.join("Cargo.toml"))?;
+            assert!(
+                root_manifest.contains(".gears/generated"),
+                "root Cargo.toml should list generated project as workspace member"
+            );
+
+            // Root Cargo.toml should have workspace dependencies
+            let root_toml: toml::Value = toml::from_str(&root_manifest)?;
+            let ws_deps = root_toml
+                .get("workspace")
+                .and_then(|ws| ws.get("dependencies"))
+                .and_then(toml::Value::as_table)
+                .expect("root Cargo.toml should have workspace.dependencies");
+            assert!(
+                ws_deps.contains_key("local_module"),
+                "workspace.dependencies should contain local_module"
+            );
 
             Ok(())
         })();
 
-        result.expect("generate_server_structure should rewrite dependency paths");
+        result.expect("generate_server_structure should produce a workspace member");
     }
 }

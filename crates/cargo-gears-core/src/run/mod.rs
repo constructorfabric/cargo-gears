@@ -204,14 +204,6 @@ impl RunParams {
     /// Execute a single run iteration. Returns `Rerun` if the watch loop
     /// detected changes and the caller should re-resolve and call again.
     pub fn run(self) -> anyhow::Result<RunOutcome> {
-        if self.build_run_args.clean {
-            crate::common::remove_from_file_structure(
-                &self.build_run_args.generated_dir,
-                &self.build_run_args.generated_name,
-                "Cargo.lock",
-            )?;
-        }
-
         if self.build_run_args.dry_run {
             let generated = crate::common::generate_server_structure(
                 &self.build_run_args.workspace_root,
