@@ -24,74 +24,115 @@ impl ListParams {
     }
 }
 
+use crate::gears_parser::Provision;
+
 #[derive(Clone, Copy)]
 pub struct SystemRegistryGear {
     pub gear_name: &'static str,
     pub crate_name: &'static str,
+    /// Provider capabilities this gear offers (e.g. `RestHost`, `GrpcHub`).
+    /// Used for automatic resolution: when a local gear declares a requirement
+    /// like `rest`, `required_provision` maps it to `RestHost`, and the system
+    /// gear whose `provides` includes `RestHost` is auto-injected.
+    pub provides: &'static [Provision],
 }
 
 pub const SYSTEM_REGISTRY_GEARS: &[SystemRegistryGear] = &[
     SystemRegistryGear {
         gear_name: "credstore",
         crate_name: "cf-gears-credstore",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "file-parser",
         crate_name: "cf-gears-file-parser",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "api-gateway",
         crate_name: "cf-gears-api-gateway",
+        provides: &[Provision::RestHost],
     },
     SystemRegistryGear {
         gear_name: "authn-resolver",
         crate_name: "cf-gears-authn-resolver",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "static-authn-plugin",
         crate_name: "cf-gears-static-authn-plugin",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "authz-resolver",
         crate_name: "cf-gears-authz-resolver",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "static-authz-plugin",
         crate_name: "cf-gears-static-authz-plugin",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "grpc-hub",
         crate_name: "cf-gears-grpc-hub",
+        provides: &[Provision::GrpcHub],
     },
     SystemRegistryGear {
         gear_name: "gear-orchestrator",
         crate_name: "cf-gears-gear-orchestrator",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "nodes-registry",
         crate_name: "cf-gears-nodes-registry",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "oagw",
         crate_name: "cf-gears-oagw",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "single-tenant-tr-plugin",
         crate_name: "cf-gears-single-tenant-tr-plugin",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "static-tr-plugin",
         crate_name: "cf-gears-static-tr-plugin",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "tenant-resolver",
         crate_name: "cf-gears-tenant-resolver",
+        provides: &[],
     },
     SystemRegistryGear {
         gear_name: "types-registry",
         crate_name: "cf-gears-types-registry",
+        provides: &[],
     },
 ];
+
+/// Finds the system gear that offers a given [`Provision`].
+///
+/// Warns if more than one system gear provides the same provision,
+/// since only the first match is used.
+#[must_use]
+pub fn system_gear_for_provision(provision: &Provision) -> Option<&'static SystemRegistryGear> {
+    let mut providers = SYSTEM_REGISTRY_GEARS
+        .iter()
+        .filter(|gear| gear.provides.contains(provision));
+    let first = providers.next()?;
+    for extra in providers {
+        eprintln!(
+            "warning: system gear '{}' also provides '{}' but '{}' was already selected",
+            extra.gear_name, provision, first.gear_name
+        );
+    }
+    Some(first)
+}
 
 #[cfg(test)]
 mod tests {

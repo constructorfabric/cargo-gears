@@ -1,4 +1,4 @@
-use super::config::{Capability, ConfigModule, ConfigModuleMetadata};
+use super::config::{Capability, ConfigModule, ConfigModuleMetadata, Provision};
 use anyhow::{Context, bail};
 use cargo_metadata::{Package, Target};
 use std::fs;
@@ -11,6 +11,7 @@ pub struct ParsedModule {
     pub name: String,
     pub deps: Vec<String>,
     pub capabilities: Vec<Capability>,
+    pub provisions: Vec<Provision>,
 }
 
 pub fn retrieve_gears_module(
@@ -93,6 +94,7 @@ pub fn parse_module_rs_source(content: &str) -> anyhow::Result<ParsedModule> {
                 name: module_info.name,
                 deps: module_info.deps,
                 capabilities: module_info.capabilities,
+                provisions: module_info.provisions,
             });
         }
     }
@@ -104,6 +106,7 @@ struct ModuleInfo {
     name: String,
     deps: Vec<String>,
     capabilities: Vec<Capability>,
+    provisions: Vec<Provision>,
 }
 
 fn parse_gears_module_attribute(attrs: &[Attribute]) -> anyhow::Result<Option<ModuleInfo>> {
@@ -127,6 +130,7 @@ fn parse_module_args(attr: &Attribute) -> anyhow::Result<ModuleInfo> {
     let mut name = None;
     let mut deps = Vec::new();
     let mut capabilities = Vec::new();
+    let mut provisions = Vec::new();
 
     attr.parse_nested_meta(|meta| {
         if meta.path.is_ident("name") {
@@ -154,30 +158,20 @@ fn parse_module_args(attr: &Attribute) -> anyhow::Result<ModuleInfo> {
             let expr: syn::Expr = value.parse()?;
             if let syn::Expr::Array(array) = expr {
                 for element in array.elems {
-                    let capability = match element {
+                    let cap_name = match &element {
                         syn::Expr::Path(path_expr) => {
                             let Some(ident) = path_expr.path.get_ident() else {
                                 return Err(syn::Error::new_spanned(
-                                    path_expr.path,
+                                    &path_expr.path,
                                     "capability must be a simple identifier",
                                 ));
                             };
-                            parse_capability_name(&ident.to_string()).ok_or_else(|| {
-                                syn::Error::new_spanned(
-                                    ident,
-                                    "unknown capability, expected one of: db, rest, rest_host, stateful, system, grpc_hub, grpc",
-                                )
-                            })?
+                            ident.to_string()
                         }
                         syn::Expr::Lit(syn::ExprLit {
                                            lit: Lit::Str(lit_str),
                                            ..
-                                       }) => parse_capability_name(&lit_str.value()).ok_or_else(|| {
-                            syn::Error::new_spanned(
-                                lit_str,
-                                "unknown capability, expected one of: db, rest, rest_host, stateful, system, grpc_hub, grpc",
-                            )
-                        })?,
+                                       }) => lit_str.value(),
                         other => {
                             return Err(syn::Error::new_spanned(
                                 other,
@@ -185,7 +179,16 @@ fn parse_module_args(attr: &Attribute) -> anyhow::Result<ModuleInfo> {
                             ));
                         }
                     };
-                    capabilities.push(capability);
+                    match classify_capability(&cap_name) {
+                        Some(CapEntry::Requirement(c)) => capabilities.push(c),
+                        Some(CapEntry::Provision(p)) => provisions.push(p),
+                        None => {
+                            return Err(syn::Error::new_spanned(
+                                element,
+                                "unknown capability, expected one of: db, rest, grpc, stateful, rest_host, grpc_hub, system",
+                            ));
+                        }
+                    }
                 }
             } else {
                 return Err(syn::Error::new_spanned(
@@ -204,18 +207,26 @@ fn parse_module_args(attr: &Attribute) -> anyhow::Result<ModuleInfo> {
         name,
         deps,
         capabilities,
+        provisions,
     })
 }
 
-fn parse_capability_name(name: &str) -> Option<Capability> {
+/// Classifies a capability name from a `#[toolkit::gear(capabilities = [...])]`
+/// attribute as either a requirement ([`Capability`]) or a provision ([`Provision`]).
+enum CapEntry {
+    Requirement(Capability),
+    Provision(Provision),
+}
+
+fn classify_capability(name: &str) -> Option<CapEntry> {
     match name {
-        "db" => Some(Capability::Db),
-        "rest" => Some(Capability::Rest),
-        "rest_host" => Some(Capability::RestHost),
-        "stateful" => Some(Capability::Stateful),
-        "system" => Some(Capability::System),
-        "grpc_hub" => Some(Capability::GrpcHub),
-        "grpc" => Some(Capability::Grpc),
+        "db" => Some(CapEntry::Requirement(Capability::Db)),
+        "rest" => Some(CapEntry::Requirement(Capability::Rest)),
+        "grpc" => Some(CapEntry::Requirement(Capability::Grpc)),
+        "stateful" => Some(CapEntry::Requirement(Capability::Stateful)),
+        "rest_host" => Some(CapEntry::Provision(Provision::RestHost)),
+        "grpc_hub" => Some(CapEntry::Provision(Provision::GrpcHub)),
+        "system" => Some(CapEntry::Provision(Provision::System)),
         _ => None,
     }
 }
@@ -236,7 +247,7 @@ fn consume_unknown_meta(input: ParseStream<'_>) -> syn::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::parse_module_rs_source;
-    use crate::gears_parser::Capability;
+    use crate::gears_parser::{Capability, Provision};
 
     #[test]
     fn parses_gear_with_lifecycle_meta() {
@@ -252,13 +263,10 @@ mod tests {
         let parsed = parse_module_rs_source(content).expect("module should parse");
         assert_eq!(parsed.name, "grpc-hub");
         assert!(parsed.deps.is_empty());
+        assert_eq!(parsed.capabilities, vec![Capability::Stateful]);
         assert_eq!(
-            parsed.capabilities,
-            vec![
-                Capability::Stateful,
-                Capability::System,
-                Capability::GrpcHub
-            ]
+            parsed.provisions,
+            vec![Provision::System, Provision::GrpcHub]
         );
     }
 
@@ -276,6 +284,7 @@ mod tests {
         assert_eq!(parsed.name, "bookmarks");
         assert!(parsed.deps.is_empty());
         assert_eq!(parsed.capabilities, vec![Capability::Db, Capability::Rest]);
+        assert!(parsed.provisions.is_empty());
     }
 
     #[test]
@@ -289,6 +298,7 @@ mod tests {
         assert_eq!(parsed.name, "demo");
         assert_eq!(parsed.deps, vec!["authz", "tenant-resolver"]);
         assert!(parsed.capabilities.is_empty());
+        assert!(parsed.provisions.is_empty());
     }
 
     #[test]
@@ -300,9 +310,7 @@ mod tests {
 
         let parsed = parse_module_rs_source(content).expect("module should parse");
         assert_eq!(parsed.name, "demo");
-        assert_eq!(
-            parsed.capabilities,
-            vec![Capability::Db, Capability::RestHost]
-        );
+        assert_eq!(parsed.capabilities, vec![Capability::Db]);
+        assert_eq!(parsed.provisions, vec![Provision::RestHost]);
     }
 }
