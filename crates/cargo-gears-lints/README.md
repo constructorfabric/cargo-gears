@@ -2,7 +2,7 @@
 
 Custom [dylint](https://github.com/trailofbits/dylint) linters enforcing architectural patterns, layer separation, and REST API conventions.
 
-These rules are compiled by `cargo-gears-core`'s build script when the CLI is built with `dylint-rules`. During local development, the build uses the sibling `crates/cargo-gears-lints` path; in installed builds, it resolves this package from the Cargo registry at the CLI version. The resulting Dylint library is embedded into the CLI.
+These rules are compiled by `cargo-gears-core`'s build script when the CLI is built with `dylint-rules`. During local development, the build uses the sibling `crates/cargo-gears-lints` path; in installed builds, it resolves this package from the Cargo registry at the version pinned by the `LINTS_PACKAGE_VERSION` constant in `crates/cargo-gears-core/build.rs`. The resulting Dylint library is embedded into the CLI.
 
 ## Available Lints
 
@@ -318,7 +318,15 @@ This lets you validate that:
 
 ### 9. Publish and adopt
 
-Once the lint is merged and a new version of `cargo-gears` is published:
+`cargo-gears-lints` and `cargo-gears` release independently (each has its own
+`release-plz` pipeline and toolchain - `release-plz` opens a release PR for
+each automatically once commits land on `main`). Once the lint is merged and
+`cargo-gears-lints` is released, `cargo-gears-core`'s `LINTS_PACKAGE_VERSION`
+constant (`crates/cargo-gears-core/build.rs`) needs to be bumped to that new
+version for standalone installs to pick it up - this requires its own
+PR/release of `cargo-gears`.
+
+Once that new version of `cargo-gears` is published:
 
 1. In the **target workspace** (e.g. `gears-rust`), update `cargo-gears`:
    ```bash

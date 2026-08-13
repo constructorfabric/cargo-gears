@@ -1,0 +1,83 @@
+[workspace]
+# Keep the defaults simple and explicit. We rely on Cargo manifests for:
+# - which crates are publishable (`publish = false` disables)
+# - per-crate versioning (cargo-gears-macros has its own explicit `version = ...`,
+#   independent of the `cargo-gears`/`cargo-gears-core` workspace version)
+#
+# NOTE: release-plz may temporarily checkout commits while computing diffs.
+# Some repos can end up "dirty" due to generated/normalized files, so we allow it.
+allow_dirty = true
+
+# Label the release PR so it is easy to spot in the PR list.
+pr_labels = ["release-plz"]
+changelog_update = true
+git_release_enable = true
+
+# We keep a single changelog for this project. release-plz will update it in the
+# release PR.
+changelog_path = "CHANGELOG.md"
+
+# Enable semver checks by default (can be overridden per package if needed later).
+semver_check = true
+
+# To prevent crates.io throttling
+publish_timeout = "10m"
+
+[changelog]
+body = """
+
+## [{{ version }}]\
+    {%- if release_link -%}\
+        ({{ release_link }})\
+    {% endif %} \
+    - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits
+    | filter(attribute="merge_commit", value=false)
+    | group_by(attribute="group")
+%}
+### {{ group | upper_first }}
+
+    {% for commit in commits %}
+        {%- if commit.scope -%}
+            - *({{commit.scope}})* {% if commit.breaking %}[**breaking**] {% endif %}\
+                {{ commit.message }}{{ self::username(commit=commit) }}\
+                {%- if commit.links %} \
+                    ({% for link in commit.links %}[{{link.text}}]({{link.href}}) {% endfor -%})\
+                {% endif %}
+        {% else -%}
+            - {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message }}{{ self::username(commit=commit) }}{{ self::pr(commit=commit) }}
+        {% endif -%}
+    {% endfor -%}
+{% endfor %}
+{%- if remote.contributors %}
+### Contributors
+{% for contributor in remote.contributors %}
+    * @{{ contributor.username }}
+{%- endfor %}
+{% endif -%}
+{%- macro username(commit) -%}
+    {% if commit.remote.username %} (by @{{ commit.remote.username }}){% endif -%}
+{% endmacro -%}
+{%- macro pr(commit) -%}
+    {% if commit.remote.pr_number %} - #{{ commit.remote.pr_number }}{% endif -%}
+{% endmacro -%}
+"""
+
+# cargo-gears CLI - the only user-facing package here, gets changelog + GitHub releases.
+[[package]]
+name = "cargo-gears"
+changelog_update = true
+git_release_enable = true
+
+# Internal implementation crates - published to crates.io (cargo-gears-core is a
+# dependency of cargo-gears; cargo-gears-macros is a dependency of cargo-gears-core)
+# but without separate changelog/release noise.
+[[package]]
+name = "cargo-gears-core"
+changelog_update = false
+git_release_enable = false
+
+[[package]]
+name = "cargo-gears-macros"
+changelog_update = false
+git_release_enable = false

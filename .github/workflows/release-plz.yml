@@ -1,0 +1,145 @@
+name: Release (release-plz)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Which release-plz command to run"
+        required: true
+        default: "release"
+        type: choice
+        options:
+          - release
+          - release-pr
+
+# Restrict default permissions to read-only
+permissions:
+  contents: read
+
+jobs:
+  # `release-plz release` publishes only versions present in the manifests and absent
+  # from crates.io, so running it on every push is safe and makes an interrupted release
+  # self-healing: the next push to main finishes it. That is why this needs no
+  # pull_request trigger and no label matching to decide whether a release is happening.
+  release:
+    name: Publish crates (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    if: >-
+      ${{
+        github.repository == 'constructorfabric/cargo-gears'
+        && (
+          github.event_name == 'push'
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release')
+        )
+      }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Root workspace: cargo-gears, cargo-gears-core, cargo-gears-macros
+          # (stable toolchain).
+          - name: cli
+            dir: .
+          # Separate Cargo project: cargo-gears-lints (own Cargo.lock, pinned nightly
+          # toolchain for rustc-dev/dylint) - can't share a `cargo metadata` resolution
+          # with the root workspace, so it releases through its own release-plz config.
+          - name: lints
+            dir: crates/cargo-gears-lints
+    # No concurrency group, deliberately. Any group can cancel a *pending* run when a
+    # newer one joins it, and a skipped publish is silent - no crates, no tags, no
+    # failure. release-plz's docs mandate this: "the concurrency block cancels the
+    # pending job if a new commit is pushed - we can't risk to skip a release." Two
+    # concurrent publishes are harmless, since each publishes only what crates.io lacks.
+    permissions:
+      contents: write
+      # release-plz resolves PR numbers and contributors for changelogs and releases.
+      pull-requests: read
+    steps:
+      # No `ref:` needed. On push, checkout defaults to github.sha, which is exactly the
+      # commit that was pushed - for a release PR merge, its merge commit.
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Each project pins its own toolchain (root: stable; cargo-gears-lints: a nightly
+      # with rustc-dev/llvm-tools-preview for dylint) via its own rust-toolchain.toml.
+      - name: Install Rust toolchain from rust-toolchain.toml
+        working-directory: ${{ matrix.dir }}
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          rustup show
+
+      # No test run here. ci.yml/dylint.yml test every push to main, and merging a
+      # release PR is the maintainer's release decision - re-testing could only
+      # override it, never inform it. `cargo publish` still compiles every crate, so a
+      # crate that does not build cannot be published.
+
+      - name: release-plz release
+        uses: release-plz/action@2eb1d8bcb770b4c48ccfaad919734b38b51958c9 # v0.5.131
+        with:
+          command: release
+          manifest_path: ${{ matrix.dir }}/Cargo.toml
+          config: ${{ matrix.dir }}/release-plz.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+  release-pr:
+    name: Create release PR (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    # Ordered after `release` so release-plz never derives the next versions from
+    # crates.io while a publish is mid-flight. `!cancelled()` keeps this running when
+    # `release` was skipped (manual release-pr dispatch) or failed.
+    needs: release
+    if: >-
+      ${{
+        !cancelled()
+        && github.repository == 'constructorfabric/cargo-gears'
+        && (
+          github.event_name == 'push'
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release-pr')
+        )
+      }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: cli
+            dir: .
+          - name: lints
+            dir: crates/cargo-gears-lints
+    # Let a running instance finish - it is part-way through committing and force-pushing
+    # the release branch - and keep only the newest waiting one.
+    concurrency:
+      group: release-plz-pr-${{ matrix.name }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Rust toolchain from rust-toolchain.toml
+        working-directory: ${{ matrix.dir }}
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          rustup show
+
+      - name: release-plz release-pr
+        uses: release-plz/action@2eb1d8bcb770b4c48ccfaad919734b38b51958c9 # v0.5.131
+        with:
+          command: release-pr
+          manifest_path: ${{ matrix.dir }}/Cargo.toml
+          config: ${{ matrix.dir }}/release-plz.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
