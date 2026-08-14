@@ -1,6 +1,6 @@
 [package]
 name = "cargo-gears-macros"
-version = "0.0.1"
+version = "0.0.2"
 edition.workspace = true
 license-file.workspace = true
 authors.workspace = true
