@@ -22,8 +22,11 @@ use ensure_toolchain_installed_shared::{
 
 #[cfg(feature = "dylint-rules")]
 const LINTS_PACKAGE_NAME: &str = "cargo-gears-lints";
+// Minimum cargo-gears-lints version to embed for standalone installs. Bump manually
+// when adopting a newer lints release - intentionally not tied to this crate's own
+// version, since cargo-gears-lints ships on its own toolchain and release cadence.
 #[cfg(feature = "dylint-rules")]
-const LINTS_PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
+const LINTS_PACKAGE_VERSION: &str = "0.0.3";
 
 #[cfg(feature = "dylint-rules")]
 fn build_dylint_rules() -> anyhow::Result<()> {
