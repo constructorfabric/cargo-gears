@@ -74,6 +74,15 @@ jobs:
           rustup show active-toolchain || rustup toolchain install
           rustup show
 
+      # cargo-gears-lints pins `linker = "dylint-link"` in its .cargo/config.toml, so
+      # every compilation in that project (including `cargo publish`, which compiles
+      # the whole crate + dependency build scripts) needs dylint-link on PATH.
+      - name: Install dylint-link (lints project only)
+        if: matrix.name == 'lints'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dylint-link
+
       # No test run here. ci.yml/dylint.yml test every push to main, and merging a
       # release PR is the maintainer's release decision - re-testing could only
       # override it, never inform it. `cargo publish` still compiles every crate, so a
@@ -134,6 +143,14 @@ jobs:
         run: |
           rustup show active-toolchain || rustup toolchain install
           rustup show
+
+      # cargo-gears-lints pins `linker = "dylint-link"` in its .cargo/config.toml, so
+      # every compilation in that project needs dylint-link on PATH.
+      - name: Install dylint-link (lints project only)
+        if: matrix.name == 'lints'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dylint-link
 
       - name: release-plz release-pr
         uses: release-plz/action@2eb1d8bcb770b4c48ccfaad919734b38b51958c9 # v0.5.131
