@@ -121,6 +121,14 @@ fn build_dylint_rules() -> anyhow::Result<()> {
         ("lib", "so")
     };
 
+    // The lints workspace may build helper crates besides the lint library
+    // itself (e.g. `fixture-macros`, a proc-macro crate used by the UI tests),
+    // and those also emit shared libraries into `release/`. Only the lint
+    // library is a valid dylint library; embedding anything else causes dylint
+    // to abort at load time with "could not find `dylint_version`". Restrict
+    // embedding to the lints crate's own cdylib.
+    let lint_lib_stem = LINTS_PACKAGE_NAME.replace('-', "_");
+
     for entry in fs::read_dir(&release_dir).context("could not read release dir")? {
         let entry = entry?;
         let path = entry.path();
@@ -142,6 +150,11 @@ fn build_dylint_rules() -> anyhow::Result<()> {
             .context("wrong library prefix")?
             .strip_suffix(&format!(".{dll_suffix}"))
             .context("wrong library suffix")?;
+
+        // Skip any workspace dylib that isn't the lint library itself.
+        if stem != lint_lib_stem {
+            continue;
+        }
 
         let versioned = format!("{dll_prefix}{stem}@{versioned_toolchain}.{dll_suffix}");
         let dest = libs_dir.join(&versioned);
