@@ -309,6 +309,7 @@ Options:
 - `--clippy` — run workspace Clippy
 - `--strict` — turn Clippy warnings into errors (requires `--clippy` or `--all`)
 - `--dylint` — run embedded Dylint rules (requires the `dylint-rules` feature)
+- `-P, --package <SPEC>` — restrict linting to specific workspace package(s); repeatable. When omitted, the whole workspace is linted. Applies to both Clippy and Dylint.
 
 With no explicit lint-selection flags, runs the manifest lint policy. Manifest
 `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints.
@@ -317,6 +318,8 @@ With no explicit lint-selection flags, runs the manifest lint policy. Manifest
 cargo gears lint --app app1 --env dev
 cargo gears lint --app app1 --env dev --clippy --strict
 cargo gears lint --app app1 --env dev --dylint
+cargo gears lint --app app1 --env dev --clippy --package cf-gears-file-parser
+cargo gears lint --app app1 --env dev --dylint -P cf-gears-file-parser -P cf-gears-file-parser-sdk
 ```
 
 Manifest Dylint skip example:

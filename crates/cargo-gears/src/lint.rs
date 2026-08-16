@@ -22,6 +22,10 @@ pub struct LintArgs {
     /// Run extra lint rules made for gears modules.
     #[arg(long)]
     dylint: bool,
+    /// Restrict linting to specific workspace package(s). Repeatable.
+    /// When omitted, the whole workspace is linted.
+    #[arg(short = 'P', long = "package", value_name = "SPEC")]
+    package: Vec<String>,
     /// List available lint rules instead of running them.
     /// Combine with `--dylint` to list only dylint rules.
     #[arg(long)]
@@ -44,6 +48,7 @@ impl LintArgs {
                 strict: false,
                 dylint: self.dylint || self.all,
                 dylint_skip: Vec::new(),
+                packages: Vec::new(),
                 list: true,
             });
         }
@@ -83,6 +88,7 @@ impl LintArgs {
             strict: self.strict,
             dylint,
             dylint_skip,
+            packages: self.package,
             list: false,
         })
     }
@@ -254,5 +260,43 @@ mod tests {
 
         assert!(resolved.list);
         assert!(!resolved.dylint);
+    }
+
+    #[test]
+    fn packages_default_to_empty() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(&temp, MINIMAL);
+
+        let resolved = parse(&temp, &["--clippy"]).resolve().expect("resolve");
+
+        assert!(resolved.packages.is_empty());
+    }
+
+    #[test]
+    fn repeated_package_flags_are_collected() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(&temp, MINIMAL);
+
+        let resolved = parse(
+            &temp,
+            &["--clippy", "--package", "crate-a", "-P", "crate-b"],
+        )
+        .resolve()
+        .expect("resolve");
+
+        assert_eq!(resolved.packages, vec!["crate-a", "crate-b"]);
+    }
+
+    #[test]
+    fn packages_are_carried_through_dylint_selection() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(&temp, MINIMAL);
+
+        let resolved = parse(&temp, &["--dylint", "-P", "crate-a"])
+            .resolve()
+            .expect("resolve");
+
+        assert!(resolved.dylint);
+        assert_eq!(resolved.packages, vec!["crate-a"]);
     }
 }

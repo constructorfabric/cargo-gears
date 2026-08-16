@@ -36,6 +36,8 @@ pub struct LintParams {
     pub dylint: bool,
     /// Lint names to skip when running dylint.
     pub dylint_skip: Vec<String>,
+    /// Restrict linting to these packages. Empty means the whole workspace.
+    pub packages: Vec<String>,
     /// List available lints instead of running them.
     pub list: bool,
 }
@@ -242,11 +244,11 @@ impl LintParams {
         }
 
         if self.clippy {
-            run_clippy(&self.workspace_root, self.strict)?;
+            run_clippy(&self.workspace_root, self.strict, &self.packages)?;
         }
 
         if self.dylint {
-            run_dylint(&self.workspace_root, &self.dylint_skip)?;
+            run_dylint(&self.workspace_root, &self.dylint_skip, &self.packages)?;
         }
 
         Ok(())
@@ -296,9 +298,17 @@ fn run_fmt(workspace_path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn run_clippy(workspace_path: &Path, strict: bool) -> Result<()> {
+fn run_clippy(workspace_path: &Path, strict: bool, packages: &[String]) -> Result<()> {
     let mut cmd = cargo_cmd()?;
-    cmd.args(["clippy", "--workspace", "--all-targets"]);
+    cmd.arg("clippy");
+    if packages.is_empty() {
+        cmd.arg("--workspace");
+    } else {
+        for package in packages {
+            cmd.args(["--package", package]);
+        }
+    }
+    cmd.arg("--all-targets");
     cmd.current_dir(workspace_path);
 
     // TODO Analyse the manifest feature-set policy and lint those combinations.
@@ -331,7 +341,7 @@ fn embedded_toolchains() -> Result<BTreeSet<String>> {
 }
 
 #[cfg(feature = "dylint-rules")]
-fn run_dylint(workspace_path: &Path, skipped_lints: &[String]) -> Result<()> {
+fn run_dylint(workspace_path: &Path, skipped_lints: &[String], packages: &[String]) -> Result<()> {
     for toolchain in embedded_toolchains()? {
         ensure_toolchain_installed(&toolchain)?;
         clear_dylint_rustc_info_cache(workspace_path, &toolchain)?;
@@ -373,8 +383,10 @@ fn run_dylint(workspace_path: &Path, skipped_lints: &[String]) -> Result<()> {
                 ),
                 ..Default::default()
             },
-            // Lint the whole workspace, not just the root crate.
-            workspace: true,
+            // Lint the whole workspace unless specific packages were requested
+            // on the command line, in which case only those are checked.
+            workspace: packages.is_empty(),
+            packages: packages.to_vec(),
             args: dylint_cargo_check_args(skipped_lints)?,
             ..Default::default()
         }),
@@ -430,7 +442,11 @@ fn clear_dylint_rustc_info_cache(workspace_path: &Path, toolchain: &str) -> Resu
 }
 
 #[cfg(not(feature = "dylint-rules"))]
-fn run_dylint(_workspace_path: &Path, _skipped_lints: &[String]) -> Result<()> {
+fn run_dylint(
+    _workspace_path: &Path,
+    _skipped_lints: &[String],
+    _packages: &[String],
+) -> Result<()> {
     anyhow::bail!("dylint-rules feature not enabled")
 }
 
