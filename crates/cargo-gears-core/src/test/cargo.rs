@@ -22,6 +22,9 @@ fn cargo_command(plan: &TestPlan, run: &TestRun) -> anyhow::Result<Command> {
     let mut args = Vec::new();
     run.append_cargo_args(&mut args);
     cmd.args(args);
+    if plan.locked {
+        cmd.arg("--locked");
+    }
     cmd.current_dir(&plan.workspace_root);
     cmd.env(CONFIG_PATH_ENV_VAR, &plan.config_path);
 
@@ -44,6 +47,7 @@ mod tests {
             coverage: false,
             custom_command: None,
             runs: vec![],
+            locked: false,
         };
         let run = TestRun {
             package: None,

@@ -23,6 +23,8 @@ pub struct TestPlan {
     pub custom_command: Option<String>,
     /// Resolved test runs (package + feature selection per run).
     pub runs: Vec<TestRun>,
+    /// Require Cargo.lock is up to date.
+    pub locked: bool,
 }
 
 impl TestPlan {

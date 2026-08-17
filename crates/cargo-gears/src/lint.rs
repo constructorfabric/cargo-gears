@@ -30,6 +30,9 @@ pub struct LintArgs {
     /// Requires at least one `-P/--package`; expands to the reverse-dependency closure.
     #[arg(long = "include-dependents")]
     include_dependents: bool,
+    /// Require Cargo.lock is up to date
+    #[arg(long, action = clap::ArgAction::SetTrue)]
+    locked: bool,
     /// List available lint rules instead of running them.
     /// Combine with `--dylint` to list only dylint rules.
     #[arg(long)]
@@ -54,6 +57,7 @@ impl LintArgs {
                 dylint_skip: Vec::new(),
                 packages: Vec::new(),
                 include_dependents: false,
+                locked: false,
                 list: true,
             });
         }
@@ -95,6 +99,7 @@ impl LintArgs {
             dylint_skip,
             packages: self.package,
             include_dependents: self.include_dependents,
+            locked: self.locked,
             list: false,
         })
     }
