@@ -24,17 +24,11 @@ pub fn expand_with_dependents(workspace_root: &Path, packages: &[String]) -> Res
 
     let requested: BTreeSet<&str> = packages.iter().map(String::as_str).collect();
 
-    let seed_ids: Vec<&guppy::PackageId> = graph
+    let (seed_ids, found): (Vec<_>, BTreeSet<_>) = graph
         .packages()
         .filter(|pkg| pkg.in_workspace() && requested.contains(pkg.name()))
-        .map(|pkg| pkg.id())
-        .collect();
-
-    let found: BTreeSet<&str> = graph
-        .packages()
-        .filter(|pkg| pkg.in_workspace() && requested.contains(pkg.name()))
-        .map(|pkg| pkg.name())
-        .collect();
+        .map(|pkg| (pkg.id(), pkg.name()))
+        .unzip();
 
     let missing: Vec<&str> = requested.difference(&found).copied().collect();
     if !missing.is_empty() {
