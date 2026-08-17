@@ -910,7 +910,7 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--list]
+cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--include-dependents] [--list]
 ```
 
 Arguments:
@@ -926,6 +926,9 @@ Arguments:
   directory
 - **[`-P, --package <SPEC>`]** Restricts linting to the given workspace package(s); repeatable. When omitted, the whole
   workspace is linted. Applies to both Clippy (`--package <SPEC>`) and Dylint (per-package selection)
+- **[`--include-dependents`]** Expands the `-P/--package` selection to also include every workspace crate that
+  (transitively) depends on the selected package(s) — the reverse-dependency closure. Requires at least one
+  `-P/--package`; has no effect on its own.
 - **[`--list`]** Lists available lint rules instead of running them. When combined with `--dylint`, lists only the
   embedded dylint rules. Does not require a manifest or workspace path.
 
@@ -946,6 +949,9 @@ Behavior:
   another workspace without manually changing directories
 - **[package-scoped linting]** Passing one or more `-P/--package <SPEC>` flags restricts both Clippy and Dylint to those
   packages instead of the whole workspace; the flag is repeatable and package specs follow cargo's `-p` selector syntax
+- **[dependent expansion]** With `--include-dependents`, the selected packages are expanded to their reverse-dependency
+  closure (the seed packages plus every workspace crate that depends on them) before Clippy/Dylint run, so a change to a
+  crate can be linted together with everything it may break. Unknown package names are rejected.
 - **[manifest dylint skips]** Manifest `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints, so
   listed rules are ignored for that lint run
 - **[toolchain bootstrap]** The build script ensures the lint package toolchain and components are installed when
@@ -981,6 +987,10 @@ cargo gears lint --app app1 --env dev --clippy --package cf-gears-file-parser
 
 ```bash
 cargo gears lint --app app1 --env dev --dylint -P cf-gears-file-parser -P cf-gears-file-parser-sdk
+```
+
+```bash
+cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --include-dependents
 ```
 
 ```bash
@@ -1093,13 +1103,14 @@ Orchestrates manifest-driven Rust tests with either `cargo test` or the in-proce
 Synopsis:
 
 ```bash
-cargo gears test [-p <PATH>] [--manifest <PATH>] [--app <APP>] [--env <ENV>] [--runner <cargo|nextest>] [--module <NAME>] [--coverage]
+cargo gears test [-p <PATH>] [--manifest <PATH>] [--app <APP>] [--env <ENV>] [--runner <cargo|nextest>] [--module <NAME>] [--include-dependents] [--coverage]
 ```
 
 Arguments:
 
 - **[`--runner <cargo|nextest>`]** Overrides the manifest `test.runner`; defaults to `nextest` that it's integrated in the tool
 - **[`--module <NAME>`]** Limits tests to a module/package. When manifest `test.feature-set` contains that module, its feature matrix is used.
+- **[`--include-dependents`]** Also tests every workspace crate that (transitively) depends on `--module` — the reverse-dependency closure. Requires `--module`; has no effect on its own.
 - **[`--coverage`]** Runs coverage with `cargo llvm-cov` using the selected or manifest test runner
 
 Behavior:
@@ -1111,6 +1122,7 @@ Behavior:
 - **[cargo coverage]** With `cargo`, runs each selected module/feature-set through `cargo llvm-cov --no-report --no-clean`, then reports once with `cargo llvm-cov report`
 - **[nextest coverage]** With `nextest`, uses `cargo llvm-cov show-env`, runs the embedded nextest runner under the coverage environment for every selected module/feature-set, then reports once with `cargo llvm-cov report`
 - **[feature-set policy]** Expands manifest `test.feature-set` module entries by `mode`: `all-features` uses `--all-features`, `no-default-features` uses `--no-default-features`, `default-features` uses Cargo defaults, and `features` uses `--no-default-features --features <LIST>`
+- **[dependent expansion]** With `--module <NAME> --include-dependents`, the resolved package is expanded to its reverse-dependency closure and each additional dependent crate is added as a default-feature test run (de-duplicated against runs already produced by the feature-set policy)
 
 ## Practical End-to-End Flows
 

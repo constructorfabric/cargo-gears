@@ -310,6 +310,7 @@ Options:
 - `--strict` — turn Clippy warnings into errors (requires `--clippy` or `--all`)
 - `--dylint` — run embedded Dylint rules (requires the `dylint-rules` feature)
 - `-P, --package <SPEC>` — restrict linting to specific workspace package(s); repeatable. When omitted, the whole workspace is linted. Applies to both Clippy and Dylint.
+- `--include-dependents` — expand `-P/--package` to also include every workspace crate that (transitively) depends on the selected package(s), i.e. their reverse-dependency closure. Requires at least one `-P/--package`.
 
 With no explicit lint-selection flags, runs the manifest lint policy. Manifest
 `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints.
@@ -320,6 +321,7 @@ cargo gears lint --app app1 --env dev --clippy --strict
 cargo gears lint --app app1 --env dev --dylint
 cargo gears lint --app app1 --env dev --clippy --package cf-gears-file-parser
 cargo gears lint --app app1 --env dev --dylint -P cf-gears-file-parser -P cf-gears-file-parser-sdk
+cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --include-dependents
 ```
 
 Manifest Dylint skip example:
@@ -348,6 +350,7 @@ Options:
 - `-p, --path <PATH>` — workspace directory
 - `--runner <cargo|nextest>` — override manifest test runner (default: `nextest`)
 - `--module <NAME>` — limit tests to a module/package
+- `--include-dependents` — also test every workspace crate that (transitively) depends on `--module`, i.e. its reverse-dependency closure. Requires `--module`.
 - `--coverage` — run with `cargo llvm-cov` using the selected runner
 
 Manifest `test.feature-set` entries expand by `mode`: `all-features`,

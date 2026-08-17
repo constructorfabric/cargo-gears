@@ -26,6 +26,10 @@ pub struct LintArgs {
     /// When omitted, the whole workspace is linted.
     #[arg(short = 'P', long = "package", value_name = "SPEC")]
     package: Vec<String>,
+    /// Also lint every workspace crate that depends on the selected package(s).
+    /// Requires at least one `-P/--package`; expands to the reverse-dependency closure.
+    #[arg(long = "include-dependents")]
+    include_dependents: bool,
     /// List available lint rules instead of running them.
     /// Combine with `--dylint` to list only dylint rules.
     #[arg(long)]
@@ -49,6 +53,7 @@ impl LintArgs {
                 dylint: self.dylint || self.all,
                 dylint_skip: Vec::new(),
                 packages: Vec::new(),
+                include_dependents: false,
                 list: true,
             });
         }
@@ -89,6 +94,7 @@ impl LintArgs {
             dylint,
             dylint_skip,
             packages: self.package,
+            include_dependents: self.include_dependents,
             list: false,
         })
     }
@@ -285,6 +291,34 @@ mod tests {
         .expect("resolve");
 
         assert_eq!(resolved.packages, vec!["crate-a", "crate-b"]);
+    }
+
+    #[test]
+    fn include_dependents_defaults_to_false() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(&temp, MINIMAL);
+
+        let resolved = parse(&temp, &["--clippy", "-P", "crate-a"])
+            .resolve()
+            .expect("resolve");
+
+        assert!(!resolved.include_dependents);
+    }
+
+    #[test]
+    fn include_dependents_flag_is_threaded() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(&temp, MINIMAL);
+
+        let resolved = parse(
+            &temp,
+            &["--clippy", "-P", "crate-a", "--include-dependents"],
+        )
+        .resolve()
+        .expect("resolve");
+
+        assert!(resolved.include_dependents);
+        assert_eq!(resolved.packages, vec!["crate-a"]);
     }
 
     #[test]

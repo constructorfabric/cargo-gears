@@ -38,6 +38,9 @@ pub struct LintParams {
     pub dylint_skip: Vec<String>,
     /// Restrict linting to these packages. Empty means the whole workspace.
     pub packages: Vec<String>,
+    /// Expand `packages` to also include every workspace crate that depends on
+    /// them (their reverse-dependency closure) before linting.
+    pub include_dependents: bool,
     /// List available lints instead of running them.
     pub list: bool,
 }
@@ -243,15 +246,27 @@ impl LintParams {
             run_fmt(&self.workspace_root)?;
         }
 
+        let packages = self.effective_packages()?;
+
         if self.clippy {
-            run_clippy(&self.workspace_root, self.strict, &self.packages)?;
+            run_clippy(&self.workspace_root, self.strict, &packages)?;
         }
 
         if self.dylint {
-            run_dylint(&self.workspace_root, &self.dylint_skip, &self.packages)?;
+            run_dylint(&self.workspace_root, &self.dylint_skip, &packages)?;
         }
 
         Ok(())
+    }
+
+    /// Resolve the package set to lint, applying reverse-dependency expansion
+    /// when `include_dependents` is set and at least one package was selected.
+    fn effective_packages(&self) -> Result<Vec<String>> {
+        if self.include_dependents && !self.packages.is_empty() {
+            crate::packages::expand_with_dependents(&self.workspace_root, &self.packages)
+        } else {
+            Ok(self.packages.clone())
+        }
     }
 }
 
