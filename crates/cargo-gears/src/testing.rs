@@ -16,6 +16,10 @@ pub struct TestArgs {
     /// Limit tests to a module/package.
     #[arg(long)]
     module: Option<String>,
+    /// Also test every workspace crate that depends on `--module`.
+    /// Requires `--module`; expands to the reverse-dependency closure.
+    #[arg(long = "include-dependents")]
+    include_dependents: bool,
     /// Run test coverage.
     #[arg(long, action = ArgAction::SetTrue)]
     coverage: bool,
@@ -34,12 +38,37 @@ impl TestArgs {
             eprintln!("WARN: custom command is specified in manifest, ignoring runner override");
         }
 
-        let runs = resolve_runs(
+        let mut runs = resolve_runs(
             self.module.as_deref(),
             &resolved.test.feature_set,
             &resolved.gears,
             &resolved.dependencies,
         );
+
+        if self.include_dependents {
+            match self.module.as_deref() {
+                Some(module) => {
+                    let seed = package_for_module(&resolved.gears, &resolved.dependencies, module);
+                    let dependents = cargo_gears_core::packages::expand_with_dependents(
+                        &resolved.workspace_root,
+                        std::slice::from_ref(&seed),
+                    )?;
+                    let existing: std::collections::BTreeSet<String> =
+                        runs.iter().filter_map(|run| run.package.clone()).collect();
+                    for package in dependents {
+                        if !existing.contains(&package) {
+                            runs.push(TestRun {
+                                package: Some(package),
+                                features: FeatureSelection::Default,
+                            });
+                        }
+                    }
+                }
+                None => {
+                    eprintln!("WARN: --include-dependents has no effect without --module");
+                }
+            }
+        }
 
         Ok(TestPlan {
             workspace_root: resolved.workspace_root,

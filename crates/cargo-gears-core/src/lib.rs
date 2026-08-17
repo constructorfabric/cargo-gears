@@ -9,6 +9,7 @@ pub mod help;
 pub mod lint;
 pub mod list;
 pub mod manifest;
+pub mod packages;
 pub mod run;
 pub mod source;
 pub mod test;
