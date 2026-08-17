@@ -962,7 +962,7 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--include-dependents] [--list]
+cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--include-dependents] [--locked] [--list]
 ```
 
 Arguments:
@@ -981,6 +981,7 @@ Arguments:
 - **[`--include-dependents`]** Expands the `-P/--package` selection to also include every workspace crate that
   (transitively) depends on the selected package(s) — the reverse-dependency closure. Requires at least one
   `-P/--package`; has no effect on its own.
+- **[`--locked`]** Require `Cargo.lock` is up to date; passed as `--locked` to `cargo clippy` and dylint's `cargo check`
 - **[`--list`]** Lists available lint rules instead of running them. When combined with `--dylint`, lists only the
   embedded dylint rules. Does not require a manifest or workspace path.
 
@@ -1155,7 +1156,7 @@ Orchestrates manifest-driven Rust tests with either `cargo test` or the in-proce
 Synopsis:
 
 ```bash
-cargo gears test [-p <PATH>] [--manifest <PATH>] [--app <APP>] [--env <ENV>] [--runner <cargo|nextest>] [--module <NAME>] [--include-dependents] [--coverage]
+cargo gears test [-p <PATH>] [--manifest <PATH>] [--app <APP>] [--env <ENV>] [--runner <cargo|nextest>] [--module <NAME>] [--include-dependents] [--coverage] [--locked]
 ```
 
 Arguments:
@@ -1164,6 +1165,7 @@ Arguments:
 - **[`--module <NAME>`]** Limits tests to a module/package. When manifest `test.feature-set` contains that module, its feature matrix is used.
 - **[`--include-dependents`]** Also tests every workspace crate that (transitively) depends on `--module` — the reverse-dependency closure. Requires `--module`; has no effect on its own.
 - **[`--coverage`]** Runs coverage with `cargo llvm-cov` using the selected or manifest test runner
+- **[`--locked`]** Require `Cargo.lock` is up to date; passed as `--locked` to `cargo test`, nextest build, and `cargo llvm-cov`
 
 Behavior:
 
@@ -1239,7 +1241,7 @@ cargo gears config db rm <name> [-p <workspace>] -c <config>
 cargo gears ls modules [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
-cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint] [-P <spec>]... [--list]
+cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint] [-P <spec>]... [--include-dependents] [--locked] [--list]
 cargo gears tools --all
 cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch] [--locked]
 cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--locked]
