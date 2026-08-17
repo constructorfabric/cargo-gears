@@ -1,5 +1,6 @@
 pub mod app_config;
 pub mod build;
+pub mod clean;
 pub mod common;
 pub mod config;
 pub mod deploy;

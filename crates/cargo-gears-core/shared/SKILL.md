@@ -80,6 +80,7 @@ cargo gears
 ├── tools
 ├── run
 ├── build
+├── clean
 └── deploy
 ```
 
@@ -113,7 +114,7 @@ From the current implementation, the CLI is mainly for:
 - **[server generation]** Generate a runnable Cargo project under the manifest `workspace.generated-dir` directory
   (default `.gears/<name>/`)
 - **[manifest orchestration]** Read `Gears.toml` to separate generation metadata from runtime YAML config
-- **[build/run/deploy]** Build, run, or package that generated server as a Docker image
+- **[build/run/clean/deploy]** Build, run, clean, or package that generated server as a Docker image
 - **[source inspection]** Resolve Rust source for crates/items through workspace metadata or crates.io
 - **[module inspection]** List workspace-discovered and system-registry modules
 - **[tool bootstrap]** Install or upgrade `rustup`, `cargofmt`, and `clippy`
@@ -848,6 +849,55 @@ cargo gears build -p /tmp/cf-demo --app app1 --env prod
 
 ```bash
 cargo gears build -p /tmp/cf-demo --app app1 --env prod --dry-run
+```
+
+### `clean`
+
+Superset of `cargo clean`: removes build artifacts, the generated server project, and its workspace member entry
+from the root `Cargo.toml`.
+
+Synopsis:
+
+```bash
+cargo gears clean [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>]
+```
+
+Arguments:
+
+- **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
+- **[`--app <APP> --env <ENV>`]** Manifest app/environment selection (inferred from manifest if omitted)
+- **[`-p, --path <PATH>`]** Optional workspace directory
+
+Behavior:
+
+- **[runs `cargo clean` first]** Removes build artifacts from the workspace `target/` directory. If this fails due to
+  a broken workspace (e.g. missing generated member), the error is ignored and cleanup continues -- fixing such
+  broken state is the purpose of this command. Other `cargo clean` failures (permissions, disk errors, etc.) are
+  propagated as errors.
+- **[resolves target without dependencies]** Reads `Gears.toml` to determine the generated project directory and name
+  without resolving module dependencies or running `cargo metadata`
+- **[deletes generated project]** Removes `<generated-dir>/<name>/` (e.g. `.gears/products-dev/`)
+- **[removes workspace member]** Removes the generated project entry from the `workspace.members` array in the root
+  `Cargo.toml`
+- **[cleans up empty generated dir]** If the generated directory (e.g. `.gears/`) is empty after removal, it is also
+  deleted
+- **[runs `cargo clean` last]** After fixing the workspace, runs `cargo clean` to remove build artifacts from the
+  `target/` directory. By running last, the workspace is guaranteed to be consistent so `cargo clean` succeeds
+  even when the generated member was previously missing or broken.
+- **[idempotent]** Running `clean` when the generated project does not exist is a no-op
+
+Examples:
+
+```bash
+cargo gears clean
+```
+
+```bash
+cargo gears clean --app app1 --env dev
+```
+
+```bash
+cargo gears clean -p /tmp/cf-demo
 ```
 
 ### `deploy`
