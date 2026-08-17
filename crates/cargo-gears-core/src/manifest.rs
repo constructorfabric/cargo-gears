@@ -1,13 +1,14 @@
 use crate::common;
 use crate::gears_parser::{
-    Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModuleMetadata, Provision,
+    Capability, CargoTomlDependencies, CargoTomlDependency, ConfigModule, ConfigModuleMetadata,
+    Provision,
 };
 use crate::list::{SYSTEM_REGISTRY_GEARS, system_gear_for_provision};
 use anyhow::{Context, bail};
 use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -395,6 +396,7 @@ fn resolve_dependencies(
     auto_resolve_system_gears(
         &local_capabilities,
         &declared_system_packages,
+        &local_modules,
         &mut dependencies,
     );
 
@@ -406,6 +408,7 @@ fn resolve_dependencies(
 fn auto_resolve_system_gears(
     local_capabilities: &[Capability],
     declared_system_packages: &BTreeSet<String>,
+    local_modules: &HashMap<String, ConfigModule>,
     dependencies: &mut CargoTomlDependencies,
 ) {
     for capability in local_capabilities {
@@ -428,13 +431,26 @@ fn auto_resolve_system_gears(
             "Auto-resolved system gear '{}' for '{}' capability",
             system_gear.gear_name, capability
         );
-        dependencies.insert(
-            dependency_name,
-            CargoTomlDependency {
+        // If the system gear is a workspace-local crate, depend on it by path so
+        // it (and its transitive `cf-gears-toolkit`) is the *same* build the
+        // local manifest gears use. Otherwise fall back to a registry crate.
+        let dependency = local_modules.get(system_gear.gear_name).map_or_else(
+            || CargoTomlDependency {
                 package: Some(system_gear.crate_name.to_owned()),
                 ..Default::default()
             },
+            |module| CargoTomlDependency {
+                package: module
+                    .metadata
+                    .package
+                    .clone()
+                    .or_else(|| Some(system_gear.crate_name.to_owned())),
+                version: module.metadata.version.clone(),
+                path: module.metadata.path.clone(),
+                ..Default::default()
+            },
         );
+        dependencies.insert(dependency_name, dependency);
     }
 }
 

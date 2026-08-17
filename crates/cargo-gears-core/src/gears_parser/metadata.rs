@@ -119,6 +119,18 @@ pub fn get_dependencies<S: std::hash::BuildHasher>(
                         .collect::<BTreeSet<_>>()
                 })
                 .unwrap_or_default();
+            // For workspace-local crates (no registry source), carry the crate
+            // path so the generated server depends on the *same* local build
+            // rather than a same-versioned copy from crates.io. Two builds of a
+            // crate like `cf-gears-toolkit` would otherwise split the
+            // `inventory`-based gear registry and hide local gears at runtime.
+            let path = if pkg.source.is_none() {
+                PathBuf::from(&pkg.manifest_path)
+                    .parent()
+                    .map(|p| p.display().to_string())
+            } else {
+                None
+            };
             res.insert(
                 name.clone(),
                 CargoTomlDependency {
@@ -129,6 +141,7 @@ pub fn get_dependencies<S: std::hash::BuildHasher>(
                     },
                     version: Some(pkg.version.to_string()),
                     features,
+                    path,
                     ..Default::default()
                 },
             );
