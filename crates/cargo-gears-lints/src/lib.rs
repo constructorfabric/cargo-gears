@@ -56,6 +56,7 @@ mod de11_testing {
 
 mod de12_documentation {
     pub(crate) mod de1201_docs_rs_all_features;
+    pub(crate) mod de1202_missing_docs_for_pub_crate;
 }
 
 mod de13_common_patterns {
@@ -94,6 +95,7 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         de09_gts_layer::de0904_no_hardcoded_gts_prefix::DE0904_NO_HARDCODED_GTS_PREFIX,
         de11_testing::de1101_tests_in_separate_files::DE1101_TESTS_IN_SEPARATE_FILES,
         de12_documentation::de1201_docs_rs_all_features::DE1201_DOCS_RS_ALL_FEATURES,
+        de12_documentation::de1202_missing_docs_for_pub_crate::DE1202_MISSING_DOCS_FOR_PUB_CRATE,
         de13_common_patterns::de1301_no_print_macros::DE1301_NO_PRINT_MACROS,
         de13_common_patterns::de1302_error_from_to_string::DE1302_ERROR_FROM_TO_STRING,
         de13_common_patterns::de1303_no_primitive_type_alias::DE1303_NO_PRIMITIVE_TYPE_ALIAS,
@@ -133,6 +135,11 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     });
     lint_store.register_pre_expansion_pass(|| {
         Box::new(de03_domain_layer::de0309_must_have_domain_model::De0309MustHaveDomainModel)
+    });
+    lint_store.register_pre_expansion_pass(|| {
+        Box::new(
+            de12_documentation::de1202_missing_docs_for_pub_crate::De1202MissingDocsForPubCrate::new(),
+        )
     });
 
     lint_store.register_early_pass(|| {
@@ -189,7 +196,13 @@ mod tests {
 
     #[test]
     fn ui_examples() {
-        dylint_testing::ui_test_examples(LIBRARY_NAME);
+        dylint_testing::ui::Test::examples(LIBRARY_NAME)
+            .dylint_toml(
+                r#"[cargo-gears-lints]
+de1202_excluded_crates = ["excluded-crate"]
+"#,
+            )
+            .run();
     }
 
     /// Lint code, comment pattern, and UI test subdirectory for each lint that uses
@@ -264,6 +277,11 @@ mod tests {
             "DE1101",
             "tests must be in separate files",
             "de1101_tests_in_separate_files",
+        ),
+        (
+            "DE1202",
+            "missing docs",
+            "de1202_missing_docs_for_pub_crate",
         ),
         ("DE1301", "Print macros", "de1301_no_print_macros"),
         ("DE1302", "to_string", "de1302_error_from_to_string"),

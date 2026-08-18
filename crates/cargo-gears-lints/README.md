@@ -67,6 +67,7 @@ These rules are compiled by `cargo-gears-core`'s build script when the CLI is bu
 | Rule | Name | What it enforces |
 |------|------|------------------|
 | DE1201 | Docs.rs All Features | Publishable crates must set `package.metadata.docs.rs.all-features = true` |
+| DE1202 | Missing Docs for `pub(crate)` | Crate-public APIs must have non-empty Rust documentation |
 
 ### DE11xx — Testing
 

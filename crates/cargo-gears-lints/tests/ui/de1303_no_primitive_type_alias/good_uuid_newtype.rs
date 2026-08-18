@@ -15,6 +15,7 @@ pub type Wrapper<T> = Vec<T>;
 pub type JsonValue = serde_json::Value;
 
 // Good - pub(crate) visibility is not flagged (lint only targets fully public aliases)
+/// Internal identifier alias used by this fixture.
 pub(crate) type InternalId = Uuid;
 
 fn main() {}
