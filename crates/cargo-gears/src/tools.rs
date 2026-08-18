@@ -51,19 +51,44 @@ fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
     let requirement = semver::VersionReq::parse(req_str)
         .map_err(|e| anyhow::anyhow!("invalid version requirement '{req_str}': {e}"))?;
 
-    let output = std::process::Command::new(tool).arg("--version").output();
-
-    let output = match output {
-        Ok(o) if o.status.success() => o,
-        Ok(o) => {
-            eprintln!("{tool} --version exited with {}", o.status);
-            std::process::exit(1);
-        }
+    let mut child = match std::process::Command::new(tool)
+        .arg("--version")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+    {
+        Ok(c) => c,
         Err(_) => {
             eprintln!("{tool} is not installed");
             std::process::exit(1);
         }
     };
+
+    let timeout = std::time::Duration::from_secs(30);
+    let start = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => break,
+            Ok(None) if start.elapsed() >= timeout => {
+                let _ = child.kill();
+                let _ = child.wait();
+                eprintln!("{tool} --version timed out after {}s", timeout.as_secs());
+                std::process::exit(1);
+            }
+            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(50)),
+            Err(e) => {
+                eprintln!("{tool} --version failed: {e}");
+                std::process::exit(1);
+            }
+        }
+    }
+
+    let output = child.wait_with_output()?;
+
+    if !output.status.success() {
+        eprintln!("{tool} --version exited with {}", output.status);
+        std::process::exit(1);
+    }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     // Parse version from output: try each whitespace-separated token
