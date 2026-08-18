@@ -178,6 +178,9 @@ fn build_binary_list(
         "json-render-diagnostics".to_owned(),
     ];
     run.append_cargo_args(&mut args);
+    if plan.locked {
+        args.push("--locked".to_owned());
+    }
 
     let output = crate::common::cargo_cmd()?
         .args(args)

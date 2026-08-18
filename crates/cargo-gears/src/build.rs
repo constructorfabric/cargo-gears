@@ -22,6 +22,7 @@ impl BuildArgs {
             .no_fips(args.no_fips.then_some(true))
             .release(args.release.then_some(true))
             .no_release(args.no_release.then_some(true))
+            .locked(args.locked)
             .clean(args.clean.then_some(true))
             .no_clean(args.no_clean.then_some(true))
             .dry_run(args.dry_run)

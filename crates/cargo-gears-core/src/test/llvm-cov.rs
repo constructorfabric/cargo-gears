@@ -43,6 +43,9 @@ fn llvm_cov_test_command(plan: &TestPlan, run: &TestRun) -> anyhow::Result<Comma
     let mut args = Vec::new();
     run.append_cargo_args(&mut args);
     cmd.args(args);
+    if plan.locked {
+        cmd.arg("--locked");
+    }
     cmd.current_dir(&plan.workspace_root);
     cmd.env(CONFIG_PATH_ENV_VAR, &plan.config_path);
 
@@ -165,6 +168,7 @@ mod tests {
             coverage: true,
             custom_command: None,
             runs: vec![],
+            locked: false,
         };
         let run = TestRun {
             package: Some("cf-module".to_owned()),
@@ -214,6 +218,7 @@ mod tests {
             runner: TestRunner::Cargo,
             coverage: true,
             custom_command: None,
+            locked: false,
             runs: vec![
                 TestRun {
                     package: Some("cf-module-b".to_owned()),

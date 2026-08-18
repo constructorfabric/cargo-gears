@@ -31,6 +31,7 @@ pub struct RunParamsBuilder {
     no_fips: Option<bool>,
     release: Option<bool>,
     no_release: Option<bool>,
+    locked: bool,
     clean: Option<bool>,
     no_clean: Option<bool>,
     dry_run: bool,
@@ -53,6 +54,7 @@ impl RunParamsBuilder {
             no_fips: None,
             release: None,
             no_release: None,
+            locked: false,
             clean: None,
             no_clean: None,
             dry_run: false,
@@ -122,6 +124,12 @@ impl RunParamsBuilder {
     }
 
     #[must_use]
+    pub const fn locked(mut self, locked: bool) -> Self {
+        self.locked = locked;
+        self
+    }
+
+    #[must_use]
     pub const fn clean(mut self, clean: Option<bool>) -> Self {
         self.clean = clean;
         self
@@ -182,6 +190,7 @@ impl RunParamsBuilder {
                 otel,
                 fips,
                 release,
+                locked: self.locked,
                 clean,
                 dry_run: self.dry_run,
             },
@@ -234,6 +243,10 @@ impl RunParams {
         );
         run_loop::RELEASE.store(
             self.build_run_args.release,
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        run_loop::LOCKED.store(
+            self.build_run_args.locked,
             std::sync::atomic::Ordering::Relaxed,
         );
 
