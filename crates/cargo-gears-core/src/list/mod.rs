@@ -1,3 +1,4 @@
+use anyhow::Context;
 mod gears;
 pub mod templates;
 
@@ -8,6 +9,8 @@ pub use templates::TemplatesParams;
 pub enum ListCommand {
     Gears(GearsParams),
     Templates(TemplatesParams),
+    Features(FeaturesParams),
+    Deps(DepsParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -20,7 +23,111 @@ impl ListParams {
         match &self.command {
             ListCommand::Gears(args) => args.run(),
             ListCommand::Templates(args) => args.run(),
+            ListCommand::Features(args) => args.run(),
+            ListCommand::Deps(args) => args.run(),
         }
+    }
+}
+
+/// Parameters for `cargo gears ls features --manifest <path>`.
+///
+/// Lists all feature names defined in a Cargo.toml's `[features]` section.
+#[derive(Debug, Eq, PartialEq)]
+pub struct FeaturesParams {
+    pub manifest: std::path::PathBuf,
+    pub format: crate::common::OutputFormat,
+}
+
+impl FeaturesParams {
+    pub fn run(&self) -> anyhow::Result<()> {
+        let content = std::fs::read_to_string(&self.manifest)
+            .with_context(|| format!("cannot read {}", self.manifest.display()))?;
+        let doc: toml::Table = content.parse()
+            .with_context(|| format!("cannot parse {}", self.manifest.display()))?;
+        let features = doc.get("features")
+            .and_then(|v| v.as_table())
+            .map(|t| {
+                let mut keys: Vec<&str> = t.keys().map(String::as_str).collect();
+                keys.sort();
+                keys
+            })
+            .unwrap_or_default();
+
+        match self.format {
+            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+                for f in &features {
+                    println!("{f}");
+                }
+            }
+            crate::common::OutputFormat::Json => {
+                println!("{}", serde_json::to_string(&features)?);
+            }
+            crate::common::OutputFormat::CargoFlags => {
+                println!("{}", features.join(","));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Parameters for `cargo gears ls deps --manifest <path>`.
+///
+/// Lists dependency names from a Cargo.toml's `[dependencies]` section.
+/// With `--non-optional`, only non-optional (always-linked) dependencies.
+#[derive(Debug, Eq, PartialEq)]
+pub struct DepsParams {
+    pub manifest: std::path::PathBuf,
+    pub non_optional: bool,
+    pub format: crate::common::OutputFormat,
+}
+
+impl DepsParams {
+    pub fn run(&self) -> anyhow::Result<()> {
+        let content = std::fs::read_to_string(&self.manifest)
+            .with_context(|| format!("cannot read {}", self.manifest.display()))?;
+        let doc: toml::Table = content.parse()
+            .with_context(|| format!("cannot parse {}", self.manifest.display()))?;
+        let deps_table = doc.get("dependencies")
+            .and_then(|v| v.as_table());
+        let Some(deps_table) = deps_table else {
+            return Ok(());
+        };
+
+        let mut names: Vec<String> = Vec::new();
+        for (key, value) in deps_table {
+            let is_optional = value
+                .as_table()
+                .and_then(|t| t.get("optional"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            if self.non_optional && is_optional {
+                continue;
+            }
+            // Use "package" field if present, otherwise the key
+            let pkg_name = value
+                .as_table()
+                .and_then(|t| t.get("package"))
+                .and_then(|v| v.as_str())
+                .unwrap_or(key);
+            names.push(pkg_name.to_owned());
+        }
+        names.sort();
+
+        match self.format {
+            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+                for n in &names {
+                    println!("{n}");
+                }
+            }
+            crate::common::OutputFormat::Json => {
+                println!("{}", serde_json::to_string(&names)?);
+            }
+            crate::common::OutputFormat::CargoFlags => {
+                let flags: Vec<String> = names.iter().map(|n| format!("-p {n}")).collect();
+                println!("{}", flags.join(" "));
+            }
+        }
+        Ok(())
     }
 }
 

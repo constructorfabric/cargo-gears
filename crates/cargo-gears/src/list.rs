@@ -13,6 +13,10 @@ pub enum ListCommand {
     Gears(GearsArgs),
     /// List templates available
     Templates(TemplatesArgs),
+    /// List feature names from a Cargo.toml
+    Features(FeaturesArgs),
+    /// List dependencies from a Cargo.toml
+    Deps(DepsArgs),
 }
 
 #[derive(Args)]
@@ -65,11 +69,55 @@ impl From<ListArgs> for cargo_gears_core::list::ListParams {
     }
 }
 
+#[derive(Args)]
+pub struct FeaturesArgs {
+    /// Path to Cargo.toml to inspect
+    #[arg(long)]
+    manifest: std::path::PathBuf,
+    /// Output format
+    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::List)]
+    format: OutputFormat,
+}
+
+#[derive(Args)]
+pub struct DepsArgs {
+    /// Path to Cargo.toml to inspect
+    #[arg(long)]
+    manifest: std::path::PathBuf,
+    /// Only list non-optional (always-linked) dependencies
+    #[arg(long)]
+    non_optional: bool,
+    /// Output format
+    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::List)]
+    format: OutputFormat,
+}
+
 impl From<ListCommand> for cargo_gears_core::list::ListCommand {
     fn from(command: ListCommand) -> Self {
         match command {
             ListCommand::Gears(args) => Self::Gears(args.into()),
             ListCommand::Templates(args) => Self::Templates(args.into()),
+            ListCommand::Features(args) => Self::Features(args.into()),
+            ListCommand::Deps(args) => Self::Deps(args.into()),
+        }
+    }
+}
+
+impl From<FeaturesArgs> for cargo_gears_core::list::FeaturesParams {
+    fn from(args: FeaturesArgs) -> Self {
+        Self {
+            manifest: args.manifest,
+            format: args.format,
+        }
+    }
+}
+
+impl From<DepsArgs> for cargo_gears_core::list::DepsParams {
+    fn from(args: DepsArgs) -> Self {
+        Self {
+            manifest: args.manifest,
+            non_optional: args.non_optional,
+            format: args.format,
         }
     }
 }
