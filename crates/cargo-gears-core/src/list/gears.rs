@@ -55,6 +55,7 @@ pub struct GearsParams {
     pub registry: Registry,
     pub format: OutputFormat,
     pub filter: Option<String>,
+    pub scope_dirs: Vec<String>,
 }
 
 impl GearsParams {
@@ -132,6 +133,22 @@ impl GearsParams {
             modules.retain(|m| re.is_match(&m.name));
         }
 
+        if !self.scope_dirs.is_empty() {
+            let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
+            let scopes: Vec<std::path::PathBuf> = self
+                .scope_dirs
+                .iter()
+                .map(|d| workspace_root.join(d.trim_end_matches('/')))
+                .filter_map(|d| d.canonicalize().ok())
+                .collect();
+            modules.retain(|m| {
+                let Some(dir) = &m.manifest_dir else { return false };
+                let dir = std::path::Path::new(dir);
+                let Ok(dir) = dir.canonicalize() else { return false };
+                scopes.iter().any(|scope| dir.starts_with(scope))
+            });
+        }
+
         Ok(GearListing {
             modules,
             output: self.output,
@@ -168,6 +185,9 @@ struct ListedGear {
     /// From the crate included
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     capabilities: Vec<String>,
+    /// Absolute path to the crate directory (local gears only, used for scope filtering).
+    #[serde(skip)]
+    manifest_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
@@ -248,6 +268,7 @@ fn listed_system_module(
                     .collect()
             })
             .unwrap_or_default(),
+        manifest_dir: None,
     }
 }
 
@@ -298,6 +319,7 @@ fn listed_local_modules(
             features: Vec::new(),
             deps: Vec::new(),
             capabilities: Vec::new(),
+            manifest_dir: module.metadata.path.clone(),
         })
         .collect()
 }
@@ -705,6 +727,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         let listing = args
@@ -735,6 +758,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         let listing = args
@@ -764,6 +788,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         let listing = args
@@ -803,6 +828,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         let listing = args

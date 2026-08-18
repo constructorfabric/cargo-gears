@@ -43,6 +43,9 @@ pub struct GearsArgs {
     /// Filter gear names by regex pattern
     #[arg(long)]
     filter: Option<String>,
+    /// Comma-separated directory paths to scope the search (relative to workspace root)
+    #[arg(long, value_delimiter = ',')]
+    scope_dirs: Vec<String>,
 }
 
 impl ListArgs {
@@ -95,6 +98,7 @@ impl From<GearsArgs> for cargo_gears_core::list::GearsParams {
             registry: args.registry,
             format: args.format,
             filter: args.filter,
+            scope_dirs: args.scope_dirs,
         }
     }
 }

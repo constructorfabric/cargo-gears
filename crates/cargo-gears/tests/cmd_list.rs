@@ -27,6 +27,7 @@ fn parses_list_modules_into_core_command() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                     filter: None,
+                    scope_dirs: Vec::new(),
                 },
             ),
         })
@@ -48,6 +49,7 @@ fn parses_list_modules_local_flag_into_core_command() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                     filter: None,
+                    scope_dirs: Vec::new(),
                 },
             ),
         })
@@ -77,6 +79,7 @@ fn parses_list_modules_system_flag_into_core_command() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                     filter: None,
+                    scope_dirs: Vec::new(),
                 },
             ),
         })

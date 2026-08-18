@@ -337,6 +337,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         args.run().expect("list gears --local should succeed");
@@ -353,6 +354,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         args.run()
@@ -368,6 +370,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         args.run().expect("list gears --system should succeed");
@@ -392,6 +395,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
+            scope_dirs: Vec::new(),
         };
 
         args.run().expect("list modules should succeed");
