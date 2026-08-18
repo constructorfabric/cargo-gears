@@ -72,12 +72,16 @@ cargo gears
 ├── lint
 ├── ls
 │   ├── gears
-│   └── templates
+│   ├── templates
+│   ├── features
+│   ├── deps
+│   └── packages
 ├── manifest
 │   ├── validate
 │   └── ls
 ├── test
 ├── tools
+│   └── check-version
 ├── run
 ├── build
 ├── clean
@@ -101,6 +105,8 @@ cargo gears
   command fails listing available names.
 - **[`--name <NAME>`]** For `build` and `run`, overrides the generated server project and binary name that would
   otherwise default to the config filename stem.
+- **[`--check-version <REQ>`]** Top-level flag. Checks that cargo-gears satisfies a semver version requirement
+  (e.g. `>=0.0.3`) and exits with code 0 (printing the version) or 1.
 - **[`-v, --verbose`]** Usually enables more logging or richer output.
 - **[name validation]** Config-managed names for modules, DB servers, and generated server names only allow letters,
   numbers, `-`, and `_`.
@@ -693,6 +699,39 @@ cargo gears tools --install clippy,cargofmt --yolo
 cargo gears tools --install rustup,clippy --upgrade --verbose
 ```
 
+#### `tools check-version`
+
+Check that an external tool satisfies a semver version requirement by running `<tool> --version`,
+parsing the version from the output, and comparing it against the requirement. Exits 0 (printing
+the version) if satisfied, or 1 if not.
+
+Synopsis:
+
+```bash
+cargo gears tools check-version <TOOL> <REQUIREMENT>
+```
+
+Arguments:
+
+- **[`<TOOL>`]** Tool binary name (e.g. `cargo-deny`, `cargo-nextest`)
+- **[`<REQUIREMENT>`]** Semver requirement (e.g. `>=0.20.0`, `^0.9.130`)
+
+Behavior:
+
+- **[runs tool]** Invokes `<tool> --version` and parses the first semver token from stdout
+- **[exit code]** Exits 0 and prints the version if the requirement is satisfied; exits 1 with an error
+  message if not satisfied, if the tool is not installed, or if the version cannot be parsed
+
+Examples:
+
+```bash
+cargo gears tools check-version cargo-deny '>=0.20.0'
+```
+
+```bash
+cargo gears tools check-version cargo-nextest '^0.9.130'
+```
+
 ### `run`
 
 Generate a server project under the manifest `<workspace.generated-dir>/<name>` and run it.
@@ -1060,59 +1099,77 @@ dylint = { enabled = true, skip = ["de0301_no_infra_in_domain"] }
 
 ### `ls`
 
-Inspect workspace modules, system modules, templates, and project state.
+Inspect workspace gears, system gears, templates, features, dependencies, and packages.
 
-#### `ls modules`
+#### `ls gears`
 
-List all modules — both system-registry and workspace-discovered — in a single unified view.
+List all gears — both system-registry and workspace-discovered — in a single unified view.
 
 Synopsis:
 
 ```bash
-cargo gears ls modules [-p <PATH>] [--system] [--local] [--verbose] [--registry crates.io] [--format table|json]
+cargo gears ls gears [-p <PATH>] [--system] [--local] [--verbose] [--registry crates.io] [--format table|json|list|cargo-flags] [--filter <REGEX>] [--scope-dirs <DIR,...>] [--include-rdeps]
 ```
 
 Arguments:
 
 - **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
-- **[`--system`]** Only print built-in system registry modules
-- **[`--local`]** Only print workspace-discovered modules
-- **[`-v, --verbose`]** Show full metadata for both system and local modules (fetches registry metadata for system
-  modules)
+- **[`--system`]** Only print built-in system registry gears
+- **[`--local`]** Only print workspace-discovered gears
+- **[`-v, --verbose`]** Show full metadata for both system and local gears (fetches registry metadata for system
+  gears)
 - **[`--registry <REGISTRY>`]** Registry to query for system-crate metadata; defaults to `crates.io`
-- **[`-f, --format <FORMAT>`]** Output format; defaults to `json`. Supported values: `table`, `json`
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `json`. Supported values: `table`, `json`, `list`,
+  `cargo-flags`
+- **[`--filter <REGEX>`]** Filter gear names by regex pattern. Applied before `--include-rdeps`
+- **[`--scope-dirs <DIR,...>`]** Comma-separated directory paths (relative to workspace root) to restrict results
+  to gears whose crate directory is under one of the given directories. Applied before `--include-rdeps`
+- **[`--include-rdeps`]** After filtering/scoping, expand the result set with every workspace crate that
+  transitively depends on the matched gears (reverse-dependency closure)
 
 Behavior:
 
-- **[combined output]** Prints system modules first, then workspace modules, separated by a blank line
-- **[filtered output]** `--system` prints only system modules; `--local` prints only workspace modules; passing both is
+- **[combined output]** Prints system gears first, then workspace gears, separated by a blank line
+- **[filtered output]** `--system` prints only system gears; `--local` prints only workspace gears; passing both is
   equivalent to the default combined output
-- **[json output]** `--format json` prints a `modules` array with each module's `source` (`system` or `local`), static
+- **[json output]** `--format json` prints a `modules` array with each gear's `source` (`system` or `local`), static
   metadata, and verbose metadata when `--verbose` is enabled
-- **[system usage marker]** System modules include `used: yes/no` in table output and `used: true/false` in JSON output,
-  based on whether `Gears.toml` references the system module as a remote module or the workspace has a discovered module
-  with the same module name
+- **[system usage marker]** System gears include `used: yes/no` in table output and `used: true/false` in JSON output,
+  based on whether `Gears.toml` references the system gear as a remote module or the workspace has a discovered gear
+  with the same name
 - **[config-independent]** Does not require a `-c/--config` file
-- **[workspace scanning]** Local output runs `cargo metadata --no-deps` and discovers crates with a gears module annotation (`#[module(...)]` or `#[gears_toolkit::module(...)]`) in any `src/*.rs` file
+- **[workspace scanning]** Local output runs `cargo metadata --no-deps` and discovers crates with a gears annotation
+  (`#[toolkit::gear(...)]`) in any `src/**/*.rs` file
 - **[system registry]** System output uses the compiled-in registry, and `--verbose` fetches crate metadata from the
   selected registry
+- **[cargo-flags format]** `--format cargo-flags` prints `-p <package>` flags suitable for passing to Cargo commands
+- **[filter → scope → rdeps pipeline]** Filters and scope directories are applied first to narrow the initial gear
+  set; `--include-rdeps` then expands that set with reverse dependents
 
 Examples:
 
 ```bash
-cargo gears ls modules
+cargo gears ls gears
 ```
 
 ```bash
-cargo gears ls modules -p /tmp/cf-demo --verbose
+cargo gears ls gears -p /tmp/cf-demo --verbose
 ```
 
 ```bash
-cargo gears ls modules --local
+cargo gears ls gears --local
 ```
 
 ```bash
-cargo gears ls modules --system --verbose
+cargo gears ls gears --system --verbose
+```
+
+```bash
+cargo gears ls gears --local --filter 'api-.*' --include-rdeps
+```
+
+```bash
+cargo gears ls gears --local --scope-dirs gears/api -f cargo-flags
 ```
 
 #### `ls templates`
@@ -1144,6 +1201,120 @@ cargo gears ls templates
 
 ```bash
 cargo gears ls templates -p /tmp/cf-demo
+```
+
+#### `ls features`
+
+List all feature names defined in a Cargo.toml's `[features]` section.
+
+Synopsis:
+
+```bash
+cargo gears ls features --manifest <PATH> [-f <FORMAT>]
+```
+
+Arguments:
+
+- **[`--manifest <PATH>`]** Path to the Cargo.toml to inspect
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `list`. Supported values: `list`, `table`, `json`,
+  `cargo-flags`
+
+Behavior:
+
+- **[sorted output]** Features are listed in lexicographic order
+- **[cargo-flags format]** `--format cargo-flags` prints features as a comma-separated list suitable for
+  `--features <LIST>`
+
+Examples:
+
+```bash
+cargo gears ls features --manifest gears/api-gateway/Cargo.toml
+```
+
+```bash
+cargo gears ls features --manifest Cargo.toml -f json
+```
+
+#### `ls deps`
+
+List dependency names from a Cargo.toml's `[dependencies]` section.
+
+Synopsis:
+
+```bash
+cargo gears ls deps --manifest <PATH> [--non-optional] [-f <FORMAT>]
+```
+
+Arguments:
+
+- **[`--manifest <PATH>`]** Path to the Cargo.toml to inspect
+- **[`--non-optional`]** Only list non-optional (always-linked) dependencies
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `list`. Supported values: `list`, `table`, `json`,
+  `cargo-flags`
+
+Behavior:
+
+- **[sorted output]** Dependencies are listed in lexicographic order
+- **[package field]** Uses the `package` field from the dependency table when present, otherwise uses the key name
+- **[cargo-flags format]** `--format cargo-flags` prints `-p <package>` flags
+
+Examples:
+
+```bash
+cargo gears ls deps --manifest gears/api-gateway/Cargo.toml
+```
+
+```bash
+cargo gears ls deps --manifest Cargo.toml --non-optional -f json
+```
+
+#### `ls packages`
+
+List all Cargo packages (crates) in the workspace or under specific directories, with optional
+filtering and reverse-dependency expansion.
+
+Synopsis:
+
+```bash
+cargo gears ls packages [-p <PATH>] [--scope-dirs <DIR,...>] [--filter <REGEX>] [--include-rdeps] [-f <FORMAT>]
+```
+
+Arguments:
+
+- **[`-p, --path <PATH>`]** Optional workspace directory
+- **[`--scope-dirs <DIR,...>`]** Comma-separated directory paths to restrict discovery to crates under those directories
+  (relative to workspace root)
+- **[`--filter <REGEX>`]** Filter package names by regex pattern. Applied before `--include-rdeps`
+- **[`--include-rdeps`]** After filtering/scoping, expand the result set with every workspace crate that transitively
+  depends on the matched packages (reverse-dependency closure)
+- **[`-f, --format <FORMAT>`]** Output format; defaults to `list`. Supported values: `list`, `table`, `json`,
+  `cargo-flags`
+
+Behavior:
+
+- **[all packages by default]** Without `--scope-dirs`, lists all workspace packages
+- **[scope-dirs discovery]** With `--scope-dirs`, only packages whose manifest path is inside one of the given directories
+  are included
+- **[filter → scope → rdeps pipeline]** Filters are applied after initial selection; `--include-rdeps` then expands
+  the filtered set
+- **[cargo-flags format]** `--format cargo-flags` prints `-p <package>` flags
+
+Examples:
+
+```bash
+cargo gears ls packages -p /tmp/cf-demo
+```
+
+```bash
+cargo gears ls packages -p /tmp/cf-demo --scope-dirs gears/api
+```
+
+```bash
+cargo gears ls packages --filter 'cf-gears-.*' --include-rdeps
+```
+
+```bash
+cargo gears ls packages --filter 'api' --include-rdeps -f cargo-flags
 ```
 
 ### `test`
@@ -1234,11 +1405,18 @@ cargo gears config db add <name> [-p <workspace>] -c <config> ...
 cargo gears config db edit <name> [-p <workspace>] -c <config> ...
 cargo gears config db rm <name> [-p <workspace>] -c <config>
 
-cargo gears ls modules [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json]
+cargo gears --check-version '<REQ>'
+
+cargo gears ls gears [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json|list|cargo-flags] [--filter <regex>] [--scope-dirs <dirs>] [--include-rdeps]
+cargo gears ls templates [-p <workspace>]
+cargo gears ls features --manifest <Cargo.toml> [-f list|json|cargo-flags]
+cargo gears ls deps --manifest <Cargo.toml> [--non-optional] [-f list|json|cargo-flags]
+cargo gears ls packages [-p <workspace>] [--scope-dirs <dirs>] [--filter <regex>] [--include-rdeps] [-f list|json|cargo-flags]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint] [-P <spec>]... [--list]
 cargo gears tools --all
+cargo gears tools check-version <tool> '<requirement>'
 cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch]
 cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>]
 cargo gears deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
