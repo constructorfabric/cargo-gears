@@ -256,6 +256,77 @@ members = ["gears/alpha", "gears/beta", "libs/gamma"]
     }
 
     #[test]
+    fn discover_packages_rejects_all_invalid_scope_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        fs::write(
+            temp.path().join("Cargo.toml"),
+            r#"[workspace]
+resolver = "2"
+members = ["alpha"]
+"#,
+        )
+        .expect("write root manifest");
+        write_member(temp.path(), "alpha", "");
+
+        let bad = temp.path().join("nonexistent");
+        let err = super::discover_packages(temp.path(), &[bad.as_path()])
+            .expect_err("should reject invalid scope dir");
+        assert!(
+            err.to_string().contains("scope directories do not exist"),
+            "error was: {err}"
+        );
+        assert!(
+            err.to_string().contains("nonexistent"),
+            "error should name the bad dir: {err}"
+        );
+    }
+
+    #[test]
+    fn discover_packages_rejects_mixed_valid_and_invalid_scope_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        fs::write(
+            temp.path().join("Cargo.toml"),
+            r#"[workspace]
+resolver = "2"
+members = ["gears/alpha"]
+"#,
+        )
+        .expect("write root manifest");
+        write_named_member(temp.path(), "gears/alpha", "alpha", "");
+
+        let valid = temp.path().join("gears");
+        let bad = temp.path().join("typo");
+        let err = super::discover_packages(temp.path(), &[valid.as_path(), bad.as_path()])
+            .expect_err("should reject when any scope dir is invalid");
+        assert!(
+            err.to_string().contains("typo"),
+            "error should name the bad dir: {err}"
+        );
+    }
+
+    #[test]
+    fn packages_scope_dirs_rejects_invalid_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            scope_dirs: vec!["nonexistent".to_owned()],
+            filter: None,
+            include_rdeps: false,
+            format: crate::common::OutputFormat::List,
+        };
+
+        let err = params
+            .run()
+            .expect_err("ls packages with invalid scope dir should fail");
+        assert!(
+            err.to_string().contains("scope directories do not exist"),
+            "error was: {err}"
+        );
+    }
+
+    #[test]
     fn packages_filter_with_include_rdeps_expands_without_scope_dirs() {
         let temp = TempDir::new().expect("temp dir");
         write_workspace(temp.path());
