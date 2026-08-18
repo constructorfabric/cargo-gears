@@ -90,9 +90,14 @@ fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
         std::process::exit(1);
     }
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    // Combine stdout and stderr: some tools write version info to stderr.
+    let version_output = format!(
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr),
+    );
     // Parse version from output: try each whitespace-separated token
-    let version = stdout
+    let version = version_output
         .split_whitespace()
         .find_map(|token| semver::Version::parse(token.trim_end_matches(',')).ok());
 
@@ -100,7 +105,7 @@ fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
         eprintln!(
             "cannot parse version from `{} --version` output: {}",
             tool,
-            stdout.trim()
+            version_output.trim()
         );
         std::process::exit(1);
     };
