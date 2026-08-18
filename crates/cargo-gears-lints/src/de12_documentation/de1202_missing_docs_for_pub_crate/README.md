@@ -2,17 +2,17 @@
 
 ## Rule
 
-APIs declared with `pub(crate)`, or whose public visibility is effectively
-limited to a `pub(crate)` API, must have non-empty Rust documentation. Together
-with rustc's `missing_docs` lint, this gives documentation coverage for both
-externally exported `pub` APIs and crate-public APIs.
+APIs that are effectively accessible throughout the crate, but not externally,
+must have non-empty Rust documentation. Together with rustc's `missing_docs`
+lint, this gives documentation coverage for both externally exported `pub` APIs
+and crate-public APIs.
 
 DE1202 checks:
 
-- `pub(crate)` modules, functions, constants, statics, type aliases, macros,
-  structs, enums, unions, traits, and trait aliases;
-- `pub` APIs nested under a `pub(crate)` module, whose effective visibility is
-  crate-public and which rustc's `missing_docs` lint does not cover;
+- modules, functions, constants, statics, type aliases, macros, structs, enums,
+  unions, traits, and trait aliases whose effective visibility is crate-public;
+- `pub` APIs exposed through a `pub(crate)` module or crate-only reexport, which
+  rustc's `missing_docs` lint does not cover;
 - `pub(crate)` fields, public fields of `pub(crate)` types, and all named
   enum-variant fields of a `pub(crate)` enum;
 - variants and associated items declared by a `pub(crate)` trait or enum;
@@ -39,11 +39,14 @@ The lint skips:
 - associated items in trait implementations, whose documentation belongs on
   the trait declaration;
 - items and subtrees hidden with `#[doc(hidden)]`;
+- externally reexported APIs, which are covered by rustc's `missing_docs` lint;
+- declarations inside private modules when no crate-public path exposes them;
 - crates temporarily listed in `de1202_excluded_crates`.
 
-`pub(in crate)` is treated as equivalent to `pub(crate)`. Other `pub(in ...)`
-visibilities, `pub(super)`, and private items are outside DE1202's scope. Enable
-rustc's `missing_docs` lint separately for exported `pub` APIs.
+`pub(in crate)` is treated as equivalent to `pub(crate)` when the declaration is
+effectively accessible throughout the crate. Other `pub(in ...)` visibilities,
+`pub(super)`, and private items are outside DE1202's scope. Enable rustc's
+`missing_docs` lint separately for exported `pub` APIs.
 
 ## Migrating Existing Crates
 

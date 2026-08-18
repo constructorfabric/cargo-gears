@@ -479,6 +479,11 @@ path = "tests/ui/de1202_missing_docs_for_pub_crate/excluded_crate.rs"
 crate-type = ["lib"]
 
 [[example]]
+name = "de1202_missing_docs_for_pub_crate-effective_visibility"
+path = "tests/ui/de1202_missing_docs_for_pub_crate/effective_visibility.rs"
+crate-type = ["lib"]
+
+[[example]]
 name = "de1301_no_print_macros-forbidden_macros"
 path = "tests/ui/de1301_no_print_macros/forbidden_macros.rs"
 crate-type = ["lib"]

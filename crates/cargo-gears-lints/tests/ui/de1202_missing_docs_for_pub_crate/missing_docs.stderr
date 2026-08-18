@@ -179,7 +179,7 @@ LL | pub(crate) fn empty_expanded_docs() {}
    = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
 
 error: crate-public function is missing documentation (DE1202)
-  --> $DIR/missing_docs.rs:82:5
+  --> $DIR/missing_docs.rs:83:5
    |
 LL |     pub(crate) fn explicitly_crate_visible() {}
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

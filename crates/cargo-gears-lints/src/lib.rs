@@ -193,14 +193,46 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
 mod tests {
     use super::LIBRARY_NAME;
 
+    fn de1202_test_config() -> String {
+        fn collect_fixture_names(
+            directory: &std::path::Path,
+            de1202_directory: &std::path::Path,
+            fixture_names: &mut Vec<String>,
+        ) {
+            for entry in std::fs::read_dir(directory).expect("UI test directory should be readable")
+            {
+                let path = entry.expect("UI test entry should be readable").path();
+                if path == de1202_directory {
+                    continue;
+                }
+                if path.is_dir() {
+                    collect_fixture_names(&path, de1202_directory, fixture_names);
+                } else if path.extension().is_some_and(|extension| extension == "rs")
+                    && let Some(stem) = path.file_stem()
+                {
+                    fixture_names.push(stem.to_string_lossy().into_owned());
+                }
+            }
+        }
+
+        let ui_directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("ui");
+        let de1202_directory = ui_directory.join("de1202_missing_docs_for_pub_crate");
+        let mut excluded_crates = vec!["excluded-crate".to_owned()];
+        collect_fixture_names(&ui_directory, &de1202_directory, &mut excluded_crates);
+        excluded_crates.sort();
+        excluded_crates.dedup();
+
+        format!("[cargo-gears-lints]\nde1202_excluded_crates = {excluded_crates:?}\n")
+    }
+
     #[test]
     fn ui_examples() {
+        // DE1202 applies broadly to crate-public APIs. Exclude fixtures for
+        // unrelated lints so their expected output remains isolated.
         dylint_testing::ui::Test::examples(LIBRARY_NAME)
-            .dylint_toml(
-                r#"[cargo-gears-lints]
-de1202_excluded_crates = ["excluded-crate"]
-"#,
-            )
+            .dylint_toml(de1202_test_config())
             .run();
     }
 

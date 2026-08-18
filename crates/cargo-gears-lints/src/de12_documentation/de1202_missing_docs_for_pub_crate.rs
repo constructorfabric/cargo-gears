@@ -28,7 +28,6 @@ pub(crate) struct De1202MissingDocsForPubCrate {
     automatically_derived_depth: u32,
     in_body: Option<BodyId>,
     crate_public_modules: Vec<bool>,
-    item_requires_docs: Vec<bool>,
 }
 
 impl De1202MissingDocsForPubCrate {
@@ -42,7 +41,6 @@ impl De1202MissingDocsForPubCrate {
             automatically_derived_depth: 0,
             in_body: None,
             crate_public_modules: Vec::new(),
-            item_requires_docs: Vec::new(),
         }
     }
 
@@ -94,8 +92,8 @@ dylint_linting::impl_late_lint! {
     /// DE1202: Crate-public APIs must have documentation
     ///
     /// Complements rustc's `missing_docs` lint by requiring documentation for
-    /// APIs declared with `pub(crate)` or whose effective visibility is limited
-    /// to the crate. The built-in lint covers externally exported APIs.
+    /// APIs whose effective visibility is limited to the crate. The built-in
+    /// lint covers externally exported APIs.
     /// Existing crates can be temporarily excluded with
     /// `de1202_excluded_crates` in `dylint.toml`.
     #[doc = include_str!("de1202_missing_docs_for_pub_crate/README.md")]
@@ -128,8 +126,12 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
     }
 
     fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
-        let public_is_crate_public = self.crate_public_modules.last().copied().unwrap_or(false);
-        let requires_docs = declaration_requires_docs(cx, item.vis_span, public_is_crate_public);
+        let requires_docs = definition_requires_docs(
+            cx,
+            item.owner_id.def_id,
+            item.vis_span,
+            self.crate_public_modules.last().copied().unwrap_or(true),
+        );
 
         let kind = match item.kind {
             ItemKind::Impl(..) => {
@@ -164,16 +166,12 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
             self.check_definition(cx, item.hir_id(), item.span, kind, requires_docs);
         }
 
-        self.item_requires_docs.push(requires_docs);
         if matches!(item.kind, ItemKind::Mod(..)) {
             self.crate_public_modules.push(requires_docs);
         }
     }
 
     fn check_item_post(&mut self, _: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
-        self.item_requires_docs
-            .pop()
-            .expect("DE1202 item visibility stack should be balanced");
         if matches!(item.kind, ItemKind::Mod(..)) {
             self.crate_public_modules
                 .pop()
@@ -188,7 +186,7 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
                 item.hir_id(),
                 item.span,
                 "trait item",
-                self.item_requires_docs.last().copied().unwrap_or(false),
+                effective_visibility_requires_docs(cx, item.owner_id.def_id),
             );
         }
     }
@@ -207,15 +205,12 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
                 item.span,
                 "associated item",
                 item.vis_span().is_some_and(|visibility_span| {
-                    match declared_visibility(cx, visibility_span) {
-                        DeclaredVisibility::Crate => true,
-                        DeclaredVisibility::Public => {
-                            is_effectively_crate_public(cx, item.owner_id.def_id)
-                        }
-                        DeclaredVisibility::Inherited | DeclaredVisibility::OtherRestricted => {
-                            false
-                        }
-                    }
+                    definition_requires_docs(
+                        cx,
+                        item.owner_id.def_id,
+                        visibility_span,
+                        self.crate_public_modules.last().copied().unwrap_or(true),
+                    )
                 }),
             );
         }
@@ -225,14 +220,18 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
         let is_positional_enum_field = field.is_positional()
             && matches!(cx.tcx.parent_hir_node(field.hir_id), Node::Variant(..));
         if !is_positional_enum_field && !is_from_proc_macro(cx, field) {
-            let parent_requires_docs = self.item_requires_docs.last().copied().unwrap_or(false);
-            let requires_docs = if matches!(cx.tcx.parent_hir_node(field.hir_id), Node::Variant(..))
-            {
-                parent_requires_docs
-            } else {
-                declaration_requires_docs(cx, field.vis_span, parent_requires_docs)
-            };
-            self.check_definition(cx, field.hir_id, field.span, "field", requires_docs);
+            self.check_definition(
+                cx,
+                field.hir_id,
+                field.span,
+                "field",
+                definition_requires_docs(
+                    cx,
+                    field.def_id,
+                    field.vis_span,
+                    self.crate_public_modules.last().copied().unwrap_or(true),
+                ),
+            );
         }
     }
 
@@ -243,7 +242,7 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
                 variant.hir_id,
                 variant.span,
                 "enum variant",
-                self.item_requires_docs.last().copied().unwrap_or(false),
+                effective_visibility_requires_docs(cx, variant.def_id),
             );
         }
     }
@@ -254,10 +253,11 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
             item.hir_id(),
             item.span,
             "foreign item",
-            declaration_requires_docs(
+            definition_requires_docs(
                 cx,
+                item.owner_id.def_id,
                 item.vis_span,
-                self.crate_public_modules.last().copied().unwrap_or(false),
+                self.crate_public_modules.last().copied().unwrap_or(true),
             ),
         );
     }
@@ -278,32 +278,34 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
     }
 }
 
-fn declaration_requires_docs(
-    cx: &LateContext<'_>,
-    visibility_span: Span,
-    public_is_crate_public: bool,
-) -> bool {
-    match declared_visibility(cx, visibility_span) {
-        DeclaredVisibility::Crate => true,
-        DeclaredVisibility::Public => public_is_crate_public,
-        DeclaredVisibility::Inherited | DeclaredVisibility::OtherRestricted => false,
-    }
+fn effective_visibility_requires_docs(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
+    cx.effective_visibilities
+        .effective_vis(def_id)
+        .is_some_and(|effective_visibility| {
+            matches!(
+                effective_visibility.at_level(Level::Reexported),
+                Visibility::Restricted(module) if module.is_top_level_module()
+            )
+        })
 }
 
-fn is_effectively_crate_public(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
-    let Some(effective_visibility) = cx.effective_visibilities.effective_vis(def_id) else {
-        return false;
-    };
-
-    if effective_visibility.at_level(Level::Reexported).is_public() {
-        return false;
+fn definition_requires_docs(
+    cx: &LateContext<'_>,
+    def_id: LocalDefId,
+    visibility_span: Span,
+    containing_module_is_crate_public: bool,
+) -> bool {
+    if let Some(effective_visibility) = cx.effective_visibilities.effective_vis(def_id) {
+        return matches!(
+            effective_visibility.at_level(Level::Reexported),
+            Visibility::Restricted(module) if module.is_top_level_module()
+        );
     }
 
-    let visibility = effective_visibility.at_level(Level::Reachable);
-    visibility.is_public()
-        || matches!(
-            visibility,
-            Visibility::Restricted(module) if module.is_top_level_module()
+    containing_module_is_crate_public
+        && matches!(
+            declared_visibility(cx, visibility_span),
+            DeclaredVisibility::Crate
         )
 }
 

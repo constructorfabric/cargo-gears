@@ -77,8 +77,9 @@ unsafe extern "C" {
 // Should trigger DE1202 - missing docs when expanded docs are empty
 pub(crate) fn empty_expanded_docs() {}
 
+/// A crate-public implementation module.
 mod private_parent {
-    // Should trigger DE1202 - missing docs on explicit pub(crate) under a private module
+    // Should trigger DE1202 - missing docs on explicit pub(crate) under a crate-public module
     pub(crate) fn explicitly_crate_visible() {}
 }
 

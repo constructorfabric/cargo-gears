@@ -1,0 +1,84 @@
+error: crate-public function is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:75:5
+   |
+LL |     pub fn crate_function() {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+   = note: `#[deny(de1202_missing_docs_for_pub_crate)]` on by default
+
+error: crate-public struct is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:78:5
+   |
+LL | /     pub struct CrateStruct {
+LL | |         // Should trigger DE1202 - missing docs for crate-only reexported field
+LL | |         pub field: usize,
+LL | |     }
+   | |_____^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public field is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:80:9
+   |
+LL |         pub field: usize,
+   |         ^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public associated item is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:85:9
+   |
+LL |         pub fn method(&self) {}
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public enum is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:89:5
+   |
+LL | /     pub enum CrateEnum {
+LL | |         // Should trigger DE1202 - missing docs for crate-only reexported variant and field
+LL | |         Variant { field: usize },
+LL | |     }
+   | |_____^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public enum variant is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:91:9
+   |
+LL |         Variant { field: usize },
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public field is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:91:19
+   |
+LL |         Variant { field: usize },
+   |                   ^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public trait is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:95:5
+   |
+LL | /     pub trait CrateTrait {
+LL | |         // Should trigger DE1202 - missing docs for crate-only reexported trait item
+LL | |         fn method(&self);
+LL | |     }
+   | |_____^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public trait item is missing documentation (DE1202)
+  --> $DIR/effective_visibility.rs:97:9
+   |
+LL |         fn method(&self);
+   |         ^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: aborting due to 9 previous errors
+

@@ -56,10 +56,14 @@ pub struct MixedVisibility {
     pub(crate) internal: usize,
 }
 
-// Other restricted and private visibilities are outside DE1202's scope.
+// A private module declared at the crate root is accessible throughout the
+// crate, so it and its crate-visible members require documentation.
+/// Crate-visible implementation details.
 mod private_module {
+    /// Performs a parent-visible operation.
     pub(super) fn parent_visible() {}
 }
+
 fn private() {}
 
 #[doc(hidden)]
@@ -94,9 +98,6 @@ pub(crate) enum AllowedVariants {
     #[allow(de1202_missing_docs_for_pub_crate)]
     AllowedVariant,
 }
-
-#[expect(de1202_missing_docs_for_pub_crate)]
-pub(crate) fn expected_missing_docs() {}
 
 #[doc = include_str!("documented_and_out_of_scope.rs")]
 pub(crate) fn macro_documented() {}
