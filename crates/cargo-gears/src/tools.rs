@@ -51,17 +51,14 @@ fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
     let requirement = semver::VersionReq::parse(req_str)
         .map_err(|e| anyhow::anyhow!("invalid version requirement '{req_str}': {e}"))?;
 
-    let mut child = match std::process::Command::new(tool)
+    let Ok(mut child) = std::process::Command::new(tool)
         .arg("--version")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()
-    {
-        Ok(c) => c,
-        Err(_) => {
-            eprintln!("{tool} is not installed");
-            std::process::exit(1);
-        }
+    else {
+        eprintln!("{tool} is not installed");
+        std::process::exit(1);
     };
 
     let timeout = std::time::Duration::from_secs(30);
