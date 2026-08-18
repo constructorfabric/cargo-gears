@@ -65,8 +65,44 @@ fn private() {}
 #[doc(hidden)]
 pub(crate) fn deliberately_hidden() {}
 
+#[doc(hidden)]
+pub(crate) mod deliberately_hidden_module {
+    pub fn hidden_child() {}
+}
+
+#[allow(de1202_missing_docs_for_pub_crate)]
+pub(crate) fn locally_allowed() {}
+
+#[allow(de1202_missing_docs_for_pub_crate)]
+pub(crate) mod allowed_module {
+    pub fn allowed_child() {}
+}
+
+/// Exercises member-level lint allowances.
+pub(crate) struct AllowedMembers {
+    #[allow(de1202_missing_docs_for_pub_crate)]
+    pub(crate) allowed_field: usize,
+}
+
+impl AllowedMembers {
+    #[allow(de1202_missing_docs_for_pub_crate)]
+    pub(crate) fn allowed_method() {}
+}
+
+/// Exercises variant-level lint allowances.
+pub(crate) enum AllowedVariants {
+    #[allow(de1202_missing_docs_for_pub_crate)]
+    AllowedVariant,
+}
+
+#[expect(de1202_missing_docs_for_pub_crate)]
+pub(crate) fn expected_missing_docs() {}
+
 #[doc = include_str!("documented_and_out_of_scope.rs")]
 pub(crate) fn macro_documented() {}
+
+#[doc = concat!("Expanded", " documentation.")]
+pub(crate) fn nonempty_expanded_docs() {}
 
 macro_rules! generate_internal {
     () => {
@@ -75,3 +111,18 @@ macro_rules! generate_internal {
 }
 
 generate_internal!();
+
+pub struct PublicType;
+
+/// Implementation details used to exercise inherent-method visibility.
+pub(crate) mod implementation_details {
+    struct PrivateType;
+
+    impl PrivateType {
+        pub fn private_method() {}
+    }
+
+    impl crate::PublicType {
+        pub fn externally_visible_method() {}
+    }
+}

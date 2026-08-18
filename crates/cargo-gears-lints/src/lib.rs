@@ -136,12 +136,6 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     lint_store.register_pre_expansion_pass(|| {
         Box::new(de03_domain_layer::de0309_must_have_domain_model::De0309MustHaveDomainModel)
     });
-    lint_store.register_pre_expansion_pass(|| {
-        Box::new(
-            de12_documentation::de1202_missing_docs_for_pub_crate::De1202MissingDocsForPubCrate::new(),
-        )
-    });
-
     lint_store.register_early_pass(|| {
         Box::new(de02_api_layer::de0201_dtos_only_in_api_rest::De0201DtosOnlyInApiRest)
     });
@@ -174,6 +168,11 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
     lint_store.register_late_pass(|_| {
         Box::new(de12_documentation::de1201_docs_rs_all_features::De1201DocsRsAllFeatures::new())
     });
+    lint_store.register_late_pass(|_| {
+        Box::new(
+            de12_documentation::de1202_missing_docs_for_pub_crate::De1202MissingDocsForPubCrate::new(),
+        )
+    });
     lint_store
         .register_late_pass(|_| Box::new(de07_security::de0707_drop_zeroize::De0707DropZeroize));
     lint_store.register_late_pass(|_| {
@@ -203,6 +202,16 @@ de1202_excluded_crates = ["excluded-crate"]
 "#,
             )
             .run();
+    }
+
+    #[test]
+    fn de1202_skips_test_builds() {
+        dylint_testing::ui::Test::src_base(
+            LIBRARY_NAME,
+            "tests/ui/de1202_missing_docs_for_pub_crate/test_build",
+        )
+        .rustc_flags(["--test"])
+        .run();
     }
 
     /// Lint code, comment pattern, and UI test subdirectory for each lint that uses

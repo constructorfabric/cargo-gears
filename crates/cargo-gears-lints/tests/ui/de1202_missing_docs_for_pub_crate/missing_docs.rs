@@ -53,4 +53,33 @@ pub struct Exported {
     pub(crate) internal: usize,
 }
 
+#[rustfmt::skip]
+// Should trigger DE1202 - missing docs on pub(in crate) function
+pub(in crate) fn visible_in_crate() {}
+
+// Should trigger DE1202 - missing docs on pub(crate) type with public method
+pub(crate) struct CratePublicType;
+
+impl CratePublicType {
+    // Should trigger DE1202 - missing docs on effectively crate-public associated item
+    pub fn crate_public_method() {}
+}
+
+unsafe extern "C" {
+    // Should trigger DE1202 - missing docs on pub(crate) foreign function
+    pub(crate) fn crate_public_foreign_function();
+
+    // Should trigger DE1202 - missing docs on pub(crate) foreign static
+    pub(crate) static CRATE_PUBLIC_FOREIGN_STATIC: i32;
+}
+
+#[doc = concat!()]
+// Should trigger DE1202 - missing docs when expanded docs are empty
+pub(crate) fn empty_expanded_docs() {}
+
+mod private_parent {
+    // Should trigger DE1202 - missing docs on explicit pub(crate) under a private module
+    pub(crate) fn explicitly_crate_visible() {}
+}
+
 fn main() {}

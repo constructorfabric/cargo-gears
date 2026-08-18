@@ -2,9 +2,10 @@
 
 ## Rule
 
-APIs declared with `pub(crate)` must have non-empty Rust documentation.
-Together with rustc's `missing_docs` lint, this gives documentation coverage for
-both externally exported `pub` APIs and crate-public APIs.
+APIs declared with `pub(crate)`, or whose public visibility is effectively
+limited to a `pub(crate)` API, must have non-empty Rust documentation. Together
+with rustc's `missing_docs` lint, this gives documentation coverage for both
+externally exported `pub` APIs and crate-public APIs.
 
 DE1202 checks:
 
@@ -15,7 +16,9 @@ DE1202 checks:
 - `pub(crate)` fields, public fields of `pub(crate)` types, and all named
   enum-variant fields of a `pub(crate)` enum;
 - variants and associated items declared by a `pub(crate)` trait or enum;
-- `pub(crate)` associated items in inherent implementations.
+- `pub(crate)` associated items in inherent implementations and public
+  associated items whose self type is crate-public;
+- `pub(crate)` foreign functions and statics.
 
 ## Rationale
 
@@ -29,12 +32,13 @@ exported `pub` items.
 
 The lint skips:
 
-- items under `#[cfg(test)]` and functions marked `#[test]`;
-- files under `tests/` and companion `*_tests.rs` files;
-- macro-generated items;
+- test-target compilations, files under `tests/`, and companion `*_tests.rs`
+  files;
+- declarative- and procedural-macro-generated items and automatically derived
+  implementations;
 - associated items in trait implementations, whose documentation belongs on
   the trait declaration;
-- items explicitly hidden with `#[doc(hidden)]`;
+- items and subtrees hidden with `#[doc(hidden)]`;
 - crates temporarily listed in `de1202_excluded_crates`.
 
 `pub(in crate)` is treated as equivalent to `pub(crate)`. Other `pub(in ...)`
@@ -96,7 +100,9 @@ impl RetryPolicy {
 ## Guidance
 
 Add a non-empty `///` comment or `#[doc = ...]` attribute that describes the
-API's purpose and any important invariants. Do not duplicate implementation
+API's purpose and any important invariants. Documentation expressions such as
+`include_str!` and `concat!` are checked after expansion, so an expression that
+expands to an empty string does not count. Do not duplicate implementation
 details that are already obvious from the code.
 
 For complete coverage, configure the target workspace with:

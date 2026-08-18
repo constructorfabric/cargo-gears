@@ -1,13 +1,18 @@
-extern crate rustc_ast;
+extern crate rustc_hir;
+extern crate rustc_middle;
 extern crate rustc_span;
 
-use rustc_ast::{
-    AssocItemKind, Attribute, FieldDef, Item, ItemKind, Visibility, VisibilityKind, visit,
-    visit::Visitor,
+use clippy_utils::{is_doc_hidden, is_from_proc_macro};
+use rustc_hir::def_id::{LOCAL_CRATE, LocalDefId};
+use rustc_hir::{
+    Attribute, Body, BodyId, FieldDef, ForeignItem, HirId, ImplItem, Item, ItemKind, Node,
+    TraitItem, Variant,
 };
-use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
-use rustc_span::{Span, symbol::kw, symbol::sym};
-use std::{collections::HashSet, path::Path};
+use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_middle::middle::privacy::Level;
+use rustc_middle::ty::Visibility;
+use rustc_span::Span;
+use std::collections::HashSet;
 
 #[derive(Default, serde::Deserialize)]
 struct Config {
@@ -17,6 +22,13 @@ struct Config {
 
 pub(crate) struct De1202MissingDocsForPubCrate {
     excluded_crates: HashSet<String>,
+    skip_crate: bool,
+    attr_depth: u32,
+    doc_hidden_depth: u32,
+    automatically_derived_depth: u32,
+    in_body: Option<BodyId>,
+    crate_public_modules: Vec<bool>,
+    item_requires_docs: Vec<bool>,
 }
 
 impl De1202MissingDocsForPubCrate {
@@ -24,286 +36,337 @@ impl De1202MissingDocsForPubCrate {
         let config: Config = dylint_linting::config_or_default(crate::LIBRARY_NAME);
         Self {
             excluded_crates: normalize_excluded_crates(config.de1202_excluded_crates),
+            skip_crate: false,
+            attr_depth: 0,
+            doc_hidden_depth: 0,
+            automatically_derived_depth: 0,
+            in_body: None,
+            crate_public_modules: Vec::new(),
+            item_requires_docs: Vec::new(),
         }
     }
 
-    fn crate_is_excluded(&self, cx: &EarlyContext<'_>, krate: &rustc_ast::Crate) -> bool {
-        let rustc_crate_name = cx
-            .sess()
-            .opts
-            .crate_name
-            .clone()
-            .or_else(|| source_crate_name(cx, krate));
-        let rustc_crate_is_excluded = rustc_crate_name
-            .as_deref()
-            .is_some_and(|crate_name| is_name_excluded(&self.excluded_crates, crate_name));
+    fn crate_is_excluded(&self, cx: &LateContext<'_>) -> bool {
+        let rustc_crate_name = cx.tcx.crate_name(LOCAL_CRATE);
+        let rustc_crate_is_excluded =
+            is_name_excluded(&self.excluded_crates, rustc_crate_name.as_str());
         let cargo_package_is_excluded = std::env::var("CARGO_PKG_NAME")
             .ok()
             .is_some_and(|package_name| is_name_excluded(&self.excluded_crates, &package_name));
 
         rustc_crate_is_excluded || cargo_package_is_excluded
     }
+
+    fn is_in_exempt_scope(&self) -> bool {
+        self.skip_crate
+            || self.doc_hidden_depth != 0
+            || self.automatically_derived_depth != 0
+            || self.in_body.is_some()
+    }
+
+    fn check_definition(
+        &self,
+        cx: &LateContext<'_>,
+        hir_id: HirId,
+        span: Span,
+        kind: &str,
+        requires_docs: bool,
+    ) {
+        if self.is_in_exempt_scope()
+            || span.from_expansion()
+            || is_test_path(cx, span)
+            || !requires_docs
+            || has_nonempty_docs(cx.tcx.hir_attrs(hir_id))
+        {
+            return;
+        }
+
+        cx.span_lint(DE1202_MISSING_DOCS_FOR_PUB_CRATE, span, |diag| {
+            diag.primary_message(format!(
+                "crate-public {kind} is missing documentation (DE1202)"
+            ));
+            diag.help("add a non-empty `///` doc comment or `#[doc = ...]` attribute");
+        });
+    }
 }
 
-dylint_linting::impl_pre_expansion_lint! {
+dylint_linting::impl_late_lint! {
     /// DE1202: Crate-public APIs must have documentation
     ///
     /// Complements rustc's `missing_docs` lint by requiring documentation for
-    /// APIs declared with `pub(crate)`. The built-in lint covers externally
-    /// exported `pub` APIs but intentionally ignores crate-public APIs.
+    /// APIs declared with `pub(crate)` or whose effective visibility is limited
+    /// to the crate. The built-in lint covers externally exported APIs.
     /// Existing crates can be temporarily excluded with
     /// `de1202_excluded_crates` in `dylint.toml`.
     #[doc = include_str!("de1202_missing_docs_for_pub_crate/README.md")]
     pub DE1202_MISSING_DOCS_FOR_PUB_CRATE,
     Deny,
-    "pub(crate) APIs must have documentation (DE1202)",
+    "crate-public APIs must have documentation (DE1202)",
     De1202MissingDocsForPubCrate::new()
 }
 
-impl EarlyLintPass for De1202MissingDocsForPubCrate {
-    fn check_crate(&mut self, cx: &EarlyContext<'_>, krate: &rustc_ast::Crate) {
-        if self.crate_is_excluded(cx, krate) {
-            return;
-        }
-
-        MissingDocsVisitor {
-            cx,
-            in_test_scope: false,
-            in_crate_public_module: false,
-        }
-        .visit_crate(krate);
-    }
-}
-
-struct MissingDocsVisitor<'a, 'cx> {
-    cx: &'a EarlyContext<'cx>,
-    in_test_scope: bool,
-    in_crate_public_module: bool,
-}
-
-impl<'ast> Visitor<'ast> for MissingDocsVisitor<'_, '_> {
-    fn visit_item(&mut self, item: &'ast Item) {
-        let previous_test_scope = self.in_test_scope;
-        let previous_crate_public_module = self.in_crate_public_module;
-        self.in_test_scope =
-            previous_test_scope || is_test_item(&item.attrs) || is_test_path(self.cx, item.span);
-
-        let item_is_crate_public = is_pub_crate(&item.vis)
-            || (previous_crate_public_module && matches!(item.vis.kind, VisibilityKind::Public));
-        if !self.in_test_scope && !item.span.from_expansion() {
-            self.check_item(item, item_is_crate_public);
-        }
-
-        if matches!(item.kind, ItemKind::Mod(..)) {
-            self.in_crate_public_module = item_is_crate_public;
-        }
-        visit::walk_item(self, item);
-        self.in_crate_public_module = previous_crate_public_module;
-        self.in_test_scope = previous_test_scope;
-    }
-}
-
-impl MissingDocsVisitor<'_, '_> {
-    fn check_item(&self, item: &Item, item_is_crate_public: bool) {
-        if item_is_crate_public && item_kind_requires_docs(&item.kind) {
-            check_docs(self.cx, &item.attrs, item.span, item_kind_name(&item.kind));
-        }
-
-        if is_doc_hidden(&item.attrs) {
-            return;
-        }
-
-        match &item.kind {
-            ItemKind::Struct(_, _, data) | ItemKind::Union(_, _, data) => {
-                for field in data.fields() {
-                    if is_pub_crate(&field.vis)
-                        || (item_is_crate_public
-                            && matches!(field.vis.kind, VisibilityKind::Public))
-                    {
-                        check_field_docs(self.cx, field);
-                    }
-                }
-            }
-            ItemKind::Enum(_, _, definition) if item_is_crate_public => {
-                for variant in &definition.variants {
-                    check_docs(self.cx, &variant.attrs, variant.span, "enum variant");
-
-                    for field in variant.data.fields() {
-                        if field.ident.is_some() {
-                            check_field_docs(self.cx, field);
-                        }
-                    }
-                }
-            }
-            ItemKind::Trait(trait_definition) if item_is_crate_public => {
-                for associated_item in &trait_definition.items {
-                    if associated_item_kind_requires_docs(&associated_item.kind) {
-                        check_docs(
-                            self.cx,
-                            &associated_item.attrs,
-                            associated_item.span,
-                            "trait item",
-                        );
-                    }
-                }
-            }
-            _ => {}
-        }
-
-        self.check_crate_public_impl_items(item);
+impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
+    fn check_crate(&mut self, cx: &LateContext<'tcx>) {
+        self.skip_crate = cx.tcx.sess.opts.test || self.crate_is_excluded(cx);
     }
 
-    fn check_crate_public_impl_items(&self, item: &Item) {
-        let ItemKind::Impl(implementation) = &item.kind else {
-            return;
+    fn check_attributes(&mut self, _: &LateContext<'tcx>, attrs: &'tcx [Attribute]) {
+        self.attr_depth += 1;
+        if self.doc_hidden_depth == 0 && is_doc_hidden(attrs) {
+            self.doc_hidden_depth = self.attr_depth;
+        }
+    }
+
+    fn check_attributes_post(&mut self, _: &LateContext<'tcx>, _: &'tcx [Attribute]) {
+        self.attr_depth -= 1;
+        if self.attr_depth < self.doc_hidden_depth {
+            self.doc_hidden_depth = 0;
+        }
+        if self.attr_depth < self.automatically_derived_depth {
+            self.automatically_derived_depth = 0;
+        }
+    }
+
+    fn check_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
+        let public_is_crate_public = self.crate_public_modules.last().copied().unwrap_or(false);
+        let requires_docs = declaration_requires_docs(cx, item.vis_span, public_is_crate_public);
+
+        let kind = match item.kind {
+            ItemKind::Impl(..) => {
+                if cx
+                    .tcx
+                    .is_automatically_derived(item.owner_id.def_id.to_def_id())
+                {
+                    self.automatically_derived_depth = self.attr_depth;
+                }
+                None
+            }
+            ItemKind::Const(..) => Some("constant"),
+            ItemKind::Enum(..) => Some("enum"),
+            ItemKind::Fn { .. } => Some("function"),
+            ItemKind::Macro(..) => Some("macro"),
+            ItemKind::Mod(..) => Some("module"),
+            ItemKind::Static(..) => Some("static"),
+            ItemKind::Struct(..) => Some("struct"),
+            ItemKind::Trait(..) => Some("trait"),
+            ItemKind::TraitAlias(..) => Some("trait alias"),
+            ItemKind::TyAlias(..) => Some("type alias"),
+            ItemKind::Union(..) => Some("union"),
+            ItemKind::ExternCrate(..)
+            | ItemKind::ForeignMod { .. }
+            | ItemKind::GlobalAsm { .. }
+            | ItemKind::Use(..) => None,
         };
 
-        // Trait implementations inherit documentation from the trait declaration.
-        if implementation.of_trait.is_some() {
-            return;
+        if let Some(kind) = kind
+            && !is_from_proc_macro(cx, item)
+        {
+            self.check_definition(cx, item.hir_id(), item.span, kind, requires_docs);
         }
 
-        for associated_item in &implementation.items {
-            if is_pub_crate(&associated_item.vis)
-                || (self.in_crate_public_module
-                    && matches!(associated_item.vis.kind, VisibilityKind::Public))
+        self.item_requires_docs.push(requires_docs);
+        if matches!(item.kind, ItemKind::Mod(..)) {
+            self.crate_public_modules.push(requires_docs);
+        }
+    }
+
+    fn check_item_post(&mut self, _: &LateContext<'tcx>, item: &'tcx Item<'tcx>) {
+        self.item_requires_docs
+            .pop()
+            .expect("DE1202 item visibility stack should be balanced");
+        if matches!(item.kind, ItemKind::Mod(..)) {
+            self.crate_public_modules
+                .pop()
+                .expect("DE1202 module visibility stack should be balanced");
+        }
+    }
+
+    fn check_trait_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx TraitItem<'tcx>) {
+        if !is_from_proc_macro(cx, item) {
+            self.check_definition(
+                cx,
+                item.hir_id(),
+                item.span,
+                "trait item",
+                self.item_requires_docs.last().copied().unwrap_or(false),
+            );
+        }
+    }
+
+    fn check_impl_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ImplItem<'tcx>) {
+        let is_inherent_item = matches!(
+            cx.tcx.parent_hir_node(item.hir_id()),
+            Node::Item(parent)
+                if matches!(parent.kind, ItemKind::Impl(implementation) if implementation.of_trait.is_none())
+        );
+
+        if is_inherent_item && !is_from_proc_macro(cx, item) {
+            self.check_definition(
+                cx,
+                item.hir_id(),
+                item.span,
+                "associated item",
+                item.vis_span().is_some_and(|visibility_span| {
+                    match declared_visibility(cx, visibility_span) {
+                        DeclaredVisibility::Crate => true,
+                        DeclaredVisibility::Public => {
+                            is_effectively_crate_public(cx, item.owner_id.def_id)
+                        }
+                        DeclaredVisibility::Inherited | DeclaredVisibility::OtherRestricted => {
+                            false
+                        }
+                    }
+                }),
+            );
+        }
+    }
+
+    fn check_field_def(&mut self, cx: &LateContext<'tcx>, field: &'tcx FieldDef<'tcx>) {
+        let is_positional_enum_field = field.is_positional()
+            && matches!(cx.tcx.parent_hir_node(field.hir_id), Node::Variant(..));
+        if !is_positional_enum_field && !is_from_proc_macro(cx, field) {
+            let parent_requires_docs = self.item_requires_docs.last().copied().unwrap_or(false);
+            let requires_docs = if matches!(cx.tcx.parent_hir_node(field.hir_id), Node::Variant(..))
             {
-                check_docs(
-                    self.cx,
-                    &associated_item.attrs,
-                    associated_item.span,
-                    "associated item",
-                );
-            }
+                parent_requires_docs
+            } else {
+                declaration_requires_docs(cx, field.vis_span, parent_requires_docs)
+            };
+            self.check_definition(cx, field.hir_id, field.span, "field", requires_docs);
+        }
+    }
+
+    fn check_variant(&mut self, cx: &LateContext<'tcx>, variant: &'tcx Variant<'tcx>) {
+        if !is_from_proc_macro(cx, variant) {
+            self.check_definition(
+                cx,
+                variant.hir_id,
+                variant.span,
+                "enum variant",
+                self.item_requires_docs.last().copied().unwrap_or(false),
+            );
+        }
+    }
+
+    fn check_foreign_item(&mut self, cx: &LateContext<'tcx>, item: &'tcx ForeignItem<'tcx>) {
+        self.check_definition(
+            cx,
+            item.hir_id(),
+            item.span,
+            "foreign item",
+            declaration_requires_docs(
+                cx,
+                item.vis_span,
+                self.crate_public_modules.last().copied().unwrap_or(false),
+            ),
+        );
+    }
+
+    fn check_body(&mut self, _: &LateContext<'tcx>, body: &Body<'tcx>) {
+        if self.doc_hidden_depth == 0
+            && self.automatically_derived_depth == 0
+            && self.in_body.is_none()
+        {
+            self.in_body = Some(body.id());
+        }
+    }
+
+    fn check_body_post(&mut self, _: &LateContext<'tcx>, body: &Body<'tcx>) {
+        if self.in_body == Some(body.id()) {
+            self.in_body = None;
         }
     }
 }
 
-fn associated_item_kind_requires_docs(kind: &AssocItemKind) -> bool {
-    matches!(
-        kind,
-        AssocItemKind::Const(..) | AssocItemKind::Fn(..) | AssocItemKind::Type(..)
-    )
-}
-
-fn item_kind_requires_docs(kind: &ItemKind) -> bool {
-    matches!(
-        kind,
-        ItemKind::Const(..)
-            | ItemKind::Enum(..)
-            | ItemKind::Fn(..)
-            | ItemKind::MacroDef(..)
-            | ItemKind::Mod(..)
-            | ItemKind::Static(..)
-            | ItemKind::Struct(..)
-            | ItemKind::Trait(..)
-            | ItemKind::TraitAlias(..)
-            | ItemKind::TyAlias(..)
-            | ItemKind::Union(..)
-    )
-}
-
-fn item_kind_name(kind: &ItemKind) -> &'static str {
-    match kind {
-        ItemKind::Const(..) => "constant",
-        ItemKind::Enum(..) => "enum",
-        ItemKind::Fn(..) => "function",
-        ItemKind::MacroDef(..) => "macro",
-        ItemKind::Mod(..) => "module",
-        ItemKind::Static(..) => "static",
-        ItemKind::Struct(..) => "struct",
-        ItemKind::Trait(..) => "trait",
-        ItemKind::TraitAlias(..) => "trait alias",
-        ItemKind::TyAlias(..) => "type alias",
-        ItemKind::Union(..) => "union",
-        _ => "item",
+fn declaration_requires_docs(
+    cx: &LateContext<'_>,
+    visibility_span: Span,
+    public_is_crate_public: bool,
+) -> bool {
+    match declared_visibility(cx, visibility_span) {
+        DeclaredVisibility::Crate => true,
+        DeclaredVisibility::Public => public_is_crate_public,
+        DeclaredVisibility::Inherited | DeclaredVisibility::OtherRestricted => false,
     }
 }
 
-fn source_crate_name(cx: &EarlyContext<'_>, krate: &rustc_ast::Crate) -> Option<String> {
-    let first_item = krate.items.first()?;
-    let filename = crate::lint_utils::filename_str(cx.sess().source_map(), first_item.span)?;
-    Path::new(&filename)
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-}
-
-fn normalize_crate_name(crate_name: &str) -> String {
-    crate_name.trim().replace('-', "_")
-}
-
-fn normalize_excluded_crates(crate_names: Vec<String>) -> HashSet<String> {
-    crate_names
-        .into_iter()
-        .map(|crate_name| normalize_crate_name(&crate_name))
-        .filter(|crate_name| !crate_name.is_empty())
-        .collect()
-}
-
-fn is_name_excluded(excluded_crates: &HashSet<String>, crate_name: &str) -> bool {
-    excluded_crates.contains(&normalize_crate_name(crate_name))
-}
-
-fn is_pub_crate(visibility: &Visibility) -> bool {
-    let VisibilityKind::Restricted { path, .. } = &visibility.kind else {
+fn is_effectively_crate_public(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
+    let Some(effective_visibility) = cx.effective_visibilities.effective_vis(def_id) else {
         return false;
     };
 
-    path.segments.len() == 1 && path.segments[0].ident.name == kw::Crate
-}
-
-fn check_field_docs(cx: &EarlyContext<'_>, field: &FieldDef) {
-    check_docs(cx, &field.attrs, field.span, "field");
-}
-
-fn check_docs(cx: &EarlyContext<'_>, attrs: &[Attribute], span: Span, kind: &str) {
-    if has_nonempty_docs(attrs) || is_doc_hidden(attrs) {
-        return;
+    if effective_visibility.at_level(Level::Reexported).is_public() {
+        return false;
     }
 
-    cx.span_lint(DE1202_MISSING_DOCS_FOR_PUB_CRATE, span, |diag| {
-        diag.primary_message(format!(
-            "crate-public {kind} is missing documentation (DE1202)"
-        ));
-        diag.help("add a non-empty `///` doc comment or `#[doc = ...]` attribute");
-    });
+    let visibility = effective_visibility.at_level(Level::Reachable);
+    visibility.is_public()
+        || matches!(
+            visibility,
+            Visibility::Restricted(module) if module.is_top_level_module()
+        )
+}
+
+#[derive(Clone, Copy)]
+enum DeclaredVisibility {
+    Inherited,
+    Public,
+    Crate,
+    OtherRestricted,
+}
+
+fn declared_visibility(cx: &LateContext<'_>, span: Span) -> DeclaredVisibility {
+    let Ok(source) = cx.sess().source_map().span_to_snippet(span) else {
+        return DeclaredVisibility::Inherited;
+    };
+    let compact = compact_visibility_source(&source);
+
+    match compact.as_str() {
+        "pub" => DeclaredVisibility::Public,
+        "pub(crate)" | "pub(incrate)" => DeclaredVisibility::Crate,
+        "" => DeclaredVisibility::Inherited,
+        _ => DeclaredVisibility::OtherRestricted,
+    }
+}
+
+fn compact_visibility_source(source: &str) -> String {
+    let mut result = String::new();
+    let mut characters = source.chars().peekable();
+    let mut block_comment_depth = 0_u32;
+
+    while let Some(character) = characters.next() {
+        if block_comment_depth != 0 {
+            if character == '/' && characters.peek() == Some(&'*') {
+                characters.next();
+                block_comment_depth += 1;
+            } else if character == '*' && characters.peek() == Some(&'/') {
+                characters.next();
+                block_comment_depth -= 1;
+            }
+            continue;
+        }
+
+        if character == '/' && characters.peek() == Some(&'*') {
+            characters.next();
+            block_comment_depth = 1;
+        } else if character == '/' && characters.peek() == Some(&'/') {
+            break;
+        } else if !character.is_whitespace() {
+            result.push(character);
+        }
+    }
+
+    result
 }
 
 fn has_nonempty_docs(attrs: &[Attribute]) -> bool {
     attrs.iter().any(|attr| {
-        if let Some(doc) = attr.doc_str() {
-            return !doc.as_str().trim().is_empty();
-        }
-
-        // At pre-expansion time, macro-backed documentation such as
-        // `#[doc = include_str!("README.md")]` is not yet a string literal.
-        attr.has_name(sym::doc) && attr.meta_item_list().is_none()
+        attr.doc_str()
+            .is_some_and(|docs| !docs.as_str().trim().is_empty())
     })
 }
 
-fn is_doc_hidden(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        attr.has_name(sym::doc)
-            && attr
-                .meta_item_list()
-                .is_some_and(|items| items.iter().any(|item| item.has_name(sym::hidden)))
-    })
-}
-
-fn is_test_item(attrs: &[Attribute]) -> bool {
-    attrs.iter().any(|attr| {
-        if attr.has_name(sym::test) {
-            return true;
-        }
-
-        attr.has_name(sym::cfg)
-            && attr
-                .meta_item_list()
-                .is_some_and(|items| items.iter().any(|item| item.has_name(sym::test)))
-    })
-}
-
-fn is_test_path(cx: &EarlyContext<'_>, span: Span) -> bool {
+fn is_test_path(cx: &LateContext<'_>, span: Span) -> bool {
     let Some(path) = crate::lint_utils::filename_str(cx.sess().source_map(), span) else {
         return false;
     };
@@ -327,9 +390,25 @@ fn simulated_path(path: &str) -> Option<String> {
     })
 }
 
+fn normalize_crate_name(crate_name: &str) -> String {
+    crate_name.trim().replace('-', "_")
+}
+
+fn normalize_excluded_crates(crate_names: Vec<String>) -> HashSet<String> {
+    crate_names
+        .into_iter()
+        .map(|crate_name| normalize_crate_name(&crate_name))
+        .filter(|crate_name| !crate_name.is_empty())
+        .collect()
+}
+
+fn is_name_excluded(excluded_crates: &HashSet<String>, crate_name: &str) -> bool {
+    excluded_crates.contains(&normalize_crate_name(crate_name))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Config, is_name_excluded, normalize_excluded_crates};
+    use super::{Config, compact_visibility_source, is_name_excluded, normalize_excluded_crates};
 
     #[test]
     fn excluded_crate_matches_exact_name() {
@@ -360,6 +439,19 @@ mod tests {
         let config = Config::default();
         let excluded = normalize_excluded_crates(config.de1202_excluded_crates);
         assert!(!is_name_excluded(&excluded, "legacy_crate"));
+    }
+
+    #[test]
+    fn visibility_source_normalization_ignores_whitespace_and_comments() {
+        assert_eq!(
+            compact_visibility_source("pub ( in crate )"),
+            "pub(incrate)"
+        );
+        assert_eq!(
+            compact_visibility_source("pub(in /* nested /* comment */ */ crate)"),
+            "pub(incrate)"
+        );
+        assert_eq!(compact_visibility_source("pub(super)"), "pub(super)");
     }
 
     #[test]
