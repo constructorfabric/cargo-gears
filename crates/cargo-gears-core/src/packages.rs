@@ -31,19 +31,18 @@ pub fn all_workspace_packages(workspace_root: &Path) -> Result<Vec<String>> {
 pub fn discover_packages(workspace_root: &Path, scope_dirs: &[&Path]) -> Result<Vec<String>> {
     let graph = build_graph(workspace_root)?;
 
-    let scopes: Vec<std::path::PathBuf> = scope_dirs
-        .iter()
-        .filter_map(|d| d.canonicalize().ok())
-        .collect();
-
-    if scopes.is_empty() {
+    let mut invalid_dirs = Vec::new();
+    let mut scopes = Vec::new();
+    for d in scope_dirs {
+        match d.canonicalize() {
+            Ok(canonical) => scopes.push(canonical),
+            Err(_) => invalid_dirs.push(d.display().to_string()),
+        }
+    }
+    if !invalid_dirs.is_empty() {
         anyhow::bail!(
-            "none of the scope directories exist: {}",
-            scope_dirs
-                .iter()
-                .map(|d| d.display().to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
+            "scope directories do not exist: {}",
+            invalid_dirs.join(", ")
         );
     }
 
