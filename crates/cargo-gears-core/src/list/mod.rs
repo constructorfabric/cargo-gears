@@ -596,4 +596,195 @@ mod tests {
         assert_eq!(echo.metadata.package.as_deref(), Some("crate-echo"));
         assert_eq!(echo.metadata.version.as_deref(), Some("0.1.0"));
     }
+
+    #[test]
+    fn filter_narrows_local_gears_by_regex() {
+        let temp_dir = scaffold_workspace(&[
+            ("crate-api-gw", "api-gw"),
+            ("crate-api-handler", "api-handler"),
+            ("crate-db-worker", "db-worker"),
+        ]);
+
+        let args = GearsParams {
+            path: Some(temp_dir.path().to_path_buf()),
+            verbose: false,
+            output: GearsOutput::local(),
+            registry: Registry::CratesIo,
+            format: OutputFormat::Json,
+            filter: Some("api-.*".to_owned()),
+            scope_dirs: Vec::new(),
+            include_rdeps: false,
+        };
+
+        args.run()
+            .expect("ls gears --local --filter 'api-.*' should succeed");
+    }
+
+    #[test]
+    fn filter_narrows_system_gears_by_regex() {
+        let args = GearsParams {
+            path: None,
+            verbose: false,
+            output: GearsOutput::system(),
+            registry: Registry::CratesIo,
+            format: OutputFormat::Json,
+            filter: Some("^credstore$".to_owned()),
+            scope_dirs: Vec::new(),
+            include_rdeps: false,
+        };
+
+        args.run()
+            .expect("ls gears --system --filter '^credstore$' should succeed");
+    }
+
+    #[test]
+    fn features_lists_sorted_feature_names() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [package]
+            name = "test-crate"
+            version = "0.1.0"
+            edition = "2024"
+
+            [features]
+            default = ["json"]
+            json = []
+            grpc = []
+            metrics = []
+            "#,
+        );
+
+        let args = FeaturesParams {
+            manifest: temp_dir.path().join("Cargo.toml"),
+            format: OutputFormat::List,
+        };
+
+        args.run().expect("ls features should succeed");
+    }
+
+    #[test]
+    fn features_handles_no_features_section() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [package]
+            name = "bare-crate"
+            version = "0.1.0"
+            edition = "2024"
+            "#,
+        );
+
+        let args = FeaturesParams {
+            manifest: temp_dir.path().join("Cargo.toml"),
+            format: OutputFormat::List,
+        };
+
+        args.run()
+            .expect("ls features with no [features] section should succeed");
+    }
+
+    #[test]
+    fn deps_lists_all_dependencies() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [package]
+            name = "test-crate"
+            version = "0.1.0"
+            edition = "2024"
+
+            [dependencies]
+            serde = "1"
+            tokio = { version = "1", optional = true }
+            anyhow = "1"
+            "#,
+        );
+
+        let args = DepsParams {
+            manifest: temp_dir.path().join("Cargo.toml"),
+            non_optional: false,
+            format: OutputFormat::List,
+        };
+
+        args.run().expect("ls deps should succeed");
+    }
+
+    #[test]
+    fn deps_non_optional_excludes_optional() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [package]
+            name = "test-crate"
+            version = "0.1.0"
+            edition = "2024"
+
+            [dependencies]
+            serde = "1"
+            tokio = { version = "1", optional = true }
+            "#,
+        );
+
+        let args = DepsParams {
+            manifest: temp_dir.path().join("Cargo.toml"),
+            non_optional: true,
+            format: OutputFormat::List,
+        };
+
+        args.run().expect("ls deps --non-optional should succeed");
+    }
+
+    #[test]
+    fn deps_uses_package_field_when_present() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [package]
+            name = "test-crate"
+            version = "0.1.0"
+            edition = "2024"
+
+            [dependencies]
+            toolkit = { version = "0.1", package = "cf-gears-toolkit" }
+            "#,
+        );
+
+        let args = DepsParams {
+            manifest: temp_dir.path().join("Cargo.toml"),
+            non_optional: false,
+            format: OutputFormat::List,
+        };
+
+        args.run()
+            .expect("ls deps with package field should succeed");
+    }
+
+    #[test]
+    fn deps_handles_no_dependencies_section() {
+        let temp_dir = TempDir::new().expect("failed to create temp dir");
+        temp_dir.write(
+            "Cargo.toml",
+            r#"
+            [package]
+            name = "bare-crate"
+            version = "0.1.0"
+            edition = "2024"
+            "#,
+        );
+
+        let args = DepsParams {
+            manifest: temp_dir.path().join("Cargo.toml"),
+            non_optional: false,
+            format: OutputFormat::List,
+        };
+
+        args.run()
+            .expect("ls deps with no [dependencies] section should succeed");
+    }
 }

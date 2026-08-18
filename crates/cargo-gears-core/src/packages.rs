@@ -211,4 +211,105 @@ members = ["leaf", "mid", "top", "other"]
             .expect_err("unknown package should error");
         assert!(err.to_string().contains("nope"), "error was: {err}");
     }
+
+    #[test]
+    fn all_workspace_packages_returns_sorted_names() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        let packages = super::all_workspace_packages(temp.path()).expect("all_workspace_packages");
+        assert_eq!(packages, vec!["leaf", "mid", "other", "top"]);
+    }
+
+    fn write_named_member(root: &Path, dir: &str, name: &str, deps: &str) {
+        let member_dir = root.join(dir);
+        fs::create_dir_all(member_dir.join("src")).expect("create member dir");
+        fs::write(
+            member_dir.join("Cargo.toml"),
+            format!(
+                "[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n{deps}"
+            ),
+        )
+        .expect("write member manifest");
+        fs::write(member_dir.join("src/lib.rs"), "").expect("write member lib");
+    }
+
+    #[test]
+    fn discover_packages_scopes_to_directory() {
+        let temp = TempDir::new().expect("temp dir");
+        fs::write(
+            temp.path().join("Cargo.toml"),
+            r#"[workspace]
+resolver = "2"
+members = ["gears/alpha", "gears/beta", "libs/gamma"]
+"#,
+        )
+        .expect("write root manifest");
+
+        write_named_member(temp.path(), "gears/alpha", "alpha", "");
+        write_named_member(temp.path(), "gears/beta", "beta", "");
+        write_named_member(temp.path(), "libs/gamma", "gamma", "");
+
+        let gears_dir = temp.path().join("gears");
+        let packages =
+            super::discover_packages(temp.path(), &[gears_dir.as_path()]).expect("discover");
+        assert_eq!(packages, vec!["alpha", "beta"]);
+    }
+
+    #[test]
+    fn packages_filter_with_include_rdeps_expands_without_scope_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        // Filter to "leaf" only, then expand with rdeps — should get leaf + mid + top
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            scope_dirs: Vec::new(),
+            filter: Some("^leaf$".to_owned()),
+            include_rdeps: true,
+            format: crate::common::OutputFormat::List,
+        };
+
+        params
+            .run()
+            .expect("ls packages --filter '^leaf$' --include-rdeps should succeed");
+    }
+
+    #[test]
+    fn packages_filter_without_rdeps_returns_only_matched() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        // Filter to "leaf" only, no rdeps — should get just leaf
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            scope_dirs: Vec::new(),
+            filter: Some("^leaf$".to_owned()),
+            include_rdeps: false,
+            format: crate::common::OutputFormat::List,
+        };
+
+        params
+            .run()
+            .expect("ls packages --filter '^leaf$' should succeed");
+    }
+
+    #[test]
+    fn packages_filter_no_match_skips_rdeps() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        // Filter matches nothing — rdeps should not error on empty input
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            scope_dirs: Vec::new(),
+            filter: Some("^nonexistent$".to_owned()),
+            include_rdeps: true,
+            format: crate::common::OutputFormat::List,
+        };
+
+        params
+            .run()
+            .expect("ls packages with no filter match + rdeps should succeed");
+    }
 }
