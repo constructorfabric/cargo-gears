@@ -31,14 +31,23 @@ pub fn get_module_name_from_crate(
         cmd.current_dir(dir);
     }
     let res = cmd.exec().context("failed to run cargo metadata")?;
-    let mut members = HashMap::new();
+    let mut members: HashMap<String, ConfigModule> = HashMap::new();
     for pkg in res.packages {
         for t in &pkg.targets {
             if is_library_target(t) && !t.name.ends_with("sdk") {
                 match super::module_rs::retrieve_gears_module(&pkg, t) {
-                    Ok(module) => {
-                        members.insert(module.0, module.1);
+                    Ok((name, module)) => {
+                        if let Some(existing) = members.get(&name) {
+                            let existing_package =
+                                existing.metadata.package.as_deref().unwrap_or("<unknown>");
+                            anyhow::bail!(
+                                "duplicate gear name `{name}` declared by packages `{existing_package}` and `{}`",
+                                pkg.name
+                            );
+                        }
+                        members.insert(name, module);
                     }
+                    Err(e) if e.is::<NotFoundError>() => {}
                     Err(e) => {
                         eprintln!("{e}");
                     }

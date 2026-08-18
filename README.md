@@ -93,7 +93,7 @@ cargo gears config mod add background-worker -c /tmp/cf-demo/config/app1-dev.yml
 
 ### Manifest inspection
 
-- `ls modules` inspects available system and workspace modules
+- `ls gears` inspects available system and workspace gears
 - `manifest validate` validates `Gears.toml` and the selected app/environment inputs
 - `manifest ls` lists the manifest app/environment entries and their resolved config paths
 
