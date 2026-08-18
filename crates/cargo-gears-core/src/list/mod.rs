@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use anyhow::Context;
 mod gears;
 pub mod templates;
@@ -11,6 +12,7 @@ pub enum ListCommand {
     Templates(TemplatesParams),
     Features(FeaturesParams),
     Deps(DepsParams),
+    Packages(PackagesParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -25,6 +27,7 @@ impl ListParams {
             ListCommand::Templates(args) => args.run(),
             ListCommand::Features(args) => args.run(),
             ListCommand::Deps(args) => args.run(),
+            ListCommand::Packages(args) => args.run(),
         }
     }
 }
@@ -129,6 +132,101 @@ impl DepsParams {
         }
         Ok(())
     }
+}
+
+/// Parameters for `cargo gears ls packages`.
+///
+/// Lists workspace Cargo packages (all crates, not just annotated gears),
+/// with the same filtering options as `ls gears`: `--filter`, `--scope-dirs`,
+/// `--include-rdeps`.
+#[derive(Debug, Eq, PartialEq)]
+pub struct PackagesParams {
+    pub path: Option<std::path::PathBuf>,
+    pub scope_dirs: Vec<String>,
+    pub filter: Option<String>,
+    pub include_rdeps: bool,
+    pub format: crate::common::OutputFormat,
+}
+
+impl PackagesParams {
+    pub fn run(&self) -> anyhow::Result<()> {
+        let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
+
+        let mut packages = if self.scope_dirs.is_empty() {
+            crate::packages::all_workspace_packages(&workspace_root)?
+        } else {
+            let dirs: Vec<std::path::PathBuf> = self.scope_dirs
+                .iter()
+                .map(|d| {
+                    let d = d.trim_end_matches('/');
+                    let p = std::path::PathBuf::from(d);
+                    if p.is_absolute() { p } else { workspace_root.join(d) }
+                })
+                .collect();
+            let dir_refs: Vec<&std::path::Path> = dirs.iter().map(std::path::PathBuf::as_path).collect();
+            crate::packages::discover_packages(&workspace_root, &dir_refs)?
+        };
+
+        if let Some(pattern) = &self.filter {
+            let re = regex::Regex::new(pattern)
+                .with_context(|| format!("invalid filter regex: {pattern}"))?;
+            packages.retain(|p| re.is_match(p));
+        }
+
+        if self.include_rdeps && !self.scope_dirs.is_empty() {
+            packages = crate::packages::expand_with_dependents(&workspace_root, &packages)?;
+        }
+
+        match self.format {
+            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+                for p in &packages {
+                    println!("{p}");
+                }
+            }
+            crate::common::OutputFormat::Json => {
+                println!("{}", serde_json::to_string(&packages)?);
+            }
+            crate::common::OutputFormat::CargoFlags => {
+                let flags: Vec<String> = packages.iter().map(|p| format!("-p {p}")).collect();
+                if !flags.is_empty() {
+                    println!("{}", flags.join(" "));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+/// Resolve a gear name to its directory by searching the workspace layout.
+///
+/// Search order: `gears/<name>/` -> `gears/*/<name>/` -> `libs/<name>/`.
+/// Also accepts relative paths containing `/` (resolved directly).
+fn resolve_gear_dir(workspace_root: &std::path::Path, gear: &str) -> anyhow::Result<PathBuf> {
+    let gear = gear.trim_end_matches('/');
+    if gear.contains('/') {
+        let candidate = workspace_root.join(gear);
+        if candidate.is_dir() { return Ok(candidate); }
+        anyhow::bail!("gear path not found: {}", candidate.display());
+    }
+    let candidate = workspace_root.join("gears").join(gear);
+    if candidate.is_dir() { return Ok(candidate); }
+    let gears_dir = workspace_root.join("gears");
+    if gears_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&gears_dir) {
+            let mut subs: Vec<_> = entries.filter_map(Result::ok).collect();
+            subs.sort_by_key(|e| e.file_name());
+            for entry in subs {
+                if entry.file_type().is_ok_and(|ft| ft.is_dir()) {
+                    let candidate = entry.path().join(gear);
+                    if candidate.is_dir() { return Ok(candidate); }
+                }
+            }
+        }
+    }
+    let candidate = workspace_root.join("libs").join(gear);
+    if candidate.is_dir() { return Ok(candidate); }
+    anyhow::bail!("gear '{}' not found. Searched: gears/{0}/, gears/*/{0}/, libs/{0}/", gear);
 }
 
 use crate::gears_parser::Provision;

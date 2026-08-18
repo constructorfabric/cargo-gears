@@ -4,6 +4,74 @@ use guppy::graph::DependencyDirection;
 use std::collections::BTreeSet;
 use std::path::Path;
 
+use guppy::graph::PackageGraph;
+
+fn build_graph(workspace_root: &Path) -> Result<PackageGraph> {
+    MetadataCommand::new()
+        .manifest_path(workspace_root.join("Cargo.toml"))
+        .build_graph()
+        .context("failed to build package graph")
+}
+
+/// Return all workspace package names, sorted and de-duplicated.
+pub fn all_workspace_packages(workspace_root: &Path) -> Result<Vec<String>> {
+    let graph = build_graph(workspace_root)?;
+    let mut names: Vec<String> = graph
+        .packages()
+        .filter(|pkg| pkg.in_workspace())
+        .map(|pkg| pkg.name().to_owned())
+        .collect();
+    names.sort();
+    names.dedup();
+    Ok(names)
+}
+
+/// Discover all workspace packages whose manifest path is inside any of the
+/// given `scope_dirs`.
+pub fn discover_packages(workspace_root: &Path, scope_dirs: &[&Path]) -> Result<Vec<String>> {
+    let graph = build_graph(workspace_root)?;
+
+    let scopes: Vec<std::path::PathBuf> = scope_dirs
+        .iter()
+        .filter_map(|d| d.canonicalize().ok())
+        .collect();
+
+    if scopes.is_empty() {
+        anyhow::bail!(
+            "none of the scope directories exist: {}",
+            scope_dirs.iter().map(|d| d.display().to_string()).collect::<Vec<_>>().join(", ")
+        );
+    }
+
+    let mut names: Vec<String> = graph
+        .packages()
+        .filter(|pkg| {
+            if !pkg.in_workspace() {
+                return false;
+            }
+            let Some(dir) = Path::new(pkg.manifest_path().as_str()).parent() else {
+                return false;
+            };
+            let Ok(dir) = dir.canonicalize() else {
+                return false;
+            };
+            scopes.iter().any(|scope| dir.starts_with(scope))
+        })
+        .map(|pkg| pkg.name().to_owned())
+        .collect();
+    names.sort();
+    names.dedup();
+
+    if names.is_empty() {
+        anyhow::bail!(
+            "no workspace packages found under: {}",
+            scope_dirs.iter().map(|d| d.display().to_string()).collect::<Vec<_>>().join(", ")
+        );
+    }
+
+    Ok(names)
+}
+
 /// Expand `packages` to include every workspace crate that (transitively)
 /// depends on them — i.e. the reverse-dependency closure.
 ///
@@ -17,10 +85,7 @@ pub fn expand_with_dependents(workspace_root: &Path, packages: &[String]) -> Res
         return Ok(Vec::new());
     }
 
-    let graph = MetadataCommand::new()
-        .manifest_path(workspace_root.join("Cargo.toml"))
-        .build_graph()
-        .context("failed to build package graph for dependent expansion")?;
+    let graph = build_graph(workspace_root)?;
 
     let requested: BTreeSet<&str> = packages.iter().map(String::as_str).collect();
 

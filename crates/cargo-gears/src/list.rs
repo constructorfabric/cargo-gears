@@ -17,6 +17,8 @@ pub enum ListCommand {
     Features(FeaturesArgs),
     /// List dependencies from a Cargo.toml
     Deps(DepsArgs),
+    /// List all Cargo packages (crates) in the workspace or under specific directories
+    Packages(PackagesArgs),
 }
 
 #[derive(Args)]
@@ -92,6 +94,24 @@ pub struct DepsArgs {
     format: OutputFormat,
 }
 
+#[derive(Args)]
+pub struct PackagesArgs {
+    #[command(flatten)]
+    workspace: WorkspacePath,
+    /// Comma-separated directory paths to scope the search (relative to workspace root)
+    #[arg(long, value_delimiter = ',')]
+    scope_dirs: Vec<String>,
+    /// Filter package names by regex pattern
+    #[arg(long)]
+    filter: Option<String>,
+    /// Include transitive reverse dependencies of matched packages
+    #[arg(long)]
+    include_rdeps: bool,
+    /// Output format
+    #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::List)]
+    format: OutputFormat,
+}
+
 impl From<ListCommand> for cargo_gears_core::list::ListCommand {
     fn from(command: ListCommand) -> Self {
         match command {
@@ -99,6 +119,19 @@ impl From<ListCommand> for cargo_gears_core::list::ListCommand {
             ListCommand::Templates(args) => Self::Templates(args.into()),
             ListCommand::Features(args) => Self::Features(args.into()),
             ListCommand::Deps(args) => Self::Deps(args.into()),
+            ListCommand::Packages(args) => Self::Packages(args.into()),
+        }
+    }
+}
+
+impl From<PackagesArgs> for cargo_gears_core::list::PackagesParams {
+    fn from(args: PackagesArgs) -> Self {
+        Self {
+            path: args.workspace.path,
+            scope_dirs: args.scope_dirs,
+            filter: args.filter,
+            include_rdeps: args.include_rdeps,
+            format: args.format,
         }
     }
 }
