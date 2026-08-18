@@ -4,10 +4,13 @@ pub mod templates;
 pub use gears::{GearsOutput, GearsParams};
 pub use templates::TemplatesParams;
 
+use std::path::PathBuf;
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum ListCommand {
     Gears(GearsParams),
     Templates(TemplatesParams),
+    Packages(PackagesParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -20,7 +23,60 @@ impl ListParams {
         match &self.command {
             ListCommand::Gears(args) => args.run(),
             ListCommand::Templates(args) => args.run(),
+            ListCommand::Packages(args) => args.run(),
         }
+    }
+}
+
+/// Parameters for `cargo gears ls packages`.
+///
+/// Lists workspace Cargo packages, optionally filtered to those whose manifest
+/// lives under one or more directories (`--scope-dirs`).  When no scope
+/// directories are given, all workspace packages are listed.
+///
+/// By default the output also includes the transitive reverse-dependency
+/// closure (every workspace crate that depends on the matched packages).
+/// Pass `--no-rdeps` to print only the directly matched packages.
+#[derive(Debug, Eq, PartialEq)]
+pub struct PackagesParams {
+    pub path: Option<PathBuf>,
+    pub scope_dirs: Vec<String>,
+    pub include_rdeps: bool,
+    pub cargo_flag_format: bool,
+}
+
+impl PackagesParams {
+    pub fn run(&self) -> anyhow::Result<()> {
+        let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
+
+        let own_packages = if self.scope_dirs.is_empty() {
+            crate::packages::all_workspace_packages(&workspace_root)?
+        } else {
+            let dirs: Vec<PathBuf> = self
+                .scope_dirs
+                .iter()
+                .map(|d| workspace_root.join(d.trim_end_matches('/')))
+                .collect();
+            let dir_refs: Vec<&std::path::Path> = dirs.iter().map(PathBuf::as_path).collect();
+            crate::packages::discover_packages(&workspace_root, &dir_refs)?
+        };
+
+        let packages = if self.include_rdeps && !self.scope_dirs.is_empty() {
+            crate::packages::expand_with_dependents(&workspace_root, &own_packages)?
+        } else {
+            own_packages
+        };
+
+        if self.cargo_flag_format {
+            let flags: Vec<String> = packages.iter().map(|p| format!("-p {p}")).collect();
+            println!("{}", flags.join(" "));
+        } else {
+            for p in &packages {
+                println!("{p}");
+            }
+        }
+
+        Ok(())
     }
 }
 

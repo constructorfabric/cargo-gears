@@ -13,6 +13,8 @@ pub enum ListCommand {
     Gears(GearsArgs),
     /// List templates available
     Templates(TemplatesArgs),
+    /// List Cargo packages for a gear/lib scope
+    Packages(PackagesArgs),
 }
 
 #[derive(Args)]
@@ -56,11 +58,40 @@ impl From<ListArgs> for cargo_gears_core::list::ListParams {
     }
 }
 
+#[derive(Args)]
+pub struct PackagesArgs {
+    #[command(flatten)]
+    workspace: WorkspacePath,
+    /// Comma-separated directory paths to scope the search (relative to workspace root).
+    /// Only packages whose manifest lives under one of these directories are included.
+    /// When omitted, all workspace packages are listed.
+    #[arg(long, value_delimiter = ',')]
+    scope_dirs: Vec<String>,
+    /// Skip transitive reverse dependencies; print only the matched packages
+    #[arg(long)]
+    no_rdeps: bool,
+    /// Print as `-p <pkg>` flags suitable for cargo commands
+    #[arg(long = "cargo-flags")]
+    cargo_flags: bool,
+}
+
 impl From<ListCommand> for cargo_gears_core::list::ListCommand {
     fn from(command: ListCommand) -> Self {
         match command {
             ListCommand::Gears(args) => Self::Gears(args.into()),
             ListCommand::Templates(args) => Self::Templates(args.into()),
+            ListCommand::Packages(args) => Self::Packages(args.into()),
+        }
+    }
+}
+
+impl From<PackagesArgs> for cargo_gears_core::list::PackagesParams {
+    fn from(args: PackagesArgs) -> Self {
+        Self {
+            path: args.workspace.path,
+            scope_dirs: args.scope_dirs,
+            include_rdeps: !args.no_rdeps,
+            cargo_flag_format: args.cargo_flags,
         }
     }
 }
