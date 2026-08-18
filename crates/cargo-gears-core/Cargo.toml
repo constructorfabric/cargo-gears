@@ -46,6 +46,8 @@ camino = { workspace = true }
 shell-words = { workspace = true }
 nextest-runner = { workspace = true }
 nextest-filtering = { workspace = true }
+cargo-util-schemas = "0.13.0"
+globset = "0.4.18"
 
 [lints]
 workspace = true

@@ -41,8 +41,49 @@ pub struct LintParams {
     /// Expand `packages` to also include every workspace crate that depends on
     /// them (their reverse-dependency closure) before linting.
     pub include_dependents: bool,
+    /// Cargo feature selection used by Clippy and Dylint.
+    pub features: LintFeatureSelection,
     /// List available lints instead of running them.
     pub list: bool,
+}
+
+/// Cargo feature selection for a lint run.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum LintFeatureSelection {
+    /// Use each selected package's default features.
+    Default,
+    /// Enable every feature (`--all-features`).
+    All,
+    /// Enable selected features, optionally without default features.
+    Selected {
+        /// Feature names passed to Cargo.
+        features: Vec<String>,
+        /// Whether to pass `--no-default-features`.
+        no_default_features: bool,
+    },
+}
+
+impl LintFeatureSelection {
+    fn cargo_args(&self) -> Vec<String> {
+        match self {
+            Self::Default => Vec::new(),
+            Self::All => vec!["--all-features".to_owned()],
+            Self::Selected {
+                features,
+                no_default_features,
+            } => {
+                let mut args = Vec::new();
+                if *no_default_features {
+                    args.push("--no-default-features".to_owned());
+                }
+                if !features.is_empty() {
+                    args.push("--features".to_owned());
+                    args.push(features.join(","));
+                }
+                args
+            }
+        }
+    }
 }
 
 /// Metadata for a single embedded dylint rule.
@@ -242,18 +283,23 @@ impl LintParams {
             return Ok(());
         }
 
-        if self.fmt {
-            run_fmt(&self.workspace_root)?;
-        }
-
         let packages = self.effective_packages()?;
 
+        if self.fmt {
+            run_fmt(&self.workspace_root, &packages)?;
+        }
+
         if self.clippy {
-            run_clippy(&self.workspace_root, self.strict, &packages)?;
+            run_clippy(&self.workspace_root, self.strict, &packages, &self.features)?;
         }
 
         if self.dylint {
-            run_dylint(&self.workspace_root, &self.dylint_skip, &packages)?;
+            run_dylint(
+                &self.workspace_root,
+                &self.dylint_skip,
+                &packages,
+                &self.features,
+            )?;
         }
 
         Ok(())
@@ -262,10 +308,12 @@ impl LintParams {
     /// Resolve the package set to lint, applying reverse-dependency expansion
     /// when `include_dependents` is set and at least one package was selected.
     fn effective_packages(&self) -> Result<Vec<String>> {
-        if self.include_dependents && !self.packages.is_empty() {
-            crate::packages::expand_with_dependents(&self.workspace_root, &self.packages)
+        let packages =
+            crate::packages::resolve_workspace_package_specs(&self.workspace_root, &self.packages)?;
+        if self.include_dependents && !packages.is_empty() {
+            crate::packages::expand_with_dependents(&self.workspace_root, &packages)
         } else {
-            Ok(self.packages.clone())
+            Ok(packages)
         }
     }
 }
@@ -273,7 +321,7 @@ impl LintParams {
 fn list_lints(dylint_only: bool) {
     if !dylint_only {
         println!("Built-in lint suites:");
-        println!("  fmt     Run `cargo fmt --check --all`");
+        println!("  fmt     Run `cargo fmt --check` for the selected package scope");
         println!("  clippy  Run `cargo clippy --workspace --all-targets`");
         println!("  dylint  Run embedded architectural lint rules (see below)");
         println!();
@@ -300,9 +348,9 @@ fn list_lints(dylint_only: bool) {
     }
 }
 
-fn run_fmt(workspace_path: &Path) -> Result<()> {
+fn run_fmt(workspace_path: &Path, packages: &[String]) -> Result<()> {
     let mut cmd = cargo_cmd()?;
-    cmd.args(["fmt", "--check", "--all"]);
+    cmd.args(fmt_cargo_args(packages));
     cmd.current_dir(workspace_path);
 
     let status = cmd.status().context("failed to run `cargo fmt --check`")?;
@@ -313,7 +361,24 @@ fn run_fmt(workspace_path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn run_clippy(workspace_path: &Path, strict: bool, packages: &[String]) -> Result<()> {
+fn fmt_cargo_args(packages: &[String]) -> Vec<String> {
+    let mut args = vec!["fmt".to_owned(), "--check".to_owned()];
+    if packages.is_empty() {
+        args.push("--all".to_owned());
+    } else {
+        for package in packages {
+            args.extend(["--package".to_owned(), package.clone()]);
+        }
+    }
+    args
+}
+
+fn run_clippy(
+    workspace_path: &Path,
+    strict: bool,
+    packages: &[String],
+    features: &LintFeatureSelection,
+) -> Result<()> {
     let mut cmd = cargo_cmd()?;
     cmd.arg("clippy");
     if packages.is_empty() {
@@ -324,6 +389,7 @@ fn run_clippy(workspace_path: &Path, strict: bool, packages: &[String]) -> Resul
         }
     }
     cmd.arg("--all-targets");
+    cmd.args(features.cargo_args());
     cmd.current_dir(workspace_path);
 
     // TODO Analyse the manifest feature-set policy and lint those combinations.
@@ -356,7 +422,12 @@ fn embedded_toolchains() -> Result<BTreeSet<String>> {
 }
 
 #[cfg(feature = "dylint-rules")]
-fn run_dylint(workspace_path: &Path, skipped_lints: &[String], packages: &[String]) -> Result<()> {
+fn run_dylint(
+    workspace_path: &Path,
+    skipped_lints: &[String],
+    packages: &[String],
+    features: &LintFeatureSelection,
+) -> Result<()> {
     for toolchain in embedded_toolchains()? {
         ensure_toolchain_installed(&toolchain)?;
         clear_dylint_rustc_info_cache(workspace_path, &toolchain)?;
@@ -402,7 +473,7 @@ fn run_dylint(workspace_path: &Path, skipped_lints: &[String], packages: &[Strin
             // on the command line, in which case only those are checked.
             workspace: packages.is_empty(),
             packages: packages.to_vec(),
-            args: dylint_cargo_check_args(skipped_lints)?,
+            args: dylint_cargo_check_args(skipped_lints, features)?,
             ..Default::default()
         }),
         ..Default::default()
@@ -412,9 +483,13 @@ fn run_dylint(workspace_path: &Path, skipped_lints: &[String], packages: &[Strin
 }
 
 #[cfg(feature = "dylint-rules")]
-fn dylint_cargo_check_args(skipped_lints: &[String]) -> Result<Vec<String>> {
+fn dylint_cargo_check_args(
+    skipped_lints: &[String],
+    features: &LintFeatureSelection,
+) -> Result<Vec<String>> {
+    let mut args = features.cargo_args();
     if skipped_lints.is_empty() {
-        return Ok(Vec::new());
+        return Ok(args);
     }
 
     let rustflags = skipped_lints
@@ -423,10 +498,11 @@ fn dylint_cargo_check_args(skipped_lints: &[String]) -> Result<Vec<String>> {
         .collect::<Vec<_>>();
     let rustflags = serde_json::to_string(&rustflags).context("failed to encode dylint skips")?;
 
-    Ok(vec![
+    args.extend([
         "--config".to_owned(),
         format!("build.rustflags={rustflags}"),
-    ])
+    ]);
+    Ok(args)
 }
 
 #[cfg(feature = "dylint-rules")]
@@ -461,21 +537,25 @@ fn run_dylint(
     _workspace_path: &Path,
     _skipped_lints: &[String],
     _packages: &[String],
+    _features: &LintFeatureSelection,
 ) -> Result<()> {
     anyhow::bail!("dylint-rules feature not enabled")
 }
 
 #[cfg(test)]
 mod tests {
-    use super::DYLINT_LINTS;
+    use super::{DYLINT_LINTS, LintFeatureSelection};
 
     #[cfg(feature = "dylint-rules")]
     #[test]
     fn dylint_skip_list_is_converted_to_cargo_rustflags_config() {
-        let args = super::dylint_cargo_check_args(&[
-            "de0301_no_infra_in_domain".to_owned(),
-            "de1302_error_from_to_string".to_owned(),
-        ])
+        let args = super::dylint_cargo_check_args(
+            &[
+                "de0301_no_infra_in_domain".to_owned(),
+                "de1302_error_from_to_string".to_owned(),
+            ],
+            &LintFeatureSelection::Default,
+        )
         .expect("skip args should encode");
 
         assert_eq!(
@@ -484,6 +564,80 @@ mod tests {
                 "--config".to_owned(),
                 "build.rustflags=[\"-A\",\"de0301_no_infra_in_domain\",\"-A\",\"de1302_error_from_to_string\"]"
                     .to_owned(),
+            ]
+        );
+    }
+
+    #[test]
+    fn fmt_uses_all_packages_without_a_package_selection() {
+        assert_eq!(super::fmt_cargo_args(&[]), ["fmt", "--check", "--all"]);
+    }
+
+    #[test]
+    fn fmt_uses_each_selected_package() {
+        assert_eq!(
+            super::fmt_cargo_args(&["crate-a".to_owned(), "crate-b".to_owned()]),
+            [
+                "fmt",
+                "--check",
+                "--package",
+                "crate-a",
+                "--package",
+                "crate-b",
+            ]
+        );
+    }
+
+    #[test]
+    fn lint_feature_selection_maps_to_cargo_arguments() {
+        assert!(LintFeatureSelection::Default.cargo_args().is_empty());
+        assert_eq!(LintFeatureSelection::All.cargo_args(), ["--all-features"]);
+        assert_eq!(
+            LintFeatureSelection::Selected {
+                features: vec!["otel".to_owned(), "metrics".to_owned()],
+                no_default_features: false,
+            }
+            .cargo_args(),
+            ["--features", "otel,metrics"]
+        );
+        assert_eq!(
+            LintFeatureSelection::Selected {
+                features: vec!["sqlite".to_owned()],
+                no_default_features: true,
+            }
+            .cargo_args(),
+            ["--no-default-features", "--features", "sqlite"]
+        );
+        assert_eq!(
+            LintFeatureSelection::Selected {
+                features: Vec::new(),
+                no_default_features: true,
+            }
+            .cargo_args(),
+            ["--no-default-features"]
+        );
+    }
+
+    #[cfg(feature = "dylint-rules")]
+    #[test]
+    fn dylint_feature_arguments_are_combined_with_skip_config() {
+        let args = super::dylint_cargo_check_args(
+            &["de1301_no_print_macros".to_owned()],
+            &LintFeatureSelection::Selected {
+                features: vec!["otel".to_owned()],
+                no_default_features: true,
+            },
+        )
+        .expect("dylint arguments should encode");
+
+        assert_eq!(
+            args,
+            [
+                "--no-default-features",
+                "--features",
+                "otel",
+                "--config",
+                "build.rustflags=[\"-A\",\"de1301_no_print_macros\"]",
             ]
         );
     }

@@ -153,7 +153,7 @@ clean = true
 | `ref` | `Option<String>` | _none_ | Reference another environment's lint policy |
 | `clippy` | `bool` | `true` | Run Clippy |
 | `fmt` | `bool` | `true` | Run `cargo fmt --check` |
-| `feature-set-test` | `bool` | `true` | Enable feature-set lint testing |
+| `feature-set-test` | `bool` | `true` | Reserved for feature-matrix linting; currently not applied by `cargo gears lint` |
 | `dylint` | `Option<Dylint>` | _none_ | Dylint configuration |
 
 ### `[lint.dylint]`

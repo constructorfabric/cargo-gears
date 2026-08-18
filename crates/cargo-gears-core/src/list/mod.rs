@@ -212,6 +212,21 @@ mod tests {
     }
 
     #[test]
+    fn local_modules_reject_duplicate_gear_names() {
+        let temp_dir =
+            scaffold_workspace(&[("crate-alpha", "duplicate"), ("crate-beta", "duplicate")]);
+
+        let message = match get_module_name_from_crate(Some(temp_dir.path())) {
+            Ok(_) => panic!("duplicate gear names should fail"),
+            Err(err) => err.to_string(),
+        };
+
+        assert!(message.contains("duplicate gear name `duplicate`"));
+        assert!(message.contains("crate-alpha"));
+        assert!(message.contains("crate-beta"));
+    }
+
+    #[test]
     fn local_modules_discovers_annotation_in_any_src_rs_file() {
         let temp_dir = TempDir::new().expect("failed to create temp dir");
         temp_dir.write(

@@ -960,7 +960,7 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--include-dependents] [--list]
+cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--gear <NAME>]... [--include-dependents] [-F <FEATURES>]... [--all-features | --no-default-features] [--list]
 ```
 
 Arguments:
@@ -969,16 +969,24 @@ Arguments:
 - **[`--manifest <PATH>`]** Manifest file, defaults to `Gears.toml`
 - **[`--app <APP> --env <ENV>`]** Manifest app/environment selection (inferred from manifest if omitted)
 - **[`--all`]** Runs all available lint suites instead of the selected manifest lint policy
-- **[`--fmt`]** Runs `cargo fmt --check --all`; if passed by itself, it runs only formatting checks
+- **[`--fmt`]** Runs `cargo fmt --check` for the selected package scope; with no `-P/--package` or `--gear`, it uses
+  `--all`. If passed by itself, it runs only formatting checks.
 - **[`--clippy`]** Runs workspace Clippy checks; if passed by itself, it runs only Clippy
 - **[`--strict`]** Turns Clippy warnings into errors; valid only when Clippy is selected explicitly or through `--all`
 - **[`--dylint`]** Runs the embedded `cargo-gears-lints` Dylint rules against the workspace rooted at the current or selected
   directory
-- **[`-P, --package <SPEC>`]** Restricts linting to the given workspace package(s); repeatable. When omitted, the whole
-  workspace is linted. Applies to both Clippy (`--package <SPEC>`) and Dylint (per-package selection)
-- **[`--include-dependents`]** Expands the `-P/--package` selection to also include every workspace crate that
-  (transitively) depends on the selected package(s) — the reverse-dependency closure. Requires at least one
-  `-P/--package`; has no effect on its own.
+- **[`-P, --package <SPEC>`]** Restricts formatting, Clippy, and Dylint to the given workspace package(s); repeatable.
+  When omitted together with `--gear`, the whole workspace is linted.
+- **[`--gear <NAME>`]** Restricts formatting, Clippy, and Dylint to the local workspace package(s) belonging to a
+  discovered gear; repeatable. Includes the conventional nested gear SDK package. Use `cargo gears ls gears --local` to
+  list valid names. Can be combined with `-P/--package`.
+- **[`--include-dependents`]** Expands the `-P/--package` and `--gear` selection to also include every workspace crate
+  that (transitively) depends on the selected package(s) — the reverse-dependency closure. Requires at least one package
+  or gear selection; otherwise the command fails.
+- **[`-F, --features <FEATURES>`]** Enables Cargo features for Clippy and Dylint. Accepts comma-separated values and is
+  repeatable. Default features remain enabled unless `--no-default-features` is also passed.
+- **[`--all-features`]** Enables every Cargo feature. Conflicts with `--features` and `--no-default-features`.
+- **[`--no-default-features`]** Disables Cargo default features. May be combined with `--features`.
 - **[`--list`]** Lists available lint rules instead of running them. When combined with `--dylint`, lists only the
   embedded dylint rules. Does not require a manifest or workspace path.
 
@@ -990,18 +998,29 @@ Behavior:
 - **[default lint selection]** With no explicit lint-selection flags, `lint` runs the selected manifest lint policy
 - **[explicit selection disables default all]** Passing `--fmt`, `--clippy`, and/or `--dylint` opts into just those
   requested lint suites unless `--all` is also provided
-- **[workspace formatting check]** `--fmt` runs `cargo fmt --check --all`
+- **[package-scoped formatting]** `--fmt` runs `cargo fmt --check --all` when no package or gear is selected. With an
+  explicit package/gear scope, it passes each effective package as `--package <SPEC>`. `--include-dependents` expands
+  this scope before formatting, matching Clippy and Dylint.
 - **[workspace Clippy]** Clippy runs as `cargo clippy --workspace --all-targets`, or as
-  `cargo clippy --package <SPEC> ... --all-targets` when one or more `-P/--package` flags are supplied. Manifest
-  `feature-set-test` policy is reserved for feature-matrix linting and is not expanded into `--all-features`.
+  `cargo clippy --package <SPEC> ... --all-targets` when one or more `-P/--package` flags are supplied. Cargo feature
+  flags are appended when selected. Without feature flags, each package's default features are used. Manifest
+  `feature-set-test` remains reserved for future feature-matrix linting and is not currently applied.
 - **[strict scope]** `--strict` is rejected unless Clippy is active through `--clippy` or `--all`
 - **[workspace-scoped dylint]** Dylint receives the resolved workspace manifest path, so `-p/--path` is the way to lint
   another workspace without manually changing directories
-- **[package-scoped linting]** Passing one or more `-P/--package <SPEC>` flags restricts both Clippy and Dylint to those
-  packages instead of the whole workspace; the flag is repeatable and package specs follow cargo's `-p` selector syntax
+- **[package-scoped linting]** Passing one or more `-P/--package <SPEC>` flags restricts formatting, Clippy, and Dylint
+  to those packages instead of the whole workspace; the flag is repeatable and package specs follow cargo's `-p`
+  selector syntax.
+- **[gear-scoped linting]** Each `--gear <NAME>` is resolved through local workspace gear discovery to its annotated
+  package and conventional nested SDK workspace package, when present. Gear-derived packages are merged and
+  de-duplicated with explicit `-P/--package` selections. System registry gears that are not local workspace members
+  cannot be selected.
 - **[dependent expansion]** With `--include-dependents`, the selected packages are expanded to their reverse-dependency
-  closure (the seed packages plus every workspace crate that depends on them) before Clippy/Dylint run, so a change to a
-  crate can be linted together with everything it may break. Unknown package names are rejected.
+  closure (the seed packages plus every workspace crate that depends on them) before formatting, Clippy, and Dylint run,
+  so a change to a crate can be linted together with everything it may break. Unknown package names are rejected.
+- **[feature-scoped linting]** `--features`, `--all-features`, and `--no-default-features` use Cargo's standard feature
+  semantics and apply to both Clippy and Dylint. Package-qualified features such as `crate-name/feature-name` can be used
+  when linting multiple workspace packages.
 - **[manifest dylint skips]** Manifest `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints, so
   listed rules are ignored for that lint run
 - **[toolchain bootstrap]** The build script ensures the lint package toolchain and components are installed when
@@ -1024,6 +1043,10 @@ cargo gears lint --app app1 --env dev --fmt
 ```
 
 ```bash
+cargo gears lint --app app1 --env dev --fmt --gear file-parser
+```
+
+```bash
 cargo gears lint --app app1 --env dev --dylint
 ```
 
@@ -1040,7 +1063,31 @@ cargo gears lint --app app1 --env dev --dylint -P cf-gears-file-parser -P cf-gea
 ```
 
 ```bash
+cargo gears lint --app app1 --env dev --dylint --gear file-parser
+```
+
+```bash
+cargo gears lint --app app1 --env dev --clippy --gear file-parser --include-dependents
+```
+
+```bash
+cargo gears lint --app app1 --env dev --clippy -P shared-utils --gear file-parser
+```
+
+```bash
 cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --include-dependents
+```
+
+```bash
+cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --features json,otel
+```
+
+```bash
+cargo gears lint --app app1 --env dev --dylint -P cf-gears-file-parser --no-default-features -F sqlite
+```
+
+```bash
+cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --all-features
 ```
 
 ```bash
@@ -1062,19 +1109,19 @@ dylint = { enabled = true, skip = ["de0301_no_infra_in_domain"] }
 
 Inspect workspace modules, system modules, templates, and project state.
 
-#### `ls modules`
+#### `ls gears`
 
-List all modules — both system-registry and workspace-discovered — in a single unified view.
+List all gears — both system-registry and workspace-discovered — in a single unified view.
 
 Synopsis:
 
 ```bash
-cargo gears ls modules [-p <PATH>] [--system] [--local] [--verbose] [--registry crates.io] [--format table|json]
+cargo gears ls gears [-p <PATH>] [--system] [--local] [--verbose] [--registry crates.io] [--format table|json]
 ```
 
 Arguments:
 
-- **[`-p, --path <PATH>`]** Optional workspace directory; changes the current working directory while Clap parses it
+- **[`-p, --path <PATH>`]** Optional workspace directory used for local gear discovery
 - **[`--system`]** Only print built-in system registry modules
 - **[`--local`]** Only print workspace-discovered modules
 - **[`-v, --verbose`]** Show full metadata for both system and local modules (fetches registry metadata for system
@@ -1100,19 +1147,19 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears ls modules
+cargo gears ls gears
 ```
 
 ```bash
-cargo gears ls modules -p /tmp/cf-demo --verbose
+cargo gears ls gears -p /tmp/cf-demo --verbose
 ```
 
 ```bash
-cargo gears ls modules --local
+cargo gears ls gears --local
 ```
 
 ```bash
-cargo gears ls modules --system --verbose
+cargo gears ls gears --system --verbose
 ```
 
 #### `ls templates`
@@ -1234,10 +1281,10 @@ cargo gears config db add <name> [-p <workspace>] -c <config> ...
 cargo gears config db edit <name> [-p <workspace>] -c <config> ...
 cargo gears config db rm <name> [-p <workspace>] -c <config>
 
-cargo gears ls modules [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json]
+cargo gears ls gears [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
-cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint] [-P <spec>]... [--list]
+cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <spec>]... [--gear <name>]... [--include-dependents] [-F <features>]... [--all-features | --no-default-features] [--list]
 cargo gears tools --all
 cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch]
 cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>]

@@ -305,12 +305,17 @@ Options:
 - `--app <APP>`, `--env <ENV>` — manifest selection
 - `-p, --path <PATH>` — workspace directory
 - `--all` — run all available lint suites
-- `--fmt` — run `cargo fmt --check --all`
+- `--fmt` — run `cargo fmt --check` for the selected package scope; uses `--all` when no package or gear is selected
 - `--clippy` — run workspace Clippy
 - `--strict` — turn Clippy warnings into errors (requires `--clippy` or `--all`)
 - `--dylint` — run embedded Dylint rules (requires the `dylint-rules` feature)
-- `-P, --package <SPEC>` — restrict linting to specific workspace package(s); repeatable. When omitted, the whole workspace is linted. Applies to both Clippy and Dylint.
-- `--include-dependents` — expand `-P/--package` to also include every workspace crate that (transitively) depends on the selected package(s), i.e. their reverse-dependency closure. Requires at least one `-P/--package`.
+- `-P, --package <SPEC>` — restrict formatting, Clippy, and Dylint to specific workspace package(s); repeatable. When omitted together with `--gear`, the whole workspace is linted.
+- `--gear <NAME>` — restrict formatting, Clippy, and Dylint to the local workspace package(s) belonging to a discovered gear; repeatable. Includes the conventional nested gear SDK package. Use `cargo gears ls gears --local` to list valid names.
+- `--include-dependents` — expand `-P/--package` and `--gear` selections to also include every workspace crate that (transitively) depends on the selected package(s), i.e. their reverse-dependency closure. Requires at least one package or gear selection; otherwise the command fails. The expanded scope applies to formatting, Clippy, and Dylint.
+- `-F, --features <FEATURES>` — enable Cargo features for Clippy and Dylint; accepts comma-separated values and is repeatable. Default features remain enabled unless `--no-default-features` is passed.
+- `--all-features` — enable every Cargo feature; conflicts with `--features` and `--no-default-features`.
+- `--no-default-features` — disable Cargo default features; may be combined with `--features`.
+- `--list` — list available lint rules instead of running them; combine with `--dylint` to list only Dylint rules.
 
 With no explicit lint-selection flags, runs the manifest lint policy. Manifest
 `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints.
@@ -319,9 +324,16 @@ With no explicit lint-selection flags, runs the manifest lint policy. Manifest
 cargo gears lint --app app1 --env dev
 cargo gears lint --app app1 --env dev --clippy --strict
 cargo gears lint --app app1 --env dev --dylint
+cargo gears lint --app app1 --env dev --fmt --gear file-parser
 cargo gears lint --app app1 --env dev --clippy --package cf-gears-file-parser
 cargo gears lint --app app1 --env dev --dylint -P cf-gears-file-parser -P cf-gears-file-parser-sdk
+cargo gears lint --app app1 --env dev --dylint --gear file-parser
+cargo gears lint --app app1 --env dev --clippy --gear file-parser --include-dependents
+cargo gears lint --app app1 --env dev --clippy -P shared-utils --gear file-parser
 cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --include-dependents
+cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --features json,otel
+cargo gears lint --app app1 --env dev --dylint -P cf-gears-file-parser --no-default-features -F sqlite
+cargo gears lint --app app1 --env dev --clippy -P cf-gears-file-parser --all-features
 ```
 
 Manifest Dylint skip example:
@@ -356,12 +368,12 @@ Options:
 Manifest `test.feature-set` entries expand by `mode`: `all-features`,
 `no-default-features`, `default-features`, or `features` (with an explicit list).
 
-## ls modules
+## ls gears
 
-List all modules — both system-registry and workspace-discovered — in a unified view.
+List all gears — both system-registry and workspace-discovered — in a unified view.
 
 ```bash
-cargo gears ls modules [options]
+cargo gears ls gears [options]
 ```
 
 Options:
@@ -374,9 +386,9 @@ Options:
 - `-f, --format <table|json>` — output format (default: `json`)
 
 ```bash
-cargo gears ls modules
-cargo gears ls modules -p /tmp/cf-demo --verbose
-cargo gears ls modules --local
+cargo gears ls gears
+cargo gears ls gears -p /tmp/cf-demo --verbose
+cargo gears ls gears --local
 ```
 
 ## manifest

@@ -107,7 +107,7 @@ Several commands support `--format json` for machine-readable output:
 ```bash
 cargo gears manifest validate --format json
 cargo gears manifest ls --format json
-cargo gears ls modules --format json
+cargo gears ls gears --format json
 ```
 
 `build --dry-run` and `run --dry-run` print JSON with the generated project
