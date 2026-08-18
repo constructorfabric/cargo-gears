@@ -157,8 +157,6 @@ impl GearsParams {
                 .filter_map(|m| gear_package_name(m))
                 .collect();
             let expanded = crate::packages::expand_with_dependents(&workspace_root, &seed_pkgs)?;
-            let expanded_set: std::collections::BTreeSet<&str> =
-                expanded.iter().map(String::as_str).collect();
             // Keep original modules + add any new packages as synthetic entries
             let existing_pkgs: std::collections::BTreeSet<String> = modules
                 .iter()

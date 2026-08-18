@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use anyhow::Context;
 mod gears;
 pub mod templates;
@@ -196,37 +195,6 @@ impl PackagesParams {
 
         Ok(())
     }
-}
-
-/// Resolve a gear name to its directory by searching the workspace layout.
-///
-/// Search order: `gears/<name>/` -> `gears/*/<name>/` -> `libs/<name>/`.
-/// Also accepts relative paths containing `/` (resolved directly).
-fn resolve_gear_dir(workspace_root: &std::path::Path, gear: &str) -> anyhow::Result<PathBuf> {
-    let gear = gear.trim_end_matches('/');
-    if gear.contains('/') {
-        let candidate = workspace_root.join(gear);
-        if candidate.is_dir() { return Ok(candidate); }
-        anyhow::bail!("gear path not found: {}", candidate.display());
-    }
-    let candidate = workspace_root.join("gears").join(gear);
-    if candidate.is_dir() { return Ok(candidate); }
-    let gears_dir = workspace_root.join("gears");
-    if gears_dir.is_dir() {
-        if let Ok(entries) = std::fs::read_dir(&gears_dir) {
-            let mut subs: Vec<_> = entries.filter_map(Result::ok).collect();
-            subs.sort_by_key(|e| e.file_name());
-            for entry in subs {
-                if entry.file_type().is_ok_and(|ft| ft.is_dir()) {
-                    let candidate = entry.path().join(gear);
-                    if candidate.is_dir() { return Ok(candidate); }
-                }
-            }
-        }
-    }
-    let candidate = workspace_root.join("libs").join(gear);
-    if candidate.is_dir() { return Ok(candidate); }
-    anyhow::bail!("gear '{}' not found. Searched: gears/{0}/, gears/*/{0}/, libs/{0}/", gear);
 }
 
 use crate::gears_parser::Provision;
