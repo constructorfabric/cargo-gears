@@ -66,6 +66,24 @@ impl GearsParams {
                 Ok(())
             }
             OutputFormat::Json => print_json_modules(&listing),
+            OutputFormat::List => {
+                for module in &listing.modules {
+                    println!("{}", module.name);
+                }
+                Ok(())
+            }
+            OutputFormat::CargoFlags => {
+                let flags: Vec<String> = listing
+                    .modules
+                    .iter()
+                    .filter_map(|m| gear_package_name(m))
+                    .map(|pkg| format!("-p {pkg}"))
+                    .collect();
+                if !flags.is_empty() {
+                    println!("{}", flags.join(" "));
+                }
+                Ok(())
+            }
         }
     }
 
@@ -266,7 +284,7 @@ fn listed_local_modules(
         .map(|(module_name, module)| ListedGear {
             name: module_name.clone(),
             source: GearSource::Local,
-            crate_name: None,
+            crate_name: module.metadata.package.clone(),
             latest_version: None,
             metadata: verbose.then(|| module.metadata.clone()),
             used: None,
@@ -349,6 +367,16 @@ fn print_module(module: &ListedGear) {
             }
         }
     }
+}
+
+fn gear_package_name(gear: &ListedGear) -> Option<String> {
+    gear.crate_name
+        .clone()
+        .or_else(|| {
+            gear.metadata
+                .as_ref()
+                .and_then(|m| m.package.clone())
+        })
 }
 
 fn print_json_modules(listing: &GearListing) -> anyhow::Result<()> {

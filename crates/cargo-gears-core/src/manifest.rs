@@ -185,18 +185,17 @@ impl ManifestParams {
                         Ok(())
                     }
                     common::OutputFormat::Json => print_value(format, &entries),
+                    common::OutputFormat::List | common::OutputFormat::CargoFlags => {
+                        anyhow::bail!("format '{format:?}' is not supported for manifest ls")
+                    }
                 }
             }
         }
     }
 }
 
-fn print_value<T: Serialize>(format: common::OutputFormat, value: &T) -> anyhow::Result<()> {
-    match format {
-        common::OutputFormat::Json | common::OutputFormat::Table => {
-            println!("{}", serde_json::to_string_pretty(value)?);
-        }
-    }
+fn print_value<T: Serialize>(_format: common::OutputFormat, value: &T) -> anyhow::Result<()> {
+    println!("{}", serde_json::to_string_pretty(value)?);
     Ok(())
 }
 
