@@ -28,6 +28,7 @@ fn parses_list_modules_into_core_command() {
                     format: OutputFormat::Json,
                     filter: None,
                     scope_dirs: Vec::new(),
+                    include_rdeps: false,
                 },
             ),
         })
@@ -50,6 +51,7 @@ fn parses_list_modules_local_flag_into_core_command() {
                     format: OutputFormat::Json,
                     filter: None,
                     scope_dirs: Vec::new(),
+                    include_rdeps: false,
                 },
             ),
         })
@@ -80,6 +82,7 @@ fn parses_list_modules_system_flag_into_core_command() {
                     format: OutputFormat::Json,
                     filter: None,
                     scope_dirs: Vec::new(),
+                    include_rdeps: false,
                 },
             ),
         })

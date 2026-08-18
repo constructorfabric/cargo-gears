@@ -56,6 +56,7 @@ pub struct GearsParams {
     pub format: OutputFormat,
     pub filter: Option<String>,
     pub scope_dirs: Vec<String>,
+    pub include_rdeps: bool,
 }
 
 impl GearsParams {
@@ -147,6 +148,39 @@ impl GearsParams {
                 let Ok(dir) = dir.canonicalize() else { return false };
                 scopes.iter().any(|scope| dir.starts_with(scope))
             });
+        }
+
+        if self.include_rdeps && !modules.is_empty() {
+            let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
+            let seed_pkgs: Vec<String> = modules
+                .iter()
+                .filter_map(|m| gear_package_name(m))
+                .collect();
+            let expanded = crate::packages::expand_with_dependents(&workspace_root, &seed_pkgs)?;
+            let expanded_set: std::collections::BTreeSet<&str> =
+                expanded.iter().map(String::as_str).collect();
+            // Keep original modules + add any new packages as synthetic entries
+            let existing_pkgs: std::collections::BTreeSet<String> = modules
+                .iter()
+                .filter_map(|m| gear_package_name(m))
+                .collect();
+            for pkg in &expanded {
+                if !existing_pkgs.contains(pkg.as_str()) {
+                    modules.push(ListedGear {
+                        name: pkg.clone(),
+                        source: GearSource::Local,
+                        crate_name: Some(pkg.clone()),
+                        latest_version: None,
+                        metadata: None,
+                        used: None,
+                        features: Vec::new(),
+                        deps: Vec::new(),
+                        capabilities: Vec::new(),
+                        manifest_dir: None,
+                    });
+                }
+            }
+            modules.sort_by(|a, b| a.name.cmp(&b.name));
         }
 
         Ok(GearListing {
@@ -728,6 +762,7 @@ mod tests {
             format: OutputFormat::Json,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args
@@ -759,6 +794,7 @@ mod tests {
             format: OutputFormat::Json,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args
@@ -789,6 +825,7 @@ mod tests {
             format: OutputFormat::Json,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args
@@ -829,6 +866,7 @@ mod tests {
             format: OutputFormat::Json,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args

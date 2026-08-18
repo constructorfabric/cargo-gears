@@ -338,6 +338,7 @@ mod tests {
             format: OutputFormat::Table,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         args.run().expect("list gears --local should succeed");
@@ -355,6 +356,7 @@ mod tests {
             format: OutputFormat::Table,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         args.run()
@@ -371,6 +373,7 @@ mod tests {
             format: OutputFormat::Table,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         args.run().expect("list gears --system should succeed");
@@ -396,6 +399,7 @@ mod tests {
             format: OutputFormat::Table,
             filter: None,
             scope_dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         args.run().expect("list modules should succeed");

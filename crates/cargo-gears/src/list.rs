@@ -46,6 +46,9 @@ pub struct GearsArgs {
     /// Comma-separated directory paths to scope the search (relative to workspace root)
     #[arg(long, value_delimiter = ',')]
     scope_dirs: Vec<String>,
+    /// Include transitive reverse dependencies of matched gears
+    #[arg(long)]
+    include_rdeps: bool,
 }
 
 impl ListArgs {
@@ -99,6 +102,7 @@ impl From<GearsArgs> for cargo_gears_core::list::GearsParams {
             format: args.format,
             filter: args.filter,
             scope_dirs: args.scope_dirs,
+            include_rdeps: args.include_rdeps,
         }
     }
 }
