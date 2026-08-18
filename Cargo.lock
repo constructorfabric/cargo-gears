@@ -367,6 +367,7 @@ dependencies = [
  "notify",
  "prettyplease",
  "proc-macro2",
+ "regex",
  "reqwest",
  "schemars",
  "semver",

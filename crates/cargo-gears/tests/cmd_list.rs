@@ -26,6 +26,7 @@ fn parses_list_modules_into_core_command() {
                     output: cargo_gears_core::list::GearsOutput::all(),
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
+                    filter: None,
                 },
             ),
         })
@@ -46,6 +47,7 @@ fn parses_list_modules_local_flag_into_core_command() {
                     output: cargo_gears_core::list::GearsOutput::local(),
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
+                    filter: None,
                 },
             ),
         })
@@ -74,6 +76,7 @@ fn parses_list_modules_system_flag_into_core_command() {
                     output: cargo_gears_core::list::GearsOutput::system(),
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
+                    filter: None,
                 },
             ),
         })

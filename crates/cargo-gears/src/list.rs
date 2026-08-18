@@ -40,6 +40,9 @@ pub struct GearsArgs {
     /// Output format
     #[arg(short = 'f', long, value_enum, default_value_t = OutputFormat::Json)]
     format: OutputFormat,
+    /// Filter gear names by regex pattern
+    #[arg(long)]
+    filter: Option<String>,
 }
 
 impl ListArgs {
@@ -91,6 +94,7 @@ impl From<GearsArgs> for cargo_gears_core::list::GearsParams {
             output,
             registry: args.registry,
             format: args.format,
+            filter: args.filter,
         }
     }
 }

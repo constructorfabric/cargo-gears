@@ -336,6 +336,7 @@ mod tests {
             output: GearsOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
+            filter: None,
         };
 
         args.run().expect("list gears --local should succeed");
@@ -351,6 +352,7 @@ mod tests {
             output: GearsOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
+            filter: None,
         };
 
         args.run()
@@ -365,6 +367,7 @@ mod tests {
             output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
+            filter: None,
         };
 
         args.run().expect("list gears --system should succeed");
@@ -388,6 +391,7 @@ mod tests {
             output: GearsOutput::all(),
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
+            filter: None,
         };
 
         args.run().expect("list modules should succeed");

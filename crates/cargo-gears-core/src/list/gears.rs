@@ -54,6 +54,7 @@ pub struct GearsParams {
     pub output: GearsOutput,
     pub registry: Registry,
     pub format: OutputFormat,
+    pub filter: Option<String>,
 }
 
 impl GearsParams {
@@ -123,6 +124,12 @@ impl GearsParams {
                     .as_ref()
                     .context("local gears should be collected when local output is enabled")?,
             ));
+        }
+
+        if let Some(pattern) = &self.filter {
+            let re = regex::Regex::new(pattern)
+                .with_context(|| format!("invalid filter regex: {pattern}"))?;
+            modules.retain(|m| re.is_match(&m.name));
         }
 
         Ok(GearListing {
@@ -697,6 +704,7 @@ mod tests {
             output: GearsOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
         };
 
         let listing = args
@@ -726,6 +734,7 @@ mod tests {
             output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
         };
 
         let listing = args
@@ -754,6 +763,7 @@ mod tests {
             output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
         };
 
         let listing = args
@@ -792,6 +802,7 @@ mod tests {
             output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
         };
 
         let listing = args
