@@ -23,6 +23,5 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: cargo-dylint,dylint-link
-      # too many issues
-      # - run: cargo clippy --workspace --locked -- -D warnings
+      - run: cargo clippy --workspace --locked -- -D warnings
       - run: cargo test --locked
