@@ -7,29 +7,16 @@ use clap::Parser;
 use common::parse_command;
 
 #[test]
-fn parses_tools_into_core_command() {
-    let command = parse_command(&[
-        "gears",
-        "tools",
-        "--install",
-        "rustfmt,clippy",
-        "--upgrade",
-        "-y",
-        "-v",
-    ]);
+fn try_from_returns_error_for_tools_command() {
+    use std::convert::TryFrom;
 
+    let cli = Cli::try_parse_from(["gears", "tools", "--install", "rustfmt,clippy", "--upgrade"])
+        .expect("should parse");
+    let result = GearsCommand::try_from(cli);
+    assert!(result.is_err());
     assert_eq!(
-        command,
-        GearsCommand::Tools(cargo_gears_core::tools::ToolsParams {
-            all: false,
-            upgrade: true,
-            install: Some(vec![
-                cargo_gears_core::tools::ToolName::Rustfmt,
-                cargo_gears_core::tools::ToolName::Clippy,
-            ]),
-            yolo: true,
-            verbose: true,
-        })
+        result.unwrap_err().to_string(),
+        "command should be dispatched directly in Cli::run()"
     );
 }
 

@@ -79,7 +79,7 @@ impl GearsParams {
                 let flags: Vec<String> = listing
                     .modules
                     .iter()
-                    .filter_map(|m| gear_package_name(m))
+                    .filter_map(gear_package_name)
                     .map(|pkg| format!("-p {pkg}"))
                     .collect();
                 if !flags.is_empty() {
@@ -143,25 +143,24 @@ impl GearsParams {
                 .filter_map(|d| d.canonicalize().ok())
                 .collect();
             modules.retain(|m| {
-                let Some(dir) = &m.manifest_dir else { return false };
+                let Some(dir) = &m.manifest_dir else {
+                    return false;
+                };
                 let dir = std::path::Path::new(dir);
-                let Ok(dir) = dir.canonicalize() else { return false };
+                let Ok(dir) = dir.canonicalize() else {
+                    return false;
+                };
                 scopes.iter().any(|scope| dir.starts_with(scope))
             });
         }
 
         if self.include_rdeps && !modules.is_empty() {
             let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
-            let seed_pkgs: Vec<String> = modules
-                .iter()
-                .filter_map(|m| gear_package_name(m))
-                .collect();
+            let seed_pkgs: Vec<String> = modules.iter().filter_map(gear_package_name).collect();
             let expanded = crate::packages::expand_with_dependents(&workspace_root, &seed_pkgs)?;
             // Keep original modules + add any new packages as synthetic entries
-            let existing_pkgs: std::collections::BTreeSet<String> = modules
-                .iter()
-                .filter_map(|m| gear_package_name(m))
-                .collect();
+            let existing_pkgs: std::collections::BTreeSet<String> =
+                modules.iter().filter_map(gear_package_name).collect();
             for pkg in &expanded {
                 if !existing_pkgs.contains(pkg.as_str()) {
                     modules.push(ListedGear {
@@ -433,11 +432,7 @@ fn print_module(module: &ListedGear) {
 fn gear_package_name(gear: &ListedGear) -> Option<String> {
     gear.crate_name
         .clone()
-        .or_else(|| {
-            gear.metadata
-                .as_ref()
-                .and_then(|m| m.package.clone())
-        })
+        .or_else(|| gear.metadata.as_ref().and_then(|m| m.package.clone()))
 }
 
 fn print_json_modules(listing: &GearListing) -> anyhow::Result<()> {

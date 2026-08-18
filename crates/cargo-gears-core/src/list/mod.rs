@@ -44,13 +44,15 @@ impl FeaturesParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let content = std::fs::read_to_string(&self.manifest)
             .with_context(|| format!("cannot read {}", self.manifest.display()))?;
-        let doc: toml::Table = content.parse()
+        let doc: toml::Table = content
+            .parse()
             .with_context(|| format!("cannot parse {}", self.manifest.display()))?;
-        let features = doc.get("features")
+        let features = doc
+            .get("features")
             .and_then(|v| v.as_table())
             .map(|t| {
                 let mut keys: Vec<&str> = t.keys().map(String::as_str).collect();
-                keys.sort();
+                keys.sort_unstable();
                 keys
             })
             .unwrap_or_default();
@@ -87,10 +89,10 @@ impl DepsParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let content = std::fs::read_to_string(&self.manifest)
             .with_context(|| format!("cannot read {}", self.manifest.display()))?;
-        let doc: toml::Table = content.parse()
+        let doc: toml::Table = content
+            .parse()
             .with_context(|| format!("cannot parse {}", self.manifest.display()))?;
-        let deps_table = doc.get("dependencies")
-            .and_then(|v| v.as_table());
+        let deps_table = doc.get("dependencies").and_then(|v| v.as_table());
         let Some(deps_table) = deps_table else {
             return Ok(());
         };
@@ -100,7 +102,7 @@ impl DepsParams {
             let is_optional = value
                 .as_table()
                 .and_then(|t| t.get("optional"))
-                .and_then(|v| v.as_bool())
+                .and_then(toml::Value::as_bool)
                 .unwrap_or(false);
             if self.non_optional && is_optional {
                 continue;
@@ -154,15 +156,21 @@ impl PackagesParams {
         let mut packages = if self.scope_dirs.is_empty() {
             crate::packages::all_workspace_packages(&workspace_root)?
         } else {
-            let dirs: Vec<std::path::PathBuf> = self.scope_dirs
+            let dirs: Vec<std::path::PathBuf> = self
+                .scope_dirs
                 .iter()
                 .map(|d| {
                     let d = d.trim_end_matches('/');
                     let p = std::path::PathBuf::from(d);
-                    if p.is_absolute() { p } else { workspace_root.join(d) }
+                    if p.is_absolute() {
+                        p
+                    } else {
+                        workspace_root.join(d)
+                    }
                 })
                 .collect();
-            let dir_refs: Vec<&std::path::Path> = dirs.iter().map(std::path::PathBuf::as_path).collect();
+            let dir_refs: Vec<&std::path::Path> =
+                dirs.iter().map(std::path::PathBuf::as_path).collect();
             crate::packages::discover_packages(&workspace_root, &dir_refs)?
         };
 
@@ -172,7 +180,7 @@ impl PackagesParams {
             packages.retain(|p| re.is_match(p));
         }
 
-        if self.include_rdeps && !self.scope_dirs.is_empty() {
+        if self.include_rdeps && !packages.is_empty() {
             packages = crate::packages::expand_with_dependents(&workspace_root, &packages)?;
         }
 

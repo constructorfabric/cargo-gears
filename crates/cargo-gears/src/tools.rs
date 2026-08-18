@@ -49,20 +49,18 @@ impl ToolsArgs {
 
 fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
     let requirement = semver::VersionReq::parse(req_str)
-        .map_err(|e| anyhow::anyhow!("invalid version requirement '{}': {}", req_str, e))?;
+        .map_err(|e| anyhow::anyhow!("invalid version requirement '{req_str}': {e}"))?;
 
-    let output = std::process::Command::new(tool)
-        .arg("--version")
-        .output();
+    let output = std::process::Command::new(tool).arg("--version").output();
 
     let output = match output {
         Ok(o) if o.status.success() => o,
         Ok(o) => {
-            eprintln!("{} --version exited with {}", tool, o.status);
+            eprintln!("{tool} --version exited with {}", o.status);
             std::process::exit(1);
         }
         Err(_) => {
-            eprintln!("{} is not installed", tool);
+            eprintln!("{tool} is not installed");
             std::process::exit(1);
         }
     };
@@ -71,19 +69,22 @@ fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
     // Parse version from output: try each whitespace-separated token
     let version = stdout
         .split_whitespace()
-        .filter_map(|token| semver::Version::parse(token.trim_end_matches(',')).ok())
-        .next();
+        .find_map(|token| semver::Version::parse(token.trim_end_matches(',')).ok());
 
     let Some(version) = version else {
-        eprintln!("cannot parse version from `{} --version` output: {}", tool, stdout.trim());
+        eprintln!(
+            "cannot parse version from `{} --version` output: {}",
+            tool,
+            stdout.trim()
+        );
         std::process::exit(1);
     };
 
     if requirement.matches(&version) {
-        println!("{}", version);
+        println!("{version}");
         Ok(())
     } else {
-        eprintln!("{} {} does not satisfy {}", tool, version, req_str);
+        eprintln!("{tool} {version} does not satisfy {req_str}");
         std::process::exit(1);
     }
 }

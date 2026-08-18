@@ -90,14 +90,14 @@ impl Cli {
     fn run_check_version(req: &str) -> anyhow::Result<()> {
         let current = env!("CARGO_PKG_VERSION");
         let version = semver::Version::parse(current)
-            .map_err(|e| anyhow::anyhow!("cannot parse own version '{}': {}", current, e))?;
+            .map_err(|e| anyhow::anyhow!("cannot parse own version '{current}': {e}"))?;
         let requirement = semver::VersionReq::parse(req)
-            .map_err(|e| anyhow::anyhow!("invalid version requirement '{}': {}", req, e))?;
+            .map_err(|e| anyhow::anyhow!("invalid version requirement '{req}': {e}"))?;
         if requirement.matches(&version) {
-            println!("{}", current);
+            println!("{current}");
             Ok(())
         } else {
-            eprintln!("cargo-gears {} does not satisfy {}", current, req);
+            eprintln!("cargo-gears {current} does not satisfy {req}");
             std::process::exit(1);
         }
     }

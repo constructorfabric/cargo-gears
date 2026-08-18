@@ -35,6 +35,6 @@ fn try_from_returns_error_for_lint_command() {
     assert!(result.is_err());
     assert_eq!(
         result.unwrap_err().to_string(),
-        "manifest-based commands should be resolved in Cli::run()"
+        "command should be dispatched directly in Cli::run()"
     );
 }

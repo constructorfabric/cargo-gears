@@ -18,7 +18,7 @@ pub fn all_workspace_packages(workspace_root: &Path) -> Result<Vec<String>> {
     let graph = build_graph(workspace_root)?;
     let mut names: Vec<String> = graph
         .packages()
-        .filter(|pkg| pkg.in_workspace())
+        .filter(guppy::graph::PackageMetadata::in_workspace)
         .map(|pkg| pkg.name().to_owned())
         .collect();
     names.sort();
@@ -39,7 +39,11 @@ pub fn discover_packages(workspace_root: &Path, scope_dirs: &[&Path]) -> Result<
     if scopes.is_empty() {
         anyhow::bail!(
             "none of the scope directories exist: {}",
-            scope_dirs.iter().map(|d| d.display().to_string()).collect::<Vec<_>>().join(", ")
+            scope_dirs
+                .iter()
+                .map(|d| d.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         );
     }
 
@@ -65,7 +69,11 @@ pub fn discover_packages(workspace_root: &Path, scope_dirs: &[&Path]) -> Result<
     if names.is_empty() {
         anyhow::bail!(
             "no workspace packages found under: {}",
-            scope_dirs.iter().map(|d| d.display().to_string()).collect::<Vec<_>>().join(", ")
+            scope_dirs
+                .iter()
+                .map(|d| d.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         );
     }
 
