@@ -41,6 +41,8 @@ pub struct LintParams {
     /// Expand `packages` to also include every workspace crate that depends on
     /// them (their reverse-dependency closure) before linting.
     pub include_dependents: bool,
+    /// Require Cargo.lock is up to date.
+    pub locked: bool,
     /// List available lints instead of running them.
     pub list: bool,
 }
@@ -249,11 +251,16 @@ impl LintParams {
         let packages = self.effective_packages()?;
 
         if self.clippy {
-            run_clippy(&self.workspace_root, self.strict, &packages)?;
+            run_clippy(&self.workspace_root, self.strict, &packages, self.locked)?;
         }
 
         if self.dylint {
-            run_dylint(&self.workspace_root, &self.dylint_skip, &packages)?;
+            run_dylint(
+                &self.workspace_root,
+                &self.dylint_skip,
+                &packages,
+                self.locked,
+            )?;
         }
 
         Ok(())
@@ -313,7 +320,12 @@ fn run_fmt(workspace_path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn run_clippy(workspace_path: &Path, strict: bool, packages: &[String]) -> Result<()> {
+fn run_clippy(
+    workspace_path: &Path,
+    strict: bool,
+    packages: &[String],
+    locked: bool,
+) -> Result<()> {
     let mut cmd = cargo_cmd()?;
     cmd.arg("clippy");
     if packages.is_empty() {
@@ -324,6 +336,9 @@ fn run_clippy(workspace_path: &Path, strict: bool, packages: &[String]) -> Resul
         }
     }
     cmd.arg("--all-targets");
+    if locked {
+        cmd.arg("--locked");
+    }
     cmd.current_dir(workspace_path);
 
     // TODO Analyse the manifest feature-set policy and lint those combinations.
@@ -356,7 +371,12 @@ fn embedded_toolchains() -> Result<BTreeSet<String>> {
 }
 
 #[cfg(feature = "dylint-rules")]
-fn run_dylint(workspace_path: &Path, skipped_lints: &[String], packages: &[String]) -> Result<()> {
+fn run_dylint(
+    workspace_path: &Path,
+    skipped_lints: &[String],
+    packages: &[String],
+    locked: bool,
+) -> Result<()> {
     for toolchain in embedded_toolchains()? {
         ensure_toolchain_installed(&toolchain)?;
         clear_dylint_rustc_info_cache(workspace_path, &toolchain)?;
@@ -402,7 +422,7 @@ fn run_dylint(workspace_path: &Path, skipped_lints: &[String], packages: &[Strin
             // on the command line, in which case only those are checked.
             workspace: packages.is_empty(),
             packages: packages.to_vec(),
-            args: dylint_cargo_check_args(skipped_lints)?,
+            args: dylint_cargo_check_args(skipped_lints, locked)?,
             ..Default::default()
         }),
         ..Default::default()
@@ -412,21 +432,25 @@ fn run_dylint(workspace_path: &Path, skipped_lints: &[String], packages: &[Strin
 }
 
 #[cfg(feature = "dylint-rules")]
-fn dylint_cargo_check_args(skipped_lints: &[String]) -> Result<Vec<String>> {
-    if skipped_lints.is_empty() {
-        return Ok(Vec::new());
+fn dylint_cargo_check_args(skipped_lints: &[String], locked: bool) -> Result<Vec<String>> {
+    let mut args = Vec::new();
+
+    if !skipped_lints.is_empty() {
+        let rustflags = skipped_lints
+            .iter()
+            .flat_map(|lint| ["-A".to_owned(), lint.clone()])
+            .collect::<Vec<_>>();
+        let rustflags =
+            serde_json::to_string(&rustflags).context("failed to encode dylint skips")?;
+        args.push("--config".to_owned());
+        args.push(format!("build.rustflags={rustflags}"));
     }
 
-    let rustflags = skipped_lints
-        .iter()
-        .flat_map(|lint| ["-A".to_owned(), lint.clone()])
-        .collect::<Vec<_>>();
-    let rustflags = serde_json::to_string(&rustflags).context("failed to encode dylint skips")?;
+    if locked {
+        args.push("--locked".to_owned());
+    }
 
-    Ok(vec![
-        "--config".to_owned(),
-        format!("build.rustflags={rustflags}"),
-    ])
+    Ok(args)
 }
 
 #[cfg(feature = "dylint-rules")]
@@ -461,6 +485,7 @@ fn run_dylint(
     _workspace_path: &Path,
     _skipped_lints: &[String],
     _packages: &[String],
+    _locked: bool,
 ) -> Result<()> {
     anyhow::bail!("dylint-rules feature not enabled")
 }
@@ -472,10 +497,13 @@ mod tests {
     #[cfg(feature = "dylint-rules")]
     #[test]
     fn dylint_skip_list_is_converted_to_cargo_rustflags_config() {
-        let args = super::dylint_cargo_check_args(&[
-            "de0301_no_infra_in_domain".to_owned(),
-            "de1302_error_from_to_string".to_owned(),
-        ])
+        let args = super::dylint_cargo_check_args(
+            &[
+                "de0301_no_infra_in_domain".to_owned(),
+                "de1302_error_from_to_string".to_owned(),
+            ],
+            false,
+        )
         .expect("skip args should encode");
 
         assert_eq!(

@@ -142,25 +142,35 @@ pub fn cargo_cmd() -> anyhow::Result<Command> {
         .map(Command::new)
 }
 
+/// Flags forwarded to a `cargo build` / `cargo run` invocation.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CargoFlags {
+    pub otel: bool,
+    pub fips: bool,
+    pub release: bool,
+    pub locked: bool,
+}
+
 pub fn cargo_command(
     subcommand: &str,
     path: &Path,
     config_path: &Path,
-    otel: bool,
-    fips: bool,
-    release: bool,
+    flags: CargoFlags,
 ) -> anyhow::Result<Command> {
     let mut cmd = cargo_cmd()?;
     cmd.arg(subcommand);
     cmd.env(CONFIG_PATH_ENV_VAR, config_path.as_os_str());
-    if otel {
+    if flags.otel {
         cmd.arg("-F").arg("otel");
     }
-    if fips {
+    if flags.fips {
         cmd.arg("-F").arg("fips");
     }
-    if release {
+    if flags.release {
         cmd.arg("-r");
+    }
+    if flags.locked {
+        cmd.arg("--locked");
     }
     cmd.current_dir(path);
     Ok(cmd)
@@ -504,6 +514,7 @@ pub struct BuildRunParams {
     pub(crate) otel: bool,
     pub(crate) fips: bool,
     pub(crate) release: bool,
+    pub(crate) locked: bool,
     pub(crate) clean: bool,
     pub(crate) dry_run: bool,
 }
@@ -525,6 +536,11 @@ impl BuildRunParams {
     }
 
     #[must_use]
+    pub const fn locked(&self) -> bool {
+        self.locked
+    }
+
+    #[must_use]
     pub const fn clean(&self) -> bool {
         self.clean
     }
@@ -532,6 +548,16 @@ impl BuildRunParams {
     #[must_use]
     pub fn generated_name(&self) -> &str {
         &self.generated_name
+    }
+
+    #[must_use]
+    pub const fn cargo_flags(&self) -> CargoFlags {
+        CargoFlags {
+            otel: self.otel,
+            fips: self.fips,
+            release: self.release,
+            locked: self.locked,
+        }
     }
 }
 
@@ -551,7 +577,7 @@ pub const fn ordered_bool(enable: Option<bool>, disable: Option<bool>) -> Option
 #[cfg(test)]
 mod tests {
     use super::{
-        cargo_command, generate_server_structure, generated_project_dir,
+        CargoFlags, cargo_command, generate_server_structure, generated_project_dir,
         make_path_workspace_relative, merge_module_metadata, prepare_cargo_server_main,
         resolve_generated_project_name,
     };
@@ -653,7 +679,13 @@ path = "src/lib.rs"
         let cargo_dir = Path::new("/tmp/generated");
 
         // CARGO env var is set by `cargo test`, so cargo_command succeeds.
-        let command = cargo_command("run", cargo_dir, config_path, true, true, true)
+        let flags = CargoFlags {
+            otel: true,
+            fips: true,
+            release: true,
+            locked: false,
+        };
+        let command = cargo_command("run", cargo_dir, config_path, flags)
             .expect("cargo_command should succeed when CARGO is set");
         let args = command
             .get_args()
@@ -662,6 +694,25 @@ path = "src/lib.rs"
 
         assert_eq!(args, vec!["run", "-F", "otel", "-F", "fips", "-r"]);
         assert_eq!(command.get_current_dir(), Some(cargo_dir));
+    }
+
+    #[test]
+    fn cargo_command_passes_locked_flag() {
+        let config_path = Path::new("/tmp/config.yml");
+        let cargo_dir = Path::new("/tmp/generated");
+
+        let flags = CargoFlags {
+            locked: true,
+            ..CargoFlags::default()
+        };
+        let command = cargo_command("build", cargo_dir, config_path, flags)
+            .expect("cargo_command should succeed when CARGO is set");
+        let args = command
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect::<Vec<_>>();
+
+        assert_eq!(args, vec!["build", "--locked"]);
     }
 
     #[test]

@@ -23,6 +23,9 @@ pub struct TestArgs {
     /// Run test coverage.
     #[arg(long, action = ArgAction::SetTrue)]
     coverage: bool,
+    /// Require Cargo.lock is up to date
+    #[arg(long, action = ArgAction::SetTrue)]
+    locked: bool,
 }
 
 impl TestArgs {
@@ -77,6 +80,7 @@ impl TestArgs {
             coverage: self.coverage,
             custom_command: resolved.test.custom_command,
             runs,
+            locked: self.locked,
         })
     }
 }
