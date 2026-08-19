@@ -1,4 +1,3 @@
-use crate::common::PathConfigParams;
 use anyhow::{Context, bail};
 use std::fmt;
 use std::fs;
@@ -10,11 +9,14 @@ const DOCKERFILE_CONTENT: &str = include_str!("../../shared/Dockerfile");
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct DeployParams {
-    pub path_config: PathConfigParams,
+    /// Resolved workspace root path.
+    pub workspace_root: PathBuf,
+    /// Resolved config file path.
+    pub config_path: PathBuf,
+    /// Cargo manifest (Cargo.toml) to build.
+    pub cargo_manifest: PathBuf,
     /// Tag to apply to the generated Docker image
     pub tag: Option<String>,
-    /// Cargo manifest to build instead of generating a server project
-    pub manifest: Option<PathBuf>,
     /// By default, builds in release mode. Use this for debug mode.
     pub debug: bool,
     /// Dockerfile path to use instead of the default
@@ -25,65 +27,59 @@ pub struct DeployParams {
 
 impl DeployParams {
     pub fn run(&self) -> anyhow::Result<()> {
-        self.path_config
-            .with_workspace_dir(|workspace_path, config_path| {
-                let manifest = self
-                    .manifest
-                    .as_ref()
-                    .context("a Cargo manifest (--manifest) is required for deploy")?;
-                let manifest_path = resolve_manifest(manifest)?;
-                let artifact_name = manifest_package_name(&manifest_path)?;
+        let manifest_path = resolve_manifest(&self.cargo_manifest)?;
+        let artifact_name = manifest_package_name(&manifest_path)?;
 
-                let workspace_root = workspace_path
-                    .canonicalize()
-                    .context("can't canonicalize workspace root")?;
-                ensure_dockerfile(&workspace_root)?;
+        let workspace_root = self
+            .workspace_root
+            .canonicalize()
+            .context("can't canonicalize workspace root")?;
+        ensure_dockerfile(&workspace_root)?;
 
-                let manifest_arg =
-                    path_inside_build_context(&manifest_path, &workspace_root, "manifest")?;
-                let config_arg = path_inside_build_context(config_path, &workspace_root, "config")?;
-                let config_ext = config_path
-                    .extension()
-                    .and_then(std::ffi::OsStr::to_str)
-                    .context("config must have a file extension")?;
+        let manifest_arg = path_inside_build_context(&manifest_path, &workspace_root, "manifest")?;
+        let config_arg = path_inside_build_context(&self.config_path, &workspace_root, "config")?;
+        let config_ext = self
+            .config_path
+            .extension()
+            .and_then(std::ffi::OsStr::to_str)
+            .context("config must have a file extension")?;
 
-                let mut command = Command::new("docker");
-                command.arg("build");
-                add_build_arg(&mut command, "BUILDER_MANIFEST", &manifest_arg);
-                add_build_arg(
-                    &mut command,
-                    "BUILD_MODE",
-                    if self.debug { "debug" } else { "release" },
-                );
-                add_build_arg(&mut command, "ARTIFACT_NAME", &artifact_name);
-                add_build_arg(&mut command, "LOCAL_CONFIG_PATH", &config_arg);
-                add_build_arg(&mut command, "CONFIG_EXT", config_ext);
-                for arg in &self.args {
-                    command.arg("--build-arg").arg(arg.to_string());
-                }
-                if let Some(tag) = &self.tag {
-                    command.arg("--tag").arg(tag);
-                } else {
-                    let default_tag = format!("gears:{}", env!("CARGO_PKG_VERSION"));
-                    command.arg("--tag").arg(default_tag);
-                }
-                if let Some(dockerfile) = &self.dockerfile {
-                    let canonical_dockerfile = dockerfile.canonicalize().with_context(|| {
-                        format!("dockerfile doesn't exists: {}", dockerfile.display())
-                    })?;
-                    command.arg("--file").arg(&canonical_dockerfile);
-                }
+        let mut command = Command::new("docker");
+        command.arg("build");
+        add_build_arg(&mut command, "BUILDER_MANIFEST", &manifest_arg);
+        add_build_arg(
+            &mut command,
+            "BUILD_MODE",
+            if self.debug { "debug" } else { "release" },
+        );
+        add_build_arg(&mut command, "ARTIFACT_NAME", &artifact_name);
+        add_build_arg(&mut command, "LOCAL_CONFIG_PATH", &config_arg);
+        add_build_arg(&mut command, "CONFIG_EXT", config_ext);
+        for arg in &self.args {
+            command.arg("--build-arg").arg(arg.to_string());
+        }
+        if let Some(tag) = &self.tag {
+            command.arg("--tag").arg(tag);
+        } else {
+            let default_tag = format!("gears:{}", env!("CARGO_PKG_VERSION"));
+            command.arg("--tag").arg(default_tag);
+        }
+        if let Some(dockerfile) = &self.dockerfile {
+            let canonical_dockerfile = dockerfile
+                .canonicalize()
+                .with_context(|| format!("dockerfile doesn't exists: {}", dockerfile.display()))?;
+            command.arg("--file").arg(&canonical_dockerfile);
+        }
 
-                command.arg(".");
-                command.current_dir(&workspace_root);
+        command.arg(".");
+        command.current_dir(&workspace_root);
 
-                let status = command.status().context("failed to run docker build")?;
-                if !status.success() {
-                    bail!("docker build exited with {status}");
-                }
+        let status = command.status().context("failed to run docker build")?;
+        if !status.success() {
+            bail!("docker build exited with {status}");
+        }
 
-                Ok(())
-            })
+        Ok(())
     }
 }
 

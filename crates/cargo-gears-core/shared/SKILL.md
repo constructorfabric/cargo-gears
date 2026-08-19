@@ -904,32 +904,36 @@ cargo gears clean -p /tmp/cf-demo
 
 ### `deploy`
 
-Generate a server project under the default generated directory and build a Docker image with the workspace `Dockerfile`.
+Build a Docker image for the generated or provided server manifest.
 
 Synopsis:
 
 ```bash
-cargo gears deploy -c <CONFIG> [-p <PATH>] [--manifest <Cargo.toml>] [--debug] [--dockerfile] [--args <KEY=VALUE>]...
+cargo gears deploy [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [-t <TAG>] [-m <Cargo.toml>] [-c <CONFIG>] [--debug] [--dockerfile <PATH>] [--args <KEY=VALUE>]...
 ```
 
 Arguments:
 
-- **[`-c, --config <CONFIG>`]** Required config file path; copied into the image and used as the runtime
-  `GEARS_CONFIG` target
-- **[`-p, --path <PATH>`]** Optional workspace directory
-- **[`-m, --manifest <Cargo.toml>`]** Optional Cargo manifest to build instead of generating the server project;
-  the path must point to a file named `Cargo.toml`
+- **[`-p, --path <PATH>`]** Optional workspace directory used to resolve relative manifest paths
+- **[`--manifest <PATH>`]** Gears manifest file, defaults to `Gears.toml`
+- **[`--app <APP> --env <ENV>`]** Manifest app/environment selection (inferred from manifest if omitted)
+- **[`-t, --tag <TAG>`]** Tag for the Docker image; defaults to `gears:<version>`
+- **[`-m, --manifest <Cargo.toml>`]** Optional Cargo manifest override; when omitted, uses the auto-resolved
+  generated project's `Cargo.toml` from the selected app/env
+- **[`-c, --config <CONFIG>`]** Optional config file override; when omitted, uses the config resolved from
+  the Gears.toml manifest
 - **[`--debug`]** Docker build mode; defaults to release mode. Use this flag to build in debug mode.
-- **[`--dockerfile <Dockerfile>`]** Dockerfile path to use instead of the default(Dockerfile from cwd)
+- **[`--dockerfile <PATH>`]** Dockerfile path to use instead of the default (Dockerfile from workspace root)
 - **[`--args <KEY=VALUE>`]** Dockerfile `ARG` override passed as `docker build --build-arg`; repeat for multiple
   overrides
 
 Behavior:
 
-- **[generates by default]** Without `--manifest`, recreates the generated server project from the config, matching
-  `build` and `run`
-- **[manifest override]** With `--manifest`, does not generate the server project; Docker builds the provided
-  manifest instead and uses its `package.name` as the artifact name
+- **[manifest selection]** Resolves the selected app/environment from `Gears.toml`, auto-selecting when there is
+  only one app/env. The generated project's `Cargo.toml` and config path are derived automatically.
+- **[manifest override]** With `-m/--manifest`, uses the provided Cargo.toml instead of the auto-resolved one;
+  its `package.name` is used as the artifact name
+- **[config override]** With `-c/--config`, uses the provided config path instead of the manifest-resolved one
 - **[Dockerfile bootstrap]** If `Dockerfile` is missing from the selected workspace root, writes the shared CLI
   Dockerfile there before running Docker
 - **[build context requirement]** The config file and selected manifest must be inside the workspace root because Docker
@@ -940,19 +944,28 @@ Behavior:
 Examples:
 
 ```bash
-cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml
+# Deploy using Gears.toml auto-selection (single app/env)
+cargo gears deploy -p /tmp/cf-demo
 ```
 
 ```bash
-cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --debug
+# Deploy a specific app/env
+cargo gears deploy --app myapp --env dev -t my-app:latest
 ```
 
 ```bash
-cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --manifest /tmp/cf-demo/Cargo.toml
+# Deploy in debug mode
+cargo gears deploy --app myapp --env dev --debug
 ```
 
 ```bash
-cargo gears deploy -p /tmp/cf-demo -c /tmp/cf-demo/config/quickstart.yml --args BUILDER_FLAGS="--features metrics"
+# Deploy with an explicit Cargo manifest override
+cargo gears deploy --app myapp --env dev -m .gears/custom-server/Cargo.toml
+```
+
+```bash
+# Deploy with extra Docker build args
+cargo gears deploy --app myapp --env dev --args BUILDER_FLAGS="--features metrics"
 ```
 
 ### `lint`
@@ -1245,5 +1258,5 @@ cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears
 cargo gears tools --all
 cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch] [--locked]
 cargo gears build [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--locked]
-cargo gears deploy [-p <workspace>] -c <config> [--manifest <Cargo.toml>] [--args <KEY=VALUE>]...
+cargo gears deploy [--app <app>] [--env <env>] [-p <workspace>] [-t <tag>] [-m <Cargo.toml>] [-c <config>] [--debug] [--args <KEY=VALUE>]...
 ```
