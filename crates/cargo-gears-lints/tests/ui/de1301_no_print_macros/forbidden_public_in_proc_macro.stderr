@@ -1,5 +1,5 @@
 error: macro `eprintln!` is forbidden in production code (DE1301)
-  --> $DIR/forbidden_public_in_proc_macro.rs:16:5
+  --> $DIR/forbidden_public_in_proc_macro.rs:17:5
    |
 LL |     eprintln!("not allowed in public helper");
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

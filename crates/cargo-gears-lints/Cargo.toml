@@ -459,6 +459,31 @@ name = "de1101_tests_in_separate_files-naming_path_correct"
 path = "tests/ui/de1101_tests_in_separate_files/naming_path_correct.rs"
 
 [[example]]
+name = "de1202_missing_docs_for_pub_crate-missing_docs"
+path = "tests/ui/de1202_missing_docs_for_pub_crate/missing_docs.rs"
+crate-type = ["lib"]
+
+[[example]]
+name = "de1202_missing_docs_for_pub_crate-documented_and_out_of_scope"
+path = "tests/ui/de1202_missing_docs_for_pub_crate/documented_and_out_of_scope.rs"
+crate-type = ["lib"]
+
+[[example]]
+name = "de1202_missing_docs_for_pub_crate-test_code"
+path = "tests/ui/de1202_missing_docs_for_pub_crate/test_code.rs"
+crate-type = ["lib"]
+
+[[example]]
+name = "de1202_missing_docs_for_pub_crate-excluded_crate"
+path = "tests/ui/de1202_missing_docs_for_pub_crate/excluded_crate.rs"
+crate-type = ["lib"]
+
+[[example]]
+name = "de1202_missing_docs_for_pub_crate-effective_visibility"
+path = "tests/ui/de1202_missing_docs_for_pub_crate/effective_visibility.rs"
+crate-type = ["lib"]
+
+[[example]]
 name = "de1301_no_print_macros-forbidden_macros"
 path = "tests/ui/de1301_no_print_macros/forbidden_macros.rs"
 crate-type = ["lib"]

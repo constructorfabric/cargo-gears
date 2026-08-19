@@ -1,0 +1,190 @@
+error: crate-public module is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:5:1
+   |
+LL | / pub(crate) mod internal {
+LL | |     // Should trigger DE1202 - missing docs on pub(crate) constant
+LL | |     pub(crate) const RETRIES: usize = 3;
+...  |
+LL | | }
+   | |_^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+   = note: `#[deny(de1202_missing_docs_for_pub_crate)]` on by default
+
+error: crate-public constant is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:7:5
+   |
+LL |     pub(crate) const RETRIES: usize = 3;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public function is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:10:5
+   |
+LL |     pub(crate) fn retry() {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public function is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:13:5
+   |
+LL |     pub fn visible_through_crate_module() {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public function is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:17:5
+   |
+LL |     pub(crate) fn empty_docs() {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public struct is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:20:5
+   |
+LL | /     pub(crate) struct Policy {
+LL | |         // Should trigger DE1202 - missing docs on pub(crate) field
+LL | |         pub(crate) attempts: usize,
+LL | |         private: usize,
+LL | |     }
+   | |_____^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public field is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:22:9
+   |
+LL |         pub(crate) attempts: usize,
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public enum is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:27:5
+   |
+LL | /     pub(crate) enum State {
+LL | |         // Should trigger DE1202 - missing docs on enum variant
+LL | |         Ready,
+LL | |         /// A documented variant.
+...  |
+LL | |         },
+LL | |     }
+   | |_____^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public enum variant is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:29:9
+   |
+LL |         Ready,
+   |         ^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public field is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:33:13
+   |
+LL |             code: u16,
+   |             ^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public trait is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:38:5
+   |
+LL | /     pub(crate) trait Execute {
+LL | |         // Should trigger DE1202 - missing docs on trait item
+LL | |         fn execute(&self);
+LL | |     }
+   | |_____^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public trait item is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:40:9
+   |
+LL |         fn execute(&self);
+   |         ^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public associated item is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:45:9
+   |
+LL | /         pub(crate) fn attempts(&self) -> usize {
+LL | |             self.attempts
+LL | |         }
+   | |_________^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public field is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:53:5
+   |
+LL |     pub(crate) internal: usize,
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public function is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:58:1
+   |
+LL | pub(in crate) fn visible_in_crate() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public struct is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:61:1
+   |
+LL | pub(crate) struct CratePublicType;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public associated item is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:65:5
+   |
+LL |     pub fn crate_public_method() {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public foreign item is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:70:5
+   |
+LL |     pub(crate) fn crate_public_foreign_function();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public foreign item is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:73:5
+   |
+LL |     pub(crate) static CRATE_PUBLIC_FOREIGN_STATIC: i32;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public function is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:78:1
+   |
+LL | pub(crate) fn empty_expanded_docs() {}
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: crate-public function is missing documentation (DE1202)
+  --> $DIR/missing_docs.rs:83:5
+   |
+LL |     pub(crate) fn explicitly_crate_visible() {}
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: add a non-empty `///` doc comment or `#[doc = ...]` attribute
+
+error: aborting due to 21 previous errors
+

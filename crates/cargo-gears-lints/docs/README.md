@@ -45,6 +45,7 @@ Index of per-lint documentation for `cargo-gears-lints`. Each lint's README live
 ## DE12xx - Documentation
 
 - [DE1201 - Docs.rs All Features](../src/de12_documentation/de1201_docs_rs_all_features/README.md)
+- [DE1202 - Missing Docs for `pub(crate)` APIs](../src/de12_documentation/de1202_missing_docs_for_pub_crate/README.md)
 
 ## DE11xx - Testing
 

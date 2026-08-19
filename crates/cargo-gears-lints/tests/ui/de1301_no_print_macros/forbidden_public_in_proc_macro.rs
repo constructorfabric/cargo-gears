@@ -11,6 +11,7 @@ pub fn my_macro(_input: TokenStream) -> TokenStream {
     TokenStream::new()
 }
 
+/// A documented crate-public helper.
 pub(crate) fn public_helper() {
     // Should trigger DE1301 - Print macros
     eprintln!("not allowed in public helper");
