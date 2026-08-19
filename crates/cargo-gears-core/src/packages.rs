@@ -26,17 +26,17 @@ pub fn all_workspace_packages(workspace_root: &Path) -> Result<Vec<String>> {
     Ok(names)
 }
 
-/// Discover all workspace packages whose manifest path is inside any of the
-/// given `dirs`.
-pub fn discover_packages(workspace_root: &Path, dirs: &[&Path]) -> Result<Vec<String>> {
-    let graph = build_graph(workspace_root)?;
-
+/// Canonicalise every path in `dirs` and return the results.
+///
+/// Returns an error listing every directory that could not be canonicalised
+/// (i.e. does not exist on disk).
+pub fn validate_scope_dirs(dirs: &[impl AsRef<Path>]) -> Result<Vec<std::path::PathBuf>> {
     let mut invalid_dirs = Vec::new();
     let mut scopes = Vec::new();
     for d in dirs {
-        match d.canonicalize() {
+        match d.as_ref().canonicalize() {
             Ok(canonical) => scopes.push(canonical),
-            Err(_) => invalid_dirs.push(d.display().to_string()),
+            Err(_) => invalid_dirs.push(d.as_ref().display().to_string()),
         }
     }
     if !invalid_dirs.is_empty() {
@@ -45,6 +45,14 @@ pub fn discover_packages(workspace_root: &Path, dirs: &[&Path]) -> Result<Vec<St
             invalid_dirs.join(", ")
         );
     }
+    Ok(scopes)
+}
+
+/// Discover all workspace packages whose manifest path is inside any of the
+/// given `dirs`.
+pub fn discover_packages(workspace_root: &Path, dirs: &[&Path]) -> Result<Vec<String>> {
+    let graph = build_graph(workspace_root)?;
+    let scopes = validate_scope_dirs(dirs)?;
 
     let mut names: Vec<String> = graph
         .packages()

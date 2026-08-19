@@ -139,18 +139,12 @@ impl GearsParams {
                 || crate::common::resolve_workspace_path(self.path.as_deref()),
                 |p| Ok(p.to_path_buf()),
             )?;
-            let mut invalid_dirs = Vec::new();
-            let mut scopes = Vec::new();
-            for d in &self.dirs {
-                let path = workspace_root.join(d.trim_end_matches('/'));
-                match path.canonicalize() {
-                    Ok(canonical) => scopes.push(canonical),
-                    Err(_) => invalid_dirs.push(d.clone()),
-                }
-            }
-            if !invalid_dirs.is_empty() {
-                bail!("invalid scope directories: {}", invalid_dirs.join(", "));
-            }
+            let resolved: Vec<PathBuf> = self
+                .dirs
+                .iter()
+                .map(|d| workspace_root.join(d.trim_end_matches('/')))
+                .collect();
+            let scopes = crate::packages::validate_scope_dirs(&resolved)?;
             modules.retain(|m| {
                 let Some(dir) = &m.manifest_dir else {
                     return false;
