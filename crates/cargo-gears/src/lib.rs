@@ -67,6 +67,7 @@ impl Cli {
             Commands::Test(test) => test.resolve()?.run(),
             Commands::Build(build) => build.resolve()?.run(),
             Commands::Clean(clean) => clean.resolve()?.run(),
+            Commands::Deploy(deploy) => deploy.resolve()?.run(),
             Commands::Run(run) => run.resolve_and_run(),
             // Tools has its own subcommands (check-version) handled in the CLI layer.
             Commands::Tools(tools) => tools.run(),
@@ -94,12 +95,12 @@ impl TryFrom<Commands> for cargo_gears_core::GearsCommand {
             Commands::Help(help) => Ok(help.into()),
             Commands::List(list) => Ok(Self::List(list.into())),
             Commands::Manifest(manifest) => Ok(Self::Manifest(manifest.into())),
-            Commands::Deploy(deploy) => Ok(Self::Deploy(deploy.into())),
-            // Manifest-based commands should be resolved in Cli::run(), not converted here.
+            // Manifest-based commands and Tools should be resolved in Cli::run(), not converted here.
             Commands::Lint(_)
             | Commands::Test(_)
             | Commands::Build(_)
             | Commands::Clean(_)
+            | Commands::Deploy(_)
             | Commands::Run(_)
             | Commands::Tools(_) => {
                 anyhow::bail!("command should be dispatched directly in Cli::run()")
