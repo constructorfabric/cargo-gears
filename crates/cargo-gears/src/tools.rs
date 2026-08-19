@@ -39,8 +39,8 @@ struct CheckVersionArgs {
 }
 
 impl ToolsArgs {
-    pub fn run(self) -> anyhow::Result<()> {
-        if let Some(ToolsCommand::CheckVersion(args)) = self.command {
+    pub fn run(mut self) -> anyhow::Result<()> {
+        if let Some(ToolsCommand::CheckVersion(args)) = self.command.take() {
             return run_check_version(&args.tool, &args.requirement);
         }
         cargo_gears_core::tools::ToolsParams::from(self).run()
