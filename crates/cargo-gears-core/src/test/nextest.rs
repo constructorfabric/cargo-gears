@@ -140,8 +140,7 @@ pub(super) fn run_nextest(
     reporter.finish();
 
     match run_stats.summarize_final() {
-        FinalRunStats::Success => Ok(()),
-        FinalRunStats::NoTestsRun => bail!("nextest found no tests to run"),
+        FinalRunStats::Success | FinalRunStats::NoTestsRun => Ok(()),
         FinalRunStats::Cancelled { kind, .. } => bail!("nextest run cancelled: {kind:?}"),
         FinalRunStats::Failed { kind } => bail!("nextest run failed: {kind:?}"),
     }
