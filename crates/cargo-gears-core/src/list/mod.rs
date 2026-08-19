@@ -12,6 +12,7 @@ pub enum ListCommand {
     Features(FeaturesParams),
     Deps(DepsParams),
     Packages(PackagesParams),
+    Targets(TargetsParams),
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -27,6 +28,7 @@ impl ListParams {
             ListCommand::Features(args) => args.run(),
             ListCommand::Deps(args) => args.run(),
             ListCommand::Packages(args) => args.run(),
+            ListCommand::Targets(args) => args.run(),
         }
     }
 }
@@ -82,6 +84,8 @@ impl FeaturesParams {
 pub struct DepsParams {
     pub manifest: std::path::PathBuf,
     pub non_optional: bool,
+    pub dev: bool,
+    pub build: bool,
     pub format: crate::common::OutputFormat,
 }
 
@@ -92,30 +96,40 @@ impl DepsParams {
         let doc: toml::Table = content
             .parse()
             .with_context(|| format!("cannot parse {}", self.manifest.display()))?;
-        let deps_table = doc.get("dependencies").and_then(|v| v.as_table());
-        let Some(deps_table) = deps_table else {
-            return Ok(());
-        };
+
+        let mut sections: Vec<&str> = vec!["dependencies"];
+        if self.dev {
+            sections.push("dev-dependencies");
+        }
+        if self.build {
+            sections.push("build-dependencies");
+        }
 
         let mut names: Vec<String> = Vec::new();
-        for (key, value) in deps_table {
-            let is_optional = value
-                .as_table()
-                .and_then(|t| t.get("optional"))
-                .and_then(toml::Value::as_bool)
-                .unwrap_or(false);
-            if self.non_optional && is_optional {
+        for section in &sections {
+            let Some(deps_table) = doc.get(*section).and_then(|v| v.as_table()) else {
                 continue;
+            };
+            for (key, value) in deps_table {
+                let is_optional = value
+                    .as_table()
+                    .and_then(|t| t.get("optional"))
+                    .and_then(toml::Value::as_bool)
+                    .unwrap_or(false);
+                if self.non_optional && is_optional {
+                    continue;
+                }
+                // Use "package" field if present, otherwise the key
+                let pkg_name = value
+                    .as_table()
+                    .and_then(|t| t.get("package"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(key);
+                names.push(pkg_name.to_owned());
             }
-            // Use "package" field if present, otherwise the key
-            let pkg_name = value
-                .as_table()
-                .and_then(|t| t.get("package"))
-                .and_then(|v| v.as_str())
-                .unwrap_or(key);
-            names.push(pkg_name.to_owned());
         }
         names.sort();
+        names.dedup();
 
         match self.format {
             crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
@@ -138,12 +152,12 @@ impl DepsParams {
 /// Parameters for `cargo gears ls packages`.
 ///
 /// Lists workspace Cargo packages (all crates, not just annotated gears),
-/// with the same filtering options as `ls gears`: `--filter`, `--scope-dirs`,
+/// with the same filtering options as `ls gears`: `--filter`, `--dirs`,
 /// `--include-rdeps`.
 #[derive(Debug, Eq, PartialEq)]
 pub struct PackagesParams {
     pub path: Option<std::path::PathBuf>,
-    pub scope_dirs: Vec<String>,
+    pub dirs: Vec<String>,
     pub filter: Option<String>,
     pub include_rdeps: bool,
     pub format: crate::common::OutputFormat,
@@ -153,11 +167,11 @@ impl PackagesParams {
     pub fn run(&self) -> anyhow::Result<()> {
         let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
 
-        let mut packages = if self.scope_dirs.is_empty() {
+        let mut packages = if self.dirs.is_empty() {
             crate::packages::all_workspace_packages(&workspace_root)?
         } else {
             let dirs: Vec<std::path::PathBuf> = self
-                .scope_dirs
+                .dirs
                 .iter()
                 .map(|d| {
                     let d = d.trim_end_matches('/');
@@ -201,6 +215,84 @@ impl PackagesParams {
             }
         }
 
+        Ok(())
+    }
+}
+
+/// Parameters for `cargo gears ls targets --manifest <path>`.
+///
+/// Lists all target names defined in a Cargo.toml (`[[bin]]`, `[lib]`,
+/// `[[example]]`, `[[test]]`, `[[bench]]`).
+#[derive(Debug, Eq, PartialEq)]
+pub struct TargetsParams {
+    pub manifest: std::path::PathBuf,
+    pub format: crate::common::OutputFormat,
+}
+
+impl TargetsParams {
+    pub fn run(&self) -> anyhow::Result<()> {
+        let content = std::fs::read_to_string(&self.manifest)
+            .with_context(|| format!("cannot read {}", self.manifest.display()))?;
+        let doc: toml::Table = content
+            .parse()
+            .with_context(|| format!("cannot parse {}", self.manifest.display()))?;
+
+        let mut targets: Vec<String> = Vec::new();
+
+        // [lib]
+        if let Some(lib) = doc.get("lib").and_then(|v| v.as_table()) {
+            let name = lib
+                .get("name")
+                .and_then(|v| v.as_str())
+                .or_else(|| {
+                    doc.get("package")
+                        .and_then(|p| p.as_table())
+                        .and_then(|p| p.get("name"))
+                        .and_then(|v| v.as_str())
+                })
+                .unwrap_or("lib");
+            targets.push(format!("lib:{name}"));
+        }
+
+        // Array-of-tables sections
+        for (section, prefix) in [
+            ("bin", "bin"),
+            ("example", "example"),
+            ("test", "test"),
+            ("bench", "bench"),
+        ] {
+            if let Some(entries) = doc.get(section).and_then(|v| v.as_array()) {
+                for entry in entries {
+                    if let Some(name) = entry
+                        .as_table()
+                        .and_then(|t| t.get("name"))
+                        .and_then(|v| v.as_str())
+                    {
+                        targets.push(format!("{prefix}:{name}"));
+                    }
+                }
+            }
+        }
+
+        targets.sort();
+
+        match self.format {
+            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+                for t in &targets {
+                    println!("{t}");
+                }
+            }
+            crate::common::OutputFormat::Json => {
+                println!("{}", serde_json::to_string(&targets)?);
+            }
+            crate::common::OutputFormat::CargoFlags => {
+                let flags: Vec<String> = targets
+                    .iter()
+                    .filter_map(|t| t.split_once(':').map(|(_, name)| format!("--bin {name}")))
+                    .collect();
+                println!("{}", flags.join(" "));
+            }
+        }
         Ok(())
     }
 }
@@ -518,7 +610,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -536,7 +628,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -553,7 +645,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -579,7 +671,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Table,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -612,7 +704,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: Some("api-.*".to_owned()),
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -629,7 +721,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: Some("^credstore$".to_owned()),
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -707,6 +799,8 @@ mod tests {
         let args = DepsParams {
             manifest: temp_dir.path().join("Cargo.toml"),
             non_optional: false,
+            dev: false,
+            build: false,
             format: OutputFormat::List,
         };
 
@@ -733,6 +827,8 @@ mod tests {
         let args = DepsParams {
             manifest: temp_dir.path().join("Cargo.toml"),
             non_optional: true,
+            dev: false,
+            build: false,
             format: OutputFormat::List,
         };
 
@@ -758,6 +854,8 @@ mod tests {
         let args = DepsParams {
             manifest: temp_dir.path().join("Cargo.toml"),
             non_optional: false,
+            dev: false,
+            build: false,
             format: OutputFormat::List,
         };
 
@@ -781,6 +879,8 @@ mod tests {
         let args = DepsParams {
             manifest: temp_dir.path().join("Cargo.toml"),
             non_optional: false,
+            dev: false,
+            build: false,
             format: OutputFormat::List,
         };
 

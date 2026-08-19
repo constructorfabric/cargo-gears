@@ -51,40 +51,15 @@ fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
     let requirement = semver::VersionReq::parse(req_str)
         .map_err(|e| anyhow::anyhow!("invalid version requirement '{req_str}': {e}"))?;
 
-    let Ok(mut child) = std::process::Command::new(tool)
+    let output = std::process::Command::new(tool)
         .arg("--version")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
-        .spawn()
-    else {
-        eprintln!("{tool} is not installed");
-        std::process::exit(1);
-    };
-
-    let timeout = std::time::Duration::from_secs(30);
-    let start = std::time::Instant::now();
-    loop {
-        match child.try_wait() {
-            Ok(Some(_)) => break,
-            Ok(None) if start.elapsed() >= timeout => {
-                let _ = child.kill();
-                let _ = child.wait();
-                eprintln!("{tool} --version timed out after {}s", timeout.as_secs());
-                std::process::exit(1);
-            }
-            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(50)),
-            Err(e) => {
-                eprintln!("{tool} --version failed: {e}");
-                std::process::exit(1);
-            }
-        }
-    }
-
-    let output = child.wait_with_output()?;
+        .output()
+        .map_err(|_| anyhow::anyhow!("{tool} is not installed"))?;
 
     if !output.status.success() {
-        eprintln!("{tool} --version exited with {}", output.status);
-        std::process::exit(1);
+        anyhow::bail!("{tool} --version exited with {}", output.status);
     }
 
     // Combine stdout and stderr: some tools write version info to stderr.
@@ -99,20 +74,17 @@ fn run_check_version(tool: &str, req_str: &str) -> anyhow::Result<()> {
         .find_map(|token| semver::Version::parse(token.trim_end_matches(',')).ok());
 
     let Some(version) = version else {
-        eprintln!(
-            "cannot parse version from `{} --version` output: {}",
-            tool,
+        anyhow::bail!(
+            "cannot parse version from `{tool} --version` output: {}",
             version_output.trim()
         );
-        std::process::exit(1);
     };
 
     if requirement.matches(&version) {
         println!("{version}");
         Ok(())
     } else {
-        eprintln!("{tool} {version} does not satisfy {req_str}");
-        std::process::exit(1);
+        anyhow::bail!("{tool} {version} does not satisfy {req_str}");
     }
 }
 

@@ -29,7 +29,7 @@ fn parses_list_modules_into_core_command() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                     filter: None,
-                    scope_dirs: Vec::new(),
+                    dirs: Vec::new(),
                     include_rdeps: false,
                 },
             ),
@@ -52,7 +52,7 @@ fn parses_list_modules_local_flag_into_core_command() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                     filter: None,
-                    scope_dirs: Vec::new(),
+                    dirs: Vec::new(),
                     include_rdeps: false,
                 },
             ),
@@ -83,7 +83,7 @@ fn parses_list_modules_system_flag_into_core_command() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                     filter: None,
-                    scope_dirs: Vec::new(),
+                    dirs: Vec::new(),
                     include_rdeps: false,
                 },
             ),
@@ -120,7 +120,7 @@ fn parses_list_gears_with_filter() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::Json,
                     filter: Some("api-.*".to_owned()),
-                    scope_dirs: Vec::new(),
+                    dirs: Vec::new(),
                     include_rdeps: false,
                 },
             ),
@@ -129,13 +129,13 @@ fn parses_list_gears_with_filter() {
 }
 
 #[test]
-fn parses_list_gears_with_scope_dirs_and_include_rdeps() {
+fn parses_list_gears_with_dirs_and_include_rdeps() {
     let command = parse_command(&[
         "gears",
         "ls",
         "gears",
         "--local",
-        "--scope-dirs",
+        "--dirs",
         "gears/api,gears/db",
         "--include-rdeps",
         "--format",
@@ -153,7 +153,7 @@ fn parses_list_gears_with_scope_dirs_and_include_rdeps() {
                     registry: Registry::CratesIo,
                     format: OutputFormat::CargoFlags,
                     filter: None,
-                    scope_dirs: vec!["gears/api".to_owned(), "gears/db".to_owned()],
+                    dirs: vec!["gears/api".to_owned(), "gears/db".to_owned()],
                     include_rdeps: true,
                 },
             ),
@@ -204,6 +204,8 @@ fn parses_list_deps_into_core_command() {
                 cargo_gears_core::list::DepsParams {
                     manifest: std::path::PathBuf::from("Cargo.toml"),
                     non_optional: true,
+                    dev: false,
+                    build: false,
                     format: OutputFormat::List,
                 },
             ),
@@ -217,7 +219,7 @@ fn parses_list_packages_into_core_command() {
         "gears",
         "ls",
         "packages",
-        "--scope-dirs",
+        "--dirs",
         "gears",
         "--filter",
         "cf-.*",
@@ -232,7 +234,7 @@ fn parses_list_packages_into_core_command() {
             command: cargo_gears_core::list::ListCommand::Packages(
                 cargo_gears_core::list::PackagesParams {
                     path: None,
-                    scope_dirs: vec!["gears".to_owned()],
+                    dirs: vec!["gears".to_owned()],
                     filter: Some("cf-.*".to_owned()),
                     include_rdeps: true,
                     format: OutputFormat::CargoFlags,
@@ -240,13 +242,4 @@ fn parses_list_packages_into_core_command() {
             ),
         })
     );
-}
-
-#[test]
-fn parses_check_version_top_level_flag() {
-    let cli = Cli::try_parse_from(["gears", "--check-version", ">=0.0.1"]).expect("should parse");
-    // --check-version is handled in Cli::run(), not via TryFrom, so TryFrom should fail
-    // because there's no subcommand
-    let result = GearsCommand::try_from(cli);
-    assert!(result.is_err());
 }

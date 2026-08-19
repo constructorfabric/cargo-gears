@@ -27,13 +27,13 @@ pub fn all_workspace_packages(workspace_root: &Path) -> Result<Vec<String>> {
 }
 
 /// Discover all workspace packages whose manifest path is inside any of the
-/// given `scope_dirs`.
-pub fn discover_packages(workspace_root: &Path, scope_dirs: &[&Path]) -> Result<Vec<String>> {
+/// given `dirs`.
+pub fn discover_packages(workspace_root: &Path, dirs: &[&Path]) -> Result<Vec<String>> {
     let graph = build_graph(workspace_root)?;
 
     let mut invalid_dirs = Vec::new();
     let mut scopes = Vec::new();
-    for d in scope_dirs {
+    for d in dirs {
         match d.canonicalize() {
             Ok(canonical) => scopes.push(canonical),
             Err(_) => invalid_dirs.push(d.display().to_string()),
@@ -68,8 +68,7 @@ pub fn discover_packages(workspace_root: &Path, scope_dirs: &[&Path]) -> Result<
     if names.is_empty() {
         anyhow::bail!(
             "no workspace packages found under: {}",
-            scope_dirs
-                .iter()
+            dirs.iter()
                 .map(|d| d.display().to_string())
                 .collect::<Vec<_>>()
                 .join(", ")
@@ -256,7 +255,7 @@ members = ["gears/alpha", "gears/beta", "libs/gamma"]
     }
 
     #[test]
-    fn discover_packages_rejects_all_invalid_scope_dirs() {
+    fn discover_packages_rejects_all_invalid_dirs() {
         let temp = TempDir::new().expect("temp dir");
         fs::write(
             temp.path().join("Cargo.toml"),
@@ -282,7 +281,7 @@ members = ["alpha"]
     }
 
     #[test]
-    fn discover_packages_rejects_mixed_valid_and_invalid_scope_dirs() {
+    fn discover_packages_rejects_mixed_valid_and_invalid_dirs() {
         let temp = TempDir::new().expect("temp dir");
         fs::write(
             temp.path().join("Cargo.toml"),
@@ -305,13 +304,13 @@ members = ["gears/alpha"]
     }
 
     #[test]
-    fn packages_scope_dirs_rejects_invalid_dirs() {
+    fn packages_dirs_rejects_invalid_dirs() {
         let temp = TempDir::new().expect("temp dir");
         write_workspace(temp.path());
 
         let params = crate::list::PackagesParams {
             path: Some(temp.path().to_path_buf()),
-            scope_dirs: vec!["nonexistent".to_owned()],
+            dirs: vec!["nonexistent".to_owned()],
             filter: None,
             include_rdeps: false,
             format: crate::common::OutputFormat::List,
@@ -327,14 +326,14 @@ members = ["gears/alpha"]
     }
 
     #[test]
-    fn packages_filter_with_include_rdeps_expands_without_scope_dirs() {
+    fn packages_filter_with_include_rdeps_expands_without_dirs() {
         let temp = TempDir::new().expect("temp dir");
         write_workspace(temp.path());
 
         // Filter to "leaf" only, then expand with rdeps — should get leaf + mid + top
         let params = crate::list::PackagesParams {
             path: Some(temp.path().to_path_buf()),
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             filter: Some("^leaf$".to_owned()),
             include_rdeps: true,
             format: crate::common::OutputFormat::List,
@@ -353,7 +352,7 @@ members = ["gears/alpha"]
         // Filter to "leaf" only, no rdeps — should get just leaf
         let params = crate::list::PackagesParams {
             path: Some(temp.path().to_path_buf()),
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             filter: Some("^leaf$".to_owned()),
             include_rdeps: false,
             format: crate::common::OutputFormat::List,
@@ -372,7 +371,7 @@ members = ["gears/alpha"]
         // Filter matches nothing — rdeps should not error on empty input
         let params = crate::list::PackagesParams {
             path: Some(temp.path().to_path_buf()),
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             filter: Some("^nonexistent$".to_owned()),
             include_rdeps: true,
             format: crate::common::OutputFormat::List,

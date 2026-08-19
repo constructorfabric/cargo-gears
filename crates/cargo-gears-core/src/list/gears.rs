@@ -55,7 +55,7 @@ pub struct GearsParams {
     pub registry: Registry,
     pub format: OutputFormat,
     pub filter: Option<String>,
-    pub scope_dirs: Vec<String>,
+    pub dirs: Vec<String>,
     pub include_rdeps: bool,
 }
 
@@ -134,11 +134,14 @@ impl GearsParams {
             modules.retain(|m| re.is_match(&m.name));
         }
 
-        if !self.scope_dirs.is_empty() {
-            let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
+        if !self.dirs.is_empty() {
+            let workspace_root = workspace_path.as_deref().map_or_else(
+                || crate::common::resolve_workspace_path(self.path.as_deref()),
+                |p| Ok(p.to_path_buf()),
+            )?;
             let mut invalid_dirs = Vec::new();
             let mut scopes = Vec::new();
-            for d in &self.scope_dirs {
+            for d in &self.dirs {
                 let path = workspace_root.join(d.trim_end_matches('/'));
                 match path.canonicalize() {
                     Ok(canonical) => scopes.push(canonical),
@@ -161,12 +164,22 @@ impl GearsParams {
         }
 
         if self.include_rdeps && !modules.is_empty() {
-            let workspace_root = crate::common::resolve_workspace_path(self.path.as_deref())?;
-            let seed_pkgs: Vec<String> = modules.iter().filter_map(gear_package_name).collect();
+            let workspace_root = workspace_path.as_deref().map_or_else(
+                || crate::common::resolve_workspace_path(self.path.as_deref()),
+                |p| Ok(p.to_path_buf()),
+            )?;
+            let seed_pkgs: Vec<String> = modules
+                .iter()
+                .filter_map(gear_package_name)
+                .map(String::from)
+                .collect();
             let expanded = crate::packages::expand_with_dependents(&workspace_root, &seed_pkgs)?;
             // Keep original modules + add any new packages as synthetic entries
-            let existing_pkgs: std::collections::BTreeSet<String> =
-                modules.iter().filter_map(gear_package_name).collect();
+            let existing_pkgs: std::collections::BTreeSet<String> = modules
+                .iter()
+                .filter_map(gear_package_name)
+                .map(String::from)
+                .collect();
             for pkg in &expanded {
                 if !existing_pkgs.contains(pkg.as_str()) {
                     modules.push(ListedGear {
@@ -435,10 +448,10 @@ fn print_module(module: &ListedGear) {
     }
 }
 
-fn gear_package_name(gear: &ListedGear) -> Option<String> {
+fn gear_package_name(gear: &ListedGear) -> Option<&str> {
     gear.crate_name
-        .clone()
-        .or_else(|| gear.metadata.as_ref().and_then(|m| m.package.clone()))
+        .as_deref()
+        .or_else(|| gear.metadata.as_ref().and_then(|m| m.package.as_deref()))
 }
 
 fn print_json_modules(listing: &GearListing) -> anyhow::Result<()> {
@@ -760,7 +773,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -792,7 +805,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -823,7 +836,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 
@@ -864,7 +877,7 @@ mod tests {
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
             filter: None,
-            scope_dirs: Vec::new(),
+            dirs: Vec::new(),
             include_rdeps: false,
         };
 

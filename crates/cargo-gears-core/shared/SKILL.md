@@ -75,7 +75,8 @@ cargo gears
 │   ├── templates
 │   ├── features
 │   ├── deps
-│   └── packages
+│   ├── packages
+│   └── targets
 ├── manifest
 │   ├── validate
 │   └── ls
@@ -105,8 +106,6 @@ cargo gears
   command fails listing available names.
 - **[`--name <NAME>`]** For `build` and `run`, overrides the generated server project and binary name that would
   otherwise default to the config filename stem.
-- **[`--check-version <REQ>`]** Top-level flag. Checks that cargo-gears satisfies a semver version requirement
-  (e.g. `>=0.0.3`) and exits with code 0 (printing the version) or 1.
 - **[`-v, --verbose`]** Usually enables more logging or richer output.
 - **[name validation]** Config-managed names for modules, DB servers, and generated server names only allow letters,
   numbers, `-`, and `_`.
@@ -1111,7 +1110,7 @@ List all gears — both system-registry and workspace-discovered — in a single
 Synopsis:
 
 ```bash
-cargo gears ls gears [-p <PATH>] [--system] [--local] [--verbose] [--registry crates.io] [--format table|json|list|cargo-flags] [--filter <REGEX>] [--scope-dirs <DIR,...>] [--include-rdeps]
+cargo gears ls gears [-p <PATH>] [--system] [--local] [--verbose] [--registry crates.io] [--format table|json|list|cargo-flags] [--filter <REGEX>] [--dirs <DIR,...>] [--include-rdeps]
 ```
 
 Arguments:
@@ -1125,7 +1124,7 @@ Arguments:
 - **[`-f, --format <FORMAT>`]** Output format; defaults to `json`. Supported values: `table`, `json`, `list`,
   `cargo-flags`
 - **[`--filter <REGEX>`]** Filter gear names by regex pattern. Applied before `--include-rdeps`
-- **[`--scope-dirs <DIR,...>`]** Comma-separated directory paths (relative to workspace root) to restrict results
+- **[`--dirs <DIR,...>`]** Comma-separated directory paths (relative to workspace root) to restrict results
   to gears whose crate directory is under one of the given directories. Applied before `--include-rdeps`
 - **[`--include-rdeps`]** After filtering/scoping, expand the result set with every workspace crate that
   transitively depends on the matched gears (reverse-dependency closure)
@@ -1172,7 +1171,7 @@ cargo gears ls gears --local --filter 'api-.*' --include-rdeps
 ```
 
 ```bash
-cargo gears ls gears --local --scope-dirs gears/api -f cargo-flags
+cargo gears ls gears --local --dirs gears/api -f cargo-flags
 ```
 
 #### `ls templates`
@@ -1279,13 +1278,13 @@ filtering and reverse-dependency expansion.
 Synopsis:
 
 ```bash
-cargo gears ls packages [-p <PATH>] [--scope-dirs <DIR,...>] [--filter <REGEX>] [--include-rdeps] [-f <FORMAT>]
+cargo gears ls packages [-p <PATH>] [--dirs <DIR,...>] [--filter <REGEX>] [--include-rdeps] [-f <FORMAT>]
 ```
 
 Arguments:
 
 - **[`-p, --path <PATH>`]** Optional workspace directory
-- **[`--scope-dirs <DIR,...>`]** Comma-separated directory paths to restrict discovery to crates under those directories
+- **[`--dirs <DIR,...>`]** Comma-separated directory paths to restrict discovery to crates under those directories
   (relative to workspace root)
 - **[`--filter <REGEX>`]** Filter package names by regex pattern. Applied before `--include-rdeps`
 - **[`--include-rdeps`]** After filtering/scoping, expand the result set with every workspace crate that transitively
@@ -1295,10 +1294,10 @@ Arguments:
 
 Behavior:
 
-- **[all packages by default]** Without `--scope-dirs`, lists all workspace packages
-- **[scope-dirs discovery]** With `--scope-dirs`, only packages whose manifest path is inside one of the given directories
+- **[all packages by default]** Without `--dirs`, lists all workspace packages
+- **[dirs discovery]** With `--dirs`, only packages whose manifest path is inside one of the given directories
   are included
-- **[filter → scope → rdeps pipeline]** Filters are applied after initial selection; `--include-rdeps` then expands
+- **[scope → filter → rdeps pipeline]** Scoping is applied first, then filters, then `--include-rdeps` expands
   the filtered set
 - **[cargo-flags format]** `--format cargo-flags` prints `-p <package>` flags
 
@@ -1309,7 +1308,7 @@ cargo gears ls packages -p /tmp/cf-demo
 ```
 
 ```bash
-cargo gears ls packages -p /tmp/cf-demo --scope-dirs gears/api
+cargo gears ls packages -p /tmp/cf-demo --dirs gears/api
 ```
 
 ```bash
@@ -1409,13 +1408,13 @@ cargo gears config db add <name> [-p <workspace>] -c <config> ...
 cargo gears config db edit <name> [-p <workspace>] -c <config> ...
 cargo gears config db rm <name> [-p <workspace>] -c <config>
 
-cargo gears --check-version '<REQ>'
 
-cargo gears ls gears [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json|list|cargo-flags] [--filter <regex>] [--scope-dirs <dirs>] [--include-rdeps]
+cargo gears ls gears [-p <workspace>] [--system] [--local] [--verbose] [--registry crates.io] [-f table|json|list|cargo-flags] [--filter <regex>] [--dirs <dirs>] [--include-rdeps]
 cargo gears ls templates [-p <workspace>]
 cargo gears ls features --manifest <Cargo.toml> [-f list|json|cargo-flags]
-cargo gears ls deps --manifest <Cargo.toml> [--non-optional] [-f list|json|cargo-flags]
-cargo gears ls packages [-p <workspace>] [--scope-dirs <dirs>] [--filter <regex>] [--include-rdeps] [-f list|json|cargo-flags]
+cargo gears ls deps --manifest <Cargo.toml> [--non-optional] [--dev] [--build] [-f list|json|cargo-flags]
+cargo gears ls packages [-p <workspace>] [--dirs <dirs>] [--filter <regex>] [--include-rdeps] [-f list|json|cargo-flags]
+cargo gears ls targets --manifest <Cargo.toml> [-f list|json|cargo-flags]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
 cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--clippy] [--strict] [--dylint] [-P <spec>]... [--include-dependents] [--locked] [--list]

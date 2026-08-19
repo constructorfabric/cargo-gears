@@ -161,9 +161,9 @@ impl ManifestParams {
         let manifest = Manifest::load(&manifest_path)?;
 
         match self.command {
-            ManifestCommand::Validate { format } => {
+            ManifestCommand::Validate { format: _ } => {
                 let report = manifest.validate(&workspace_root, &manifest_path);
-                print_value(format, &report)
+                print_value(&report)
             }
             ManifestCommand::Ls { format } => {
                 let entries = manifest.entries(&workspace_root, &manifest_path);
@@ -184,7 +184,7 @@ impl ManifestParams {
                         }
                         Ok(())
                     }
-                    common::OutputFormat::Json => print_value(format, &entries),
+                    common::OutputFormat::Json => print_value(&entries),
                     common::OutputFormat::List | common::OutputFormat::CargoFlags => {
                         anyhow::bail!("format '{format:?}' is not supported for manifest ls")
                     }
@@ -194,7 +194,7 @@ impl ManifestParams {
     }
 }
 
-fn print_value<T: Serialize>(_format: common::OutputFormat, value: &T) -> anyhow::Result<()> {
+fn print_value<T: Serialize>(value: &T) -> anyhow::Result<()> {
     println!("{}", serde_json::to_string_pretty(value)?);
     Ok(())
 }

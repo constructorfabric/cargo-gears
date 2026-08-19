@@ -19,14 +19,10 @@ use std::convert::TryFrom;
 #[command(version, about)]
 #[command(propagate_version = true)]
 #[command(name = "gears")]
+#[command(arg_required_else_help = true)]
 pub struct Cli {
-    /// Check that cargo-gears satisfies a version requirement (e.g. '>=0.0.3')
-    /// and exit with code 0 (satisfied) or 1 (not satisfied).
-    #[arg(long, value_name = "REQ")]
-    check_version: Option<String>,
-
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(clap::Subcommand)]
@@ -65,15 +61,7 @@ enum Commands {
 
 impl Cli {
     pub fn run(self) -> anyhow::Result<()> {
-        if let Some(req) = &self.check_version {
-            return Self::run_check_version(req);
-        }
-
-        let Some(command) = self.command else {
-            anyhow::bail!("no subcommand provided. Run 'cargo gears --help' for usage.");
-        };
-
-        match command {
+        match self.command {
             // Manifest-based commands: resolve CLI overrides, then run core logic.
             Commands::Lint(lint) => lint.resolve()?.run(),
             Commands::Test(test) => test.resolve()?.run(),
@@ -84,21 +72,6 @@ impl Cli {
             Commands::Tools(tools) => tools.run(),
             // Non-manifest commands: pass through to core.
             other => cargo_gears_core::GearsCommand::try_from(other)?.run(),
-        }
-    }
-
-    fn run_check_version(req: &str) -> anyhow::Result<()> {
-        let current = env!("CARGO_PKG_VERSION");
-        let version = semver::Version::parse(current)
-            .map_err(|e| anyhow::anyhow!("cannot parse own version '{current}': {e}"))?;
-        let requirement = semver::VersionReq::parse(req)
-            .map_err(|e| anyhow::anyhow!("invalid version requirement '{req}': {e}"))?;
-        if requirement.matches(&version) {
-            println!("{current}");
-            Ok(())
-        } else {
-            eprintln!("cargo-gears {current} does not satisfy {req}");
-            std::process::exit(1);
         }
     }
 }
@@ -139,9 +112,6 @@ impl TryFrom<Cli> for cargo_gears_core::GearsCommand {
     type Error = anyhow::Error;
 
     fn try_from(cli: Cli) -> Result<Self, Self::Error> {
-        match cli.command {
-            Some(cmd) => Self::try_from(cmd),
-            None => anyhow::bail!("no subcommand provided"),
-        }
+        Self::try_from(cli.command)
     }
 }
