@@ -60,7 +60,13 @@ impl FeaturesParams {
             .unwrap_or_default();
 
         match self.format {
-            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+            crate::common::OutputFormat::Table => {
+                println!("FEATURE");
+                for f in &features {
+                    println!("{f}");
+                }
+            }
+            crate::common::OutputFormat::List => {
                 for f in &features {
                     println!("{f}");
                 }
@@ -132,7 +138,13 @@ impl DepsParams {
         names.dedup();
 
         match self.format {
-            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+            crate::common::OutputFormat::Table => {
+                println!("DEPENDENCY");
+                for n in &names {
+                    println!("{n}");
+                }
+            }
+            crate::common::OutputFormat::List => {
                 for n in &names {
                     println!("{n}");
                 }
@@ -199,7 +211,13 @@ impl PackagesParams {
         }
 
         match self.format {
-            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+            crate::common::OutputFormat::Table => {
+                println!("PACKAGE");
+                for p in &packages {
+                    println!("{p}");
+                }
+            }
+            crate::common::OutputFormat::List => {
                 for p in &packages {
                     println!("{p}");
                 }
@@ -277,7 +295,17 @@ impl TargetsParams {
         targets.sort();
 
         match self.format {
-            crate::common::OutputFormat::List | crate::common::OutputFormat::Table => {
+            crate::common::OutputFormat::Table => {
+                println!("{:<10} NAME", "KIND");
+                for t in &targets {
+                    if let Some((kind, name)) = t.split_once(':') {
+                        println!("{kind:<10} {name}");
+                    } else {
+                        println!("{t}");
+                    }
+                }
+            }
+            crate::common::OutputFormat::List => {
                 for t in &targets {
                     println!("{t}");
                 }
