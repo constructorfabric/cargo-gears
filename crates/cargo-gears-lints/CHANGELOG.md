@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-lints-v0.0.4...cargo-gears-lints-v0.0.5) - 2026-08-20
+
+### Added
+
+- *(dylint)* require docs for crate-public APIs (by @fdlockgraf)
+
+### Fixed
+
+- *(dylint)* use effective visibility for DE1202 (by @fdlockgraf)
+- *(dylint)* correct DE1202 visibility and scopes (by @fdlockgraf)
+
+### Contributors
+
+* @fdlockgraf
+
 ## [0.0.4](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-lints-v0.0.3...cargo-gears-lints-v0.0.4) - 2026-08-14
 
 ### Added
