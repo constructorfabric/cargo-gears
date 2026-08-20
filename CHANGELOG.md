@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-v0.0.5...cargo-gears-v0.0.6) - 2026-08-20
+
+### Fixed
+
+- add --version flag to top-level CLI parser (by @Artifizer)
+- fix the compile time warnings (by @Artifizer)
+
+### Contributors
+
+* @Artifizer
+
 ## [0.0.5](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-v0.0.4...cargo-gears-v0.0.5) - 2026-08-20
 
 ### Added
