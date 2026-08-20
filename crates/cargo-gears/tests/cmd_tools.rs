@@ -5,8 +5,6 @@ use cargo_gears_core::GearsCommand;
 use clap::Parser;
 use std::process::Command;
 
-use common::parse_command;
-
 fn cargo_gears_bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_cargo-gears"))
 }

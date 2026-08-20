@@ -1,9 +1,7 @@
 mod common;
 
-use cargo_gears::Cli;
 use cargo_gears_core::GearsCommand;
 use cargo_gears_core::common::{OutputFormat, Registry};
-use clap::Parser;
 
 use common::parse_command;
 
