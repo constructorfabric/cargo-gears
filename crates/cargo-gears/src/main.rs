@@ -4,7 +4,7 @@ use clap::Parser;
 // cargo invokes this binary as `cargo-gears gears <args>`
 // so the parser below is defined with that in mind
 #[derive(Parser)]
-#[clap(bin_name = "cargo")]
+#[clap(bin_name = "cargo", version)]
 enum Opt {
     Gears(Cli),
 }
