@@ -109,6 +109,11 @@ pub enum OutputFormat {
     #[default]
     Table,
     Json,
+    /// One item per line, plain text.
+    List,
+    /// Cargo `-p <pkg>` flags, space-separated on a single line.
+    #[cfg_attr(feature = "clap", value(name = "cargo-flags"))]
+    CargoFlags,
 }
 
 pub const DEFAULT_GENERATED_DIR: &str = ".gears";

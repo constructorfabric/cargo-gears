@@ -19,6 +19,7 @@ use std::convert::TryFrom;
 #[command(version, about)]
 #[command(propagate_version = true)]
 #[command(name = "gears")]
+#[command(arg_required_else_help = true)]
 pub struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -68,6 +69,8 @@ impl Cli {
             Commands::Clean(clean) => clean.resolve()?.run(),
             Commands::Deploy(deploy) => deploy.resolve()?.run(),
             Commands::Run(run) => run.resolve_and_run(),
+            // Tools has its own subcommands (check-version) handled in the CLI layer.
+            Commands::Tools(tools) => tools.run(),
             // Non-manifest commands: pass through to core.
             other => cargo_gears_core::GearsCommand::try_from(other)?.run(),
         }
@@ -92,15 +95,15 @@ impl TryFrom<Commands> for cargo_gears_core::GearsCommand {
             Commands::Help(help) => Ok(help.into()),
             Commands::List(list) => Ok(Self::List(list.into())),
             Commands::Manifest(manifest) => Ok(Self::Manifest(manifest.into())),
-            Commands::Tools(tools) => Ok(Self::Tools(tools.into())),
-            // Manifest-based commands should be resolved in Cli::run(), not converted here.
+            // Manifest-based commands and Tools should be resolved in Cli::run(), not converted here.
             Commands::Lint(_)
             | Commands::Test(_)
             | Commands::Build(_)
             | Commands::Clean(_)
             | Commands::Deploy(_)
-            | Commands::Run(_) => {
-                anyhow::bail!("manifest-based commands should be resolved in Cli::run()")
+            | Commands::Run(_)
+            | Commands::Tools(_) => {
+                anyhow::bail!("command should be dispatched directly in Cli::run()")
             }
         }
     }

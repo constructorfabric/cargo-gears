@@ -4,6 +4,88 @@ use guppy::graph::DependencyDirection;
 use std::collections::BTreeSet;
 use std::path::Path;
 
+use guppy::graph::PackageGraph;
+
+fn build_graph(workspace_root: &Path) -> Result<PackageGraph> {
+    MetadataCommand::new()
+        .manifest_path(workspace_root.join("Cargo.toml"))
+        .build_graph()
+        .context("failed to build package graph")
+}
+
+/// Return all workspace package names, sorted and de-duplicated.
+pub fn all_workspace_packages(workspace_root: &Path) -> Result<Vec<String>> {
+    let graph = build_graph(workspace_root)?;
+    let mut names: Vec<String> = graph
+        .packages()
+        .filter(guppy::graph::PackageMetadata::in_workspace)
+        .map(|pkg| pkg.name().to_owned())
+        .collect();
+    names.sort();
+    names.dedup();
+    Ok(names)
+}
+
+/// Canonicalise every path in `dirs` and return the results.
+///
+/// Returns an error listing every directory that could not be canonicalised
+/// (i.e. does not exist on disk).
+pub fn validate_scope_dirs(dirs: &[impl AsRef<Path>]) -> Result<Vec<std::path::PathBuf>> {
+    let mut invalid_dirs = Vec::new();
+    let mut scopes = Vec::new();
+    for d in dirs {
+        match d.as_ref().canonicalize() {
+            Ok(canonical) => scopes.push(canonical),
+            Err(_) => invalid_dirs.push(d.as_ref().display().to_string()),
+        }
+    }
+    if !invalid_dirs.is_empty() {
+        anyhow::bail!(
+            "scope directories do not exist: {}",
+            invalid_dirs.join(", ")
+        );
+    }
+    Ok(scopes)
+}
+
+/// Discover all workspace packages whose manifest path is inside any of the
+/// given `dirs`.
+pub fn discover_packages(workspace_root: &Path, dirs: &[&Path]) -> Result<Vec<String>> {
+    let graph = build_graph(workspace_root)?;
+    let scopes = validate_scope_dirs(dirs)?;
+
+    let mut names: Vec<String> = graph
+        .packages()
+        .filter(|pkg| {
+            if !pkg.in_workspace() {
+                return false;
+            }
+            let Some(dir) = Path::new(pkg.manifest_path().as_str()).parent() else {
+                return false;
+            };
+            let Ok(dir) = dir.canonicalize() else {
+                return false;
+            };
+            scopes.iter().any(|scope| dir.starts_with(scope))
+        })
+        .map(|pkg| pkg.name().to_owned())
+        .collect();
+    names.sort();
+    names.dedup();
+
+    if names.is_empty() {
+        anyhow::bail!(
+            "no workspace packages found under: {}",
+            dirs.iter()
+                .map(|d| d.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+    }
+
+    Ok(names)
+}
+
 /// Expand `packages` to include every workspace crate that (transitively)
 /// depends on them — i.e. the reverse-dependency closure.
 ///
@@ -17,10 +99,7 @@ pub fn expand_with_dependents(workspace_root: &Path, packages: &[String]) -> Res
         return Ok(Vec::new());
     }
 
-    let graph = MetadataCommand::new()
-        .manifest_path(workspace_root.join("Cargo.toml"))
-        .build_graph()
-        .context("failed to build package graph for dependent expansion")?;
+    let graph = build_graph(workspace_root)?;
 
     let requested: BTreeSet<&str> = packages.iter().map(String::as_str).collect();
 
@@ -137,5 +216,177 @@ members = ["leaf", "mid", "top", "other"]
         let err = expand_with_dependents(temp.path(), &["nope".to_owned()])
             .expect_err("unknown package should error");
         assert!(err.to_string().contains("nope"), "error was: {err}");
+    }
+
+    #[test]
+    fn all_workspace_packages_returns_sorted_names() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        let packages = super::all_workspace_packages(temp.path()).expect("all_workspace_packages");
+        assert_eq!(packages, vec!["leaf", "mid", "other", "top"]);
+    }
+
+    fn write_named_member(root: &Path, dir: &str, name: &str, deps: &str) {
+        let member_dir = root.join(dir);
+        fs::create_dir_all(member_dir.join("src")).expect("create member dir");
+        fs::write(
+            member_dir.join("Cargo.toml"),
+            format!(
+                "[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\n{deps}"
+            ),
+        )
+        .expect("write member manifest");
+        fs::write(member_dir.join("src/lib.rs"), "").expect("write member lib");
+    }
+
+    #[test]
+    fn discover_packages_scopes_to_directory() {
+        let temp = TempDir::new().expect("temp dir");
+        fs::write(
+            temp.path().join("Cargo.toml"),
+            r#"[workspace]
+resolver = "2"
+members = ["gears/alpha", "gears/beta", "libs/gamma"]
+"#,
+        )
+        .expect("write root manifest");
+
+        write_named_member(temp.path(), "gears/alpha", "alpha", "");
+        write_named_member(temp.path(), "gears/beta", "beta", "");
+        write_named_member(temp.path(), "libs/gamma", "gamma", "");
+
+        let gears_dir = temp.path().join("gears");
+        let packages =
+            super::discover_packages(temp.path(), &[gears_dir.as_path()]).expect("discover");
+        assert_eq!(packages, vec!["alpha", "beta"]);
+    }
+
+    #[test]
+    fn discover_packages_rejects_all_invalid_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        fs::write(
+            temp.path().join("Cargo.toml"),
+            r#"[workspace]
+resolver = "2"
+members = ["alpha"]
+"#,
+        )
+        .expect("write root manifest");
+        write_member(temp.path(), "alpha", "");
+
+        let bad = temp.path().join("nonexistent");
+        let err = super::discover_packages(temp.path(), &[bad.as_path()])
+            .expect_err("should reject invalid scope dir");
+        assert!(
+            err.to_string().contains("scope directories do not exist"),
+            "error was: {err}"
+        );
+        assert!(
+            err.to_string().contains("nonexistent"),
+            "error should name the bad dir: {err}"
+        );
+    }
+
+    #[test]
+    fn discover_packages_rejects_mixed_valid_and_invalid_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        fs::write(
+            temp.path().join("Cargo.toml"),
+            r#"[workspace]
+resolver = "2"
+members = ["gears/alpha"]
+"#,
+        )
+        .expect("write root manifest");
+        write_named_member(temp.path(), "gears/alpha", "alpha", "");
+
+        let valid = temp.path().join("gears");
+        let bad = temp.path().join("typo");
+        let err = super::discover_packages(temp.path(), &[valid.as_path(), bad.as_path()])
+            .expect_err("should reject when any scope dir is invalid");
+        assert!(
+            err.to_string().contains("typo"),
+            "error should name the bad dir: {err}"
+        );
+    }
+
+    #[test]
+    fn packages_dirs_rejects_invalid_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            dirs: vec!["nonexistent".to_owned()],
+            filter: None,
+            include_rdeps: false,
+            format: crate::common::OutputFormat::List,
+        };
+
+        let err = params
+            .run()
+            .expect_err("ls packages with invalid scope dir should fail");
+        assert!(
+            err.to_string().contains("scope directories do not exist"),
+            "error was: {err}"
+        );
+    }
+
+    #[test]
+    fn packages_filter_with_include_rdeps_expands_without_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        // Filter to "leaf" only, then expand with rdeps — should get leaf + mid + top
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            dirs: Vec::new(),
+            filter: Some("^leaf$".to_owned()),
+            include_rdeps: true,
+            format: crate::common::OutputFormat::List,
+        };
+
+        params
+            .run()
+            .expect("ls packages --filter '^leaf$' --include-rdeps should succeed");
+    }
+
+    #[test]
+    fn packages_filter_without_rdeps_returns_only_matched() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        // Filter to "leaf" only, no rdeps — should get just leaf
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            dirs: Vec::new(),
+            filter: Some("^leaf$".to_owned()),
+            include_rdeps: false,
+            format: crate::common::OutputFormat::List,
+        };
+
+        params
+            .run()
+            .expect("ls packages --filter '^leaf$' should succeed");
+    }
+
+    #[test]
+    fn packages_filter_no_match_skips_rdeps() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(temp.path());
+
+        // Filter matches nothing — rdeps should not error on empty input
+        let params = crate::list::PackagesParams {
+            path: Some(temp.path().to_path_buf()),
+            dirs: Vec::new(),
+            filter: Some("^nonexistent$".to_owned()),
+            include_rdeps: true,
+            format: crate::common::OutputFormat::List,
+        };
+
+        params
+            .run()
+            .expect("ls packages with no filter match + rdeps should succeed");
     }
 }

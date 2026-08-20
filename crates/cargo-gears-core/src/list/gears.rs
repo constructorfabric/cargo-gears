@@ -54,6 +54,9 @@ pub struct GearsParams {
     pub output: GearsOutput,
     pub registry: Registry,
     pub format: OutputFormat,
+    pub filter: Option<String>,
+    pub dirs: Vec<String>,
+    pub include_rdeps: bool,
 }
 
 impl GearsParams {
@@ -66,6 +69,24 @@ impl GearsParams {
                 Ok(())
             }
             OutputFormat::Json => print_json_modules(&listing),
+            OutputFormat::List => {
+                for module in &listing.modules {
+                    println!("{}", module.name);
+                }
+                Ok(())
+            }
+            OutputFormat::CargoFlags => {
+                let flags: Vec<String> = listing
+                    .modules
+                    .iter()
+                    .filter_map(gear_package_name)
+                    .map(|pkg| format!("-p {pkg}"))
+                    .collect();
+                if !flags.is_empty() {
+                    println!("{}", flags.join(" "));
+                }
+                Ok(())
+            }
         }
     }
 
@@ -107,6 +128,71 @@ impl GearsParams {
             ));
         }
 
+        if let Some(pattern) = &self.filter {
+            let re = regex::Regex::new(pattern)
+                .with_context(|| format!("invalid filter regex: {pattern}"))?;
+            modules.retain(|m| re.is_match(&m.name));
+        }
+
+        if !self.dirs.is_empty() {
+            let workspace_root = workspace_path.as_deref().map_or_else(
+                || crate::common::resolve_workspace_path(self.path.as_deref()),
+                |p| Ok(p.to_path_buf()),
+            )?;
+            let resolved: Vec<PathBuf> = self
+                .dirs
+                .iter()
+                .map(|d| workspace_root.join(d.trim_end_matches('/')))
+                .collect();
+            let scopes = crate::packages::validate_scope_dirs(&resolved)?;
+            modules.retain(|m| {
+                let Some(dir) = &m.manifest_dir else {
+                    return false;
+                };
+                let dir = std::path::Path::new(dir);
+                let Ok(dir) = dir.canonicalize() else {
+                    return false;
+                };
+                scopes.iter().any(|scope| dir.starts_with(scope))
+            });
+        }
+
+        if self.include_rdeps && !modules.is_empty() {
+            let workspace_root = workspace_path.as_deref().map_or_else(
+                || crate::common::resolve_workspace_path(self.path.as_deref()),
+                |p| Ok(p.to_path_buf()),
+            )?;
+            let seed_pkgs: Vec<String> = modules
+                .iter()
+                .filter_map(gear_package_name)
+                .map(String::from)
+                .collect();
+            let expanded = crate::packages::expand_with_dependents(&workspace_root, &seed_pkgs)?;
+            // Keep original modules + add any new packages as synthetic entries
+            let existing_pkgs: std::collections::BTreeSet<String> = modules
+                .iter()
+                .filter_map(gear_package_name)
+                .map(String::from)
+                .collect();
+            for pkg in &expanded {
+                if !existing_pkgs.contains(pkg.as_str()) {
+                    modules.push(ListedGear {
+                        name: pkg.clone(),
+                        source: GearSource::Local,
+                        crate_name: Some(pkg.clone()),
+                        latest_version: None,
+                        metadata: None,
+                        used: None,
+                        features: Vec::new(),
+                        deps: Vec::new(),
+                        capabilities: Vec::new(),
+                        manifest_dir: None,
+                    });
+                }
+            }
+            modules.sort_by(|a, b| a.name.cmp(&b.name));
+        }
+
         Ok(GearListing {
             modules,
             output: self.output,
@@ -143,6 +229,9 @@ struct ListedGear {
     /// From the crate included
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     capabilities: Vec<String>,
+    /// Absolute path to the crate directory (local gears only, used for scope filtering).
+    #[serde(skip)]
+    manifest_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize)]
@@ -223,6 +312,7 @@ fn listed_system_module(
                     .collect()
             })
             .unwrap_or_default(),
+        manifest_dir: None,
     }
 }
 
@@ -266,13 +356,14 @@ fn listed_local_modules(
         .map(|(module_name, module)| ListedGear {
             name: module_name.clone(),
             source: GearSource::Local,
-            crate_name: None,
+            crate_name: module.metadata.package.clone(),
             latest_version: None,
             metadata: verbose.then(|| module.metadata.clone()),
             used: None,
             features: Vec::new(),
             deps: Vec::new(),
             capabilities: Vec::new(),
+            manifest_dir: module.metadata.path.clone(),
         })
         .collect()
 }
@@ -349,6 +440,12 @@ fn print_module(module: &ListedGear) {
             }
         }
     }
+}
+
+fn gear_package_name(gear: &ListedGear) -> Option<&str> {
+    gear.crate_name
+        .as_deref()
+        .or_else(|| gear.metadata.as_ref().and_then(|m| m.package.as_deref()))
 }
 
 fn print_json_modules(listing: &GearListing) -> anyhow::Result<()> {
@@ -669,6 +766,9 @@ mod tests {
             output: GearsOutput::local(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
+            dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args
@@ -698,6 +798,9 @@ mod tests {
             output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
+            dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args
@@ -726,6 +829,9 @@ mod tests {
             output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
+            dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args
@@ -764,6 +870,9 @@ mod tests {
             output: GearsOutput::system(),
             registry: Registry::CratesIo,
             format: OutputFormat::Json,
+            filter: None,
+            dirs: Vec::new(),
+            include_rdeps: false,
         };
 
         let listing = args
