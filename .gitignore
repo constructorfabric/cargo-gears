@@ -28,3 +28,6 @@ target
 
 # Cached checkout of sibling docs sources (e.g. gears-rust) for `make docs-preview`
 .web-docs-sources/
+
+# code-ranker reports
+.code-ranker/
