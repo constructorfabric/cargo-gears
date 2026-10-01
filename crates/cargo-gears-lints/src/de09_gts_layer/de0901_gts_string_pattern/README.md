@@ -5,10 +5,12 @@
 `DE0901_GTS_STRING_PATTERN` validates every string literal that looks like a
 Global Type Schema (GTS) identifier. It ensures that:
 
-1. `schema_id = "..."` inside `#[struct_to_gts_schema]` attributes is a valid
-   **type schema** (must end with `~`, no wildcards).
+1. `type_id = "..."` (or the deprecated `schema_id = "..."`) inside
+   `#[struct_to_gts_schema]` attributes is a valid **type schema** (must end
+   with `~`, no wildcards).
 2. Arguments passed to `gts_make_instance_id("...")` are valid **instance
-   segment identifiers** (single segment, no wildcards, no `:` or `~`).
+   segment identifiers** (single segment, no wildcards, no `:` or `~`) or an
+   anonymous-instance UUID.
 3. Any other string literal that starts with `gts.` or appears inside a
    colon-separated permission string contains a valid schema/instance chain.
 4. `const`/`static` items holding GTS wildcard strings (`*`) **must** have
@@ -16,7 +18,8 @@ Global Type Schema (GTS) identifier. It ensures that:
 
 Wildcards (`*`) are only allowed in contexts where they are used as patterns:
 permission strings, `resource_pattern(...)`, `with_pattern(...)`,
-`resolve_to_uuids(...)`, `GtsWildcard::new(...)`, and `str.starts_with(...)`.
+`resolve_to_uuids(...)`, `GtsIdPattern::try_new(...)` (`GtsWildcard::new(...)`
+before gts 0.13), and `str.starts_with(...)`.
 Everywhere else the lint rejects wildcard tokens.
 
 Use `#[allow(de0901_gts_string_pattern)]` to suppress the lint:
@@ -45,8 +48,9 @@ protects security-critical permission checks.
 * `resource_pattern("...")`, `with_pattern("...")`, and
   `resolve_to_uuids(&["..."])` calls also allow wildcards, since they represent
   pattern matching or resolution contexts.
-* `GtsWildcard::new("...")` — arguments are allowed to contain wildcards, since
-  `GtsWildcard` is explicitly typed to hold pattern values.
+* `GtsIdPattern::try_new("...")` (`GtsWildcard::new("...")` before gts 0.13) —
+  arguments are allowed to contain wildcards, since `GtsIdPattern` is
+  explicitly typed to hold pattern values.
 * `const`/`static` items whose names end with `_WILDCARD` may hold GTS wildcard
   strings (they are allowed and marked as intentional wildcard constants).
 * Strings passed to `str.starts_with("gts.")` are ignored.
@@ -62,7 +66,7 @@ name **must** end with `_WILDCARD`:
 ```rust
 // ✅ Allowed — name ends with _WILDCARD
 const SRR_WILDCARD: &str = "gts.cf.core.srr.resource.v1~*";
-GtsWildcard::new(SRR_WILDCARD).unwrap();
+GtsIdPattern::try_new(SRR_WILDCARD).unwrap();
 
 // ❌ DE0901: name does not end with _WILDCARD
 const SRR_PATTERN: &str = "gts.cf.core.srr.resource.v1~*";
@@ -104,6 +108,9 @@ let schema = "gts.acme.core.events.type.v1~";
 // ✅ Instance id segment
 let _id = Product::gts_make_instance_id("vendor.package.sku.some.v1");
 
+// ✅ Anonymous-instance UUID
+let _id = Product::gts_make_instance_id("7a1d2f34-5678-49ab-9012-abcdef123456");
+
 // ✅ Wildcard allowed inside permission/resource patterns
 let pattern = Permission::builder()
     .resource_pattern("gts.acme.core.events.topic.v1~vendor.*")
@@ -113,8 +120,8 @@ let pattern = Permission::builder()
 
 // ✅ Wildcard constant with _WILDCARD suffix
 const ALL_SRR_WILDCARD: &str = "gts.cf.core.srr.resource.v1~*";
-let wc = GtsWildcard::new(ALL_SRR_WILDCARD).unwrap();
+let wc = GtsIdPattern::try_new(ALL_SRR_WILDCARD).unwrap();
 
-// ✅ Inline wildcard passed directly to GtsWildcard::new()
-let wc = GtsWildcard::new("gts.cf.core.srr.resource.v1~*").unwrap();
+// ✅ Inline wildcard passed directly to GtsIdPattern::try_new()
+let wc = GtsIdPattern::try_new("gts.cf.core.srr.resource.v1~*").unwrap();
 ```

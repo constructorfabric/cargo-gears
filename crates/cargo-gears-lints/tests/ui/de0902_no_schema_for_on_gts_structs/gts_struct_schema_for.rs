@@ -7,7 +7,7 @@ use gts_macros::struct_to_gts_schema;
 #[struct_to_gts_schema(
     dir_path = "schemas",
     base = true,
-    schema_id = "gts.cf.core.test.plugin.v1~",
+    type_id = "gts.cf.core.test.plugin.v1~",
     description = "Test plugin specification",
     properties = "id,vendor"
 )]

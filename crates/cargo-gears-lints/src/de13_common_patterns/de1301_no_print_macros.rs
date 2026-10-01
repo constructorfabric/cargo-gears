@@ -1,6 +1,7 @@
 extern crate rustc_ast;
 extern crate rustc_span;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{
     AttrKind, Attribute, ExprKind, Item, ItemKind, MacCall, VisibilityKind, visit, visit::Visitor,
 };
@@ -109,7 +110,7 @@ struct ForbiddenMacroVisitor<'a, 'cx> {
     allow_stack: Vec<bool>,
 }
 
-impl<'a, 'cx> ForbiddenMacroVisitor<'a, 'cx> {
+impl ForbiddenMacroVisitor<'_, '_> {
     fn lint_mac_call(&self, mac_call: &MacCall) {
         let allowed_here = self.allow_stack.last().copied().unwrap_or(false);
         if allowed_here {
@@ -129,49 +130,37 @@ impl<'a, 'cx> ForbiddenMacroVisitor<'a, 'cx> {
             return;
         }
 
-        self.cx
-            .span_lint(DE1301_NO_PRINT_MACROS, mac_call.span(), |diag| {
-                diag.primary_message(format!(
-                    "macro `{name}!` is forbidden in production code (DE1301)"
-                ));
+        span_lint_and_then(
+            self.cx,
+            DE1301_NO_PRINT_MACROS,
+            mac_call.span(),
+            format!("macro `{name}!` is forbidden in production code (DE1301)"),
+            |diag| {
                 diag.help(
                     "use `tracing`/`log` for observability, or return the value and handle it at the boundary",
                 );
-            });
+            },
+        );
     }
 }
 
-impl<'ast, 'a, 'cx> visit::Visitor<'ast> for ForbiddenMacroVisitor<'a, 'cx> {
+impl<'ast> visit::Visitor<'ast> for ForbiddenMacroVisitor<'_, '_> {
     fn visit_item(&mut self, item: &'ast Item) {
         let parent_allow = self.allow_stack.last().copied().unwrap_or(false);
 
-        match &item.kind {
-            ItemKind::Fn(_fn_item) => {
-                let is_binary_entry = self.allow_stack.is_empty() && self.is_bin_crate;
-                let is_private = matches!(item.vis.kind, VisibilityKind::Inherited);
-                let allow_here = parent_allow
-                    || is_binary_entry
-                    || is_test_item(&item.attrs)
-                    || (self.in_proc_macro_crate
-                        && (is_private || has_proc_macro_attr(&item.attrs)));
+        // Functions are additionally allowed as binary entry points and, in proc-macro
+        // crates, when private or carrying a proc-macro attribute.
+        let fn_allow = matches!(item.kind, ItemKind::Fn(_)) && {
+            let is_binary_entry = self.allow_stack.is_empty() && self.is_bin_crate;
+            let is_private = matches!(item.vis.kind, VisibilityKind::Inherited);
+            is_binary_entry
+                || (self.in_proc_macro_crate && (is_private || has_proc_macro_attr(&item.attrs)))
+        };
+        let allow_here = parent_allow || fn_allow || is_test_item(&item.attrs);
 
-                self.allow_stack.push(allow_here);
-                visit::walk_item(self, item);
-                self.allow_stack.pop();
-            }
-            ItemKind::Mod(..) => {
-                let allow_here = parent_allow || is_test_item(&item.attrs);
-                self.allow_stack.push(allow_here);
-                visit::walk_item(self, item);
-                self.allow_stack.pop();
-            }
-            _ => {
-                let allow_here = parent_allow || is_test_item(&item.attrs);
-                self.allow_stack.push(allow_here);
-                visit::walk_item(self, item);
-                self.allow_stack.pop();
-            }
-        }
+        self.allow_stack.push(allow_here);
+        visit::walk_item(self, item);
+        self.allow_stack.pop();
     }
 
     fn visit_assoc_item(

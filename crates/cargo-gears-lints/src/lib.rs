@@ -67,6 +67,10 @@ mod de13_common_patterns {
 
 dylint_linting::dylint_library!();
 
+#[expect(
+    clippy::no_mangle_with_rust_abi,
+    reason = "dylint loads `register_lints` with the Rust ABI; it is built with the same toolchain"
+)]
 #[unsafe(no_mangle)]
 pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint::LintStore) {
     dylint_linting::init_config(sess);
@@ -101,97 +105,101 @@ pub fn register_lints(sess: &rustc_session::Session, lint_store: &mut rustc_lint
         de13_common_patterns::de1303_no_primitive_type_alias::DE1303_NO_PRIMITIVE_TYPE_ALIAS,
     ]);
 
-    lint_store.register_pre_expansion_pass(|| {
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de01_domain_layer::de0101_no_serde_in_domain::De0101NoSerdeInContract)
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de01_domain_layer::de0102_no_toschema_in_domain::De0102NoToschemaInContract)
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de01_domain_layer::de0104_no_api_dto_in_domain::De0104NoApiDtoInContract)
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de02_api_layer::de0203_dtos_must_use_api_dto::De0203DtosMustUseApiDto)
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(
             de02_api_layer::de0204_dtos_must_have_toschema_derive::De0204DtosMustHaveToschemaDerive,
         )
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de08_rest_api_conventions::de0803_api_snake_case::De0803ApiSnakeCase)
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de11_testing::de1101_tests_in_separate_files::De1101TestsInSeparateFiles::new())
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de09_gts_layer::de0901_gts_string_pattern::De0901GtsStringPattern::new())
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de09_gts_layer::de0904_no_hardcoded_gts_prefix::De0904NoHardcodedGtsPrefix)
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de13_common_patterns::de1301_no_print_macros::De1301NoPrintMacros)
-    });
-    lint_store.register_pre_expansion_pass(|| {
+    }));
+    lint_store.register_pre_expansion_lint_pass(Box::new(|| {
         Box::new(de03_domain_layer::de0309_must_have_domain_model::De0309MustHaveDomainModel)
-    });
-    lint_store.register_early_pass(|| {
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
         Box::new(de02_api_layer::de0201_dtos_only_in_api_rest::De0201DtosOnlyInApiRest)
-    });
-    lint_store.register_early_pass(|| {
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
         Box::new(de03_domain_layer::de0301_no_infra_in_domain::De0301NoInfraInDomain)
-    });
-    lint_store.register_early_pass(|| {
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
         Box::new(de03_domain_layer::de0308_no_http_in_domain::De0308NoHttpInDomain)
-    });
-    lint_store.register_early_pass(|| {
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
         Box::new(de05_client_layer::de0503_plugin_client_suffix::De0503PluginClientSuffix)
-    });
-    lint_store.register_early_pass(|| {
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
         Box::new(de05_client_layer::de0504_client_versioning::De0504ClientVersioning)
-    });
-    lint_store
-        .register_early_pass(|| Box::new(de07_security::de0706_no_direct_sqlx::De0706NoDirectSqlx));
-    lint_store.register_early_pass(|| {
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
+        Box::new(de07_security::de0706_no_direct_sqlx::De0706NoDirectSqlx)
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
         Box::new(de07_security::de0708_no_non_fips_hasher::De0708NoNonFipsHasher::new())
-    });
-    lint_store.register_early_pass(|| {
+    }));
+    lint_store.register_early_lint_pass(Box::new(|| {
         Box::new(de13_common_patterns::de1303_no_primitive_type_alias::De1303NoPrimitiveTypeAlias)
-    });
+    }));
 
-    lint_store.register_late_pass(|_| {
+    lint_store.register_late_lint_pass(Box::new(|_| {
         Box::new(
             de02_api_layer::de0202_dtos_not_referenced_outside_api::De0202DtosNotReferencedOutsideApi,
         )
-    });
-    lint_store.register_late_pass(|_| {
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| {
         Box::new(de12_documentation::de1201_docs_rs_all_features::De1201DocsRsAllFeatures::new())
-    });
-    lint_store.register_late_pass(|_| {
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| {
         Box::new(
             de12_documentation::de1202_missing_docs_for_pub_crate::De1202MissingDocsForPubCrate::new(),
         )
-    });
-    lint_store
-        .register_late_pass(|_| Box::new(de07_security::de0707_drop_zeroize::De0707DropZeroize));
-    lint_store.register_late_pass(|_| {
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| {
+        Box::new(de07_security::de0707_drop_zeroize::De0707DropZeroize)
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| {
         Box::new(de08_rest_api_conventions::de0801_api_endpoint_version::De0801ApiEndpointVersion)
-    });
-    lint_store.register_late_pass(|_| {
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| {
         Box::new(de08_rest_api_conventions::de0802_use_odata_ext::De0802UseOdataExt)
-    });
-    lint_store.register_late_pass(|_| {
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| {
         Box::new(de09_gts_layer::de0902_no_schema_for_on_gts_structs::De0902NoSchemaForOnGtsStructs)
-    });
-    lint_store.register_late_pass(|_| {
+    }));
+    lint_store.register_late_lint_pass(Box::new(|_| {
         Box::new(de13_common_patterns::de1302_error_from_to_string::De1302ErrorFromToString)
-    });
+    }));
 }
 
 #[cfg(test)]
 mod tests {
-    use super::LIBRARY_NAME;
+    /// Dylint locates the compiled library by its crate name (underscored), which
+    /// differs from `LIBRARY_NAME` (the hyphenated package name used as config key).
+    const DYLINT_LIBRARY_NAME: &str = env!("CARGO_CRATE_NAME");
 
     fn de1202_test_config() -> String {
         fn collect_fixture_names(
@@ -231,7 +239,7 @@ mod tests {
     fn ui_examples() {
         // DE1202 applies broadly to crate-public APIs. Exclude fixtures for
         // unrelated lints so their expected output remains isolated.
-        dylint_testing::ui::Test::examples(LIBRARY_NAME)
+        dylint_testing::ui::Test::examples(DYLINT_LIBRARY_NAME)
             .dylint_toml(de1202_test_config())
             .run();
     }
@@ -239,7 +247,7 @@ mod tests {
     #[test]
     fn de1202_skips_test_builds() {
         dylint_testing::ui::Test::src_base(
-            LIBRARY_NAME,
+            DYLINT_LIBRARY_NAME,
             "tests/ui/de1202_missing_docs_for_pub_crate/test_build",
         )
         .rustc_flags(["--test"])

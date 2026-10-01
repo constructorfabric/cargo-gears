@@ -1,5 +1,6 @@
 extern crate rustc_hir;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::{Item, ItemKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext};
 
@@ -57,13 +58,17 @@ impl<'tcx> LateLintPass<'tcx> for De0202DtosNotReferencedOutsideApi {
                     "infra"
                 };
 
-                cx.span_lint(DE0202_DTOS_NOT_REFERENCED_OUTSIDE_API, item.span, |diag| {
-                    diag.primary_message(format!(
-                        "{} module imports DTO type `{}` from api layer (DE0202)",
-                        module_type, last
-                    ));
-                    diag.help("DTOs are API layer details; use domain types instead");
-                });
+                span_lint_and_then(
+                    cx,
+                    DE0202_DTOS_NOT_REFERENCED_OUTSIDE_API,
+                    item.span,
+                    format!(
+                        "{module_type} module imports DTO type `{last}` from api layer (DE0202)"
+                    ),
+                    |diag| {
+                        diag.help("DTOs are API layer details; use domain types instead");
+                    },
+                );
             }
         }
     }

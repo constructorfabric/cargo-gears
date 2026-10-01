@@ -4,7 +4,7 @@ error: invalid GTS string: 'gts.cf.*.events.*.v1~' (DE0901)
 LL |     let _perm3 = "resource-id:gts.cf.*.events.*.v1~:action:scope";
    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: Invalid GTS wildcard pattern: gts.cf.*.events.*.v1~: The wildcard '*' token is allowed only once
+   = note: Invalid GTS identifier: gts.cf.*.events.*.v1~: The wildcard '*' token is allowed only once
    = note: `#[deny(de0901_gts_string_pattern)]` on by default
 
 error: invalid GTS string: 'gts.cf.core.events.event.v1~a.b.c~' (DE0901)
@@ -39,13 +39,13 @@ LL |     let _perm6 = "uuid:gts.badvendor.pkg.ns.type.v1~cf.pkg.ns.derived.v1~:a
    |
    = note: found vendor 'badvendor', allowed vendors: cf, vendor, example, fabrikam, contoso, acme, globex
 
-error: invalid GTS string: 'gts.cf.core.events.type.v*' (DE0901)
+error: invalid GTS string: 'gts.cf.core.events.type.v1*' (DE0901)
   --> $DIR/permission_strings.rs:36:27
    |
-LL |         .resource_pattern("gts.cf.core.events.type.v*")
-   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |         .resource_pattern("gts.cf.core.events.type.v1*")
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: Invalid GTS wildcard pattern: gts.cf.core.events.type.v*: The wildcard '*' token is allowed only at the end of the pattern
+   = note: Invalid GTS segment #1 @ offset 4: 'cf.core.events.type.v1*': Major version must be an integer, got '1*'
 
 error: aborting due to 6 previous errors
 

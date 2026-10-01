@@ -1,5 +1,6 @@
 extern crate rustc_ast;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 
@@ -68,15 +69,29 @@ impl EarlyLintPass for De0101NoSerdeInContract {
             let is_deserialize = crate::lint_utils::is_serde_trait(&segments, "Deserialize");
 
             if is_serialize {
-                cx.span_lint(DE0101_NO_SERDE_IN_CONTRACT, attr.span, |diag| {
-                    diag.primary_message("domain type should not derive `Serialize` (DE0101)");
-                    diag.help("remove serde derives from domain models; use DTOs in the API layer");
-                });
+                span_lint_and_then(
+                    cx,
+                    DE0101_NO_SERDE_IN_CONTRACT,
+                    attr.span,
+                    "domain type should not derive `Serialize` (DE0101)",
+                    |diag| {
+                        diag.help(
+                            "remove serde derives from domain models; use DTOs in the API layer",
+                        );
+                    },
+                );
             } else if is_deserialize {
-                cx.span_lint(DE0101_NO_SERDE_IN_CONTRACT, attr.span, |diag| {
-                    diag.primary_message("domain type should not derive `Deserialize` (DE0101)");
-                    diag.help("remove serde derives from domain models; use DTOs in the API layer");
-                });
+                span_lint_and_then(
+                    cx,
+                    DE0101_NO_SERDE_IN_CONTRACT,
+                    attr.span,
+                    "domain type should not derive `Deserialize` (DE0101)",
+                    |diag| {
+                        diag.help(
+                            "remove serde derives from domain models; use DTOs in the API layer",
+                        );
+                    },
+                );
             }
         });
     }

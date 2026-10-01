@@ -1,7 +1,8 @@
 extern crate rustc_span;
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
-use rustc_lint::{LateContext, LateLintPass, LintContext};
+use clippy_utils::diagnostics::{span_lint, span_lint_and_then};
+use rustc_lint::{LateContext, LateLintPass};
 use rustc_span::DUMMY_SP;
 use serde_json::Value;
 use std::collections::HashSet;
@@ -73,22 +74,28 @@ impl LateLintPass<'_> for De1201DocsRsAllFeatures {
         {
             Ok(metadata) => metadata,
             Err(error) => {
-                cx.span_lint(DE1201_DOCS_RS_ALL_FEATURES, DUMMY_SP, |diag| {
-                    diag.primary_message(format!(
+                span_lint(
+                    cx,
+                    DE1201_DOCS_RS_ALL_FEATURES,
+                    DUMMY_SP,
+                    format!(
                         "could not read Cargo metadata for docs.rs configuration check: {error}"
-                    ));
-                });
+                    ),
+                );
                 return;
             }
         };
 
         let Some(package) = find_current_package(&metadata, &manifest_path) else {
-            cx.span_lint(DE1201_DOCS_RS_ALL_FEATURES, DUMMY_SP, |diag| {
-                diag.primary_message(format!(
+            span_lint(
+                cx,
+                DE1201_DOCS_RS_ALL_FEATURES,
+                DUMMY_SP,
+                format!(
                     "could not find current package in Cargo metadata for `{}`",
                     manifest_path.display()
-                ));
-            });
+                ),
+            );
             return;
         };
 
@@ -101,18 +108,23 @@ impl LateLintPass<'_> for De1201DocsRsAllFeatures {
             return;
         };
 
-        cx.span_lint(DE1201_DOCS_RS_ALL_FEATURES, DUMMY_SP, |diag| {
-            diag.primary_message(format!(
+        span_lint_and_then(
+            cx,
+            DE1201_DOCS_RS_ALL_FEATURES,
+            DUMMY_SP,
+            format!(
                 "publishable crate `{}` must set `package.metadata.docs.rs.all-features = true` (DE1201)",
                 package.name
-            ));
-            diag.help(format!(
+            ),
+            |diag| {
+                diag.help(format!(
                 "{}; add `[package.metadata.docs.rs] all-features = true` to `{}` or add `{}` to `[de1201_docs_rs_all_features].excluded_crates` in `dylint.toml` or `{ENV_EXCLUDED_CRATES}`",
                 status.help_reason(),
                 package.manifest_path,
                 package.name,
             ));
-        });
+            },
+        );
     }
 }
 

@@ -2,6 +2,7 @@ extern crate rustc_ast;
 extern crate rustc_span;
 
 use crate::lint_utils::{filename_str, use_tree_to_strings};
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 use rustc_span::Span;
@@ -131,15 +132,18 @@ impl EarlyLintPass for De0708NoNonFipsHasher {
 
         if let Some(path_str) = banned {
             let crate_root = path_str.split("::").next().unwrap_or(&path_str);
-            cx.span_lint(DE0708_NO_NON_FIPS_HASHER, item.span, |diag| {
-                diag.primary_message(format!(
-                    "non-FIPS-validated hasher import detected: `{crate_root}` (DE0708)"
-                ));
-                diag.help(
+            span_lint_and_then(
+                cx,
+                DE0708_NO_NON_FIPS_HASHER,
+                item.span,
+                format!("non-FIPS-validated hasher import detected: `{crate_root}` (DE0708)"),
+                |diag| {
+                    diag.help(
                     "these crates use pure-Rust RustCrypto; allow-list the path via `hasher_allowed_paths` in dylint.toml if reviewed",
                 );
-                diag.note("see your project's FIPS dependency policy for details");
-            });
+                    diag.note("see your project's FIPS dependency policy for details");
+                },
+            );
         }
     }
 }

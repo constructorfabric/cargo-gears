@@ -8,9 +8,6 @@ use rustc_ast::{UseTree, UseTreeKind};
 
 use rustc_span::source_map::SourceMap;
 use rustc_span::{FileName, RemapPathScopeComponents, Span};
-use std::collections::HashSet;
-
-const ALLOWED_FLAGS: &[&str] = &["request", "response"];
 
 pub fn is_in_domain_path(source_map: &SourceMap, span: Span) -> bool {
     check_span_path(source_map, span, "/domain/")
@@ -25,7 +22,7 @@ pub fn is_in_contract_path(source_map: &SourceMap, span: Span) -> bool {
 }
 
 /// AST-based helper to check if an item is in a contract module.
-/// This works with EarlyLintPass and checks both file paths and simulated_dir comments.
+/// This works with `EarlyLintPass` and checks both file paths and `simulated_dir` comments.
 pub fn is_in_contract_module_ast(
     cx: &rustc_lint::EarlyContext<'_>,
     item: &rustc_ast::Item,
@@ -34,17 +31,13 @@ pub fn is_in_contract_module_ast(
 }
 
 /// AST-based helper to check if an item is in a domain module.
-/// This works with EarlyLintPass and checks both file paths and simulated_dir comments.
+/// This works with `EarlyLintPass` and checks both file paths and `simulated_dir` comments.
 pub fn is_in_domain_module_ast(cx: &rustc_lint::EarlyContext<'_>, item: &rustc_ast::Item) -> bool {
     is_in_domain_path(cx.sess().source_map(), item.span)
 }
 
 pub fn is_in_api_rest_folder(source_map: &SourceMap, span: Span) -> bool {
     check_span_path(source_map, span, "/api/rest/")
-}
-
-pub fn is_in_module_folder(source_map: &SourceMap, span: Span) -> bool {
-    check_span_path(source_map, span, "/modules/")
 }
 
 /// Extract the filename string from a span.
@@ -104,13 +97,13 @@ impl VersionParts<'_> {
 
 /// Parse version suffix from a trait/type name.
 ///
-/// - `FooClientV1`  -> base=`FooClient`, version_suffix=`V1`, malformed_digits=``
-/// - `FooClientV10` -> base=`FooClient`, version_suffix=`V10`, malformed_digits=``
-/// - `FooClient2`   -> base=`FooClient`, version_suffix=``, malformed_digits=`2`
-/// - `FooClient`    -> base=`FooClient`, version_suffix=``, malformed_digits=``
-/// - `FooClientV`   -> base=`FooClient`, version_suffix=``, malformed_digits=`` (bare V stripped)
-/// - `FooClientV0`  -> base=`FooClient`, version_suffix=``, malformed_digits=`` (V0 rejected)
-/// - `FooClientV01` -> base=`FooClient`, version_suffix=``, malformed_digits=`` (leading zero rejected)
+/// - `FooClientV1`  -> `base="FooClient", version_suffix="V1", malformed_digits=""`
+/// - `FooClientV10` -> `base="FooClient", version_suffix="V10", malformed_digits=""`
+/// - `FooClient2`   -> `base="FooClient", version_suffix="", malformed_digits="2"`
+/// - `FooClient`    -> `base="FooClient", version_suffix="", malformed_digits=""`
+/// - `FooClientV`   -> `base="FooClient", version_suffix="", malformed_digits=""` (bare V stripped)
+/// - `FooClientV0`  -> `base="FooClient", version_suffix="", malformed_digits=""` (V0 rejected)
+/// - `FooClientV01` -> `base="FooClient", version_suffix="", malformed_digits=""` (leading zero rejected)
 pub fn parse_version_suffix(name: &str) -> VersionParts<'_> {
     if name.is_empty() {
         return VersionParts {
@@ -156,17 +149,17 @@ pub fn parse_version_suffix(name: &str) -> VersionParts<'_> {
 
         // Valid version: V followed by non-zero number without leading zeros (V1, V2, V10)
         // Invalid: V0, V00, V01 (leading zeros or zero version)
-        if !digit_str.starts_with('0') {
-            VersionParts {
-                base: &name[..v_pos],
-                version_suffix: &name[v_pos..],
-                malformed_digits: "",
-            }
-        } else {
+        if digit_str.starts_with('0') {
             // V0, V00, V01 — strip the invalid V-prefix version from base
             VersionParts {
                 base: &name[..v_pos],
                 version_suffix: "",
+                malformed_digits: "",
+            }
+        } else {
+            VersionParts {
+                base: &name[..v_pos],
+                version_suffix: &name[v_pos..],
                 malformed_digits: "",
             }
         }
@@ -238,7 +231,7 @@ where
         {
             for nested_meta in meta_items {
                 if let Some(meta_item) = nested_meta.meta_item() {
-                    f(meta_item, attr)
+                    f(meta_item, attr);
                 }
             }
         }
@@ -310,130 +303,6 @@ pub fn has_api_dto_attribute(item: &rustc_ast::Item) -> bool {
     false
 }
 
-/// Returns the api_dto arguments (request, response) if present and valid.
-/// Returns None if the attribute is not present OR if it contains invalid flags.
-/// Returns Some with flags indicating which modes are enabled.
-///
-/// # Validation
-///
-/// This function validates the attribute arguments to match the proc-macro's behavior:
-/// - Only "request" and "response" flags are allowed
-/// - Duplicate flags are rejected
-/// - Unknown flags are rejected
-/// - At least one of "request" or "response" must be present
-///
-/// If any validation fails, this function returns `None`, treating the invalid
-/// attribute the same as an absent attribute. This ensures lint behavior stays
-/// in sync with the proc-macro, which would reject these attributes at compile time.
-pub fn get_api_dto_args(item: &rustc_ast::Item) -> Option<ApiDtoArgs> {
-    for attr in &item.attrs {
-        if let rustc_ast::AttrKind::Normal(attr_item) = &attr.kind {
-            let path = &attr_item.item.path;
-            let segments: Vec<&str> = path
-                .segments
-                .iter()
-                .map(|s| s.ident.name.as_str())
-                .collect();
-
-            if segments.last() != Some(&"api_dto") {
-                continue;
-            }
-
-            // Parse and validate the arguments
-            let mut has_request = false;
-            let mut has_response = false;
-            let mut seen_flags = HashSet::new();
-            let mut has_invalid = false;
-
-            if let Some(args) = attr_item.item.meta_item_list() {
-                for arg in args {
-                    if let Some(ident) = arg.ident() {
-                        let flag_str = ident.name.as_str();
-
-                        // Check if flag is allowed
-                        if !ALLOWED_FLAGS.contains(&flag_str) {
-                            has_invalid = true;
-                            break;
-                        }
-
-                        // Check for duplicates (convert to String for storage)
-                        if !seen_flags.insert(flag_str.to_string()) {
-                            has_invalid = true;
-                            break;
-                        }
-
-                        match flag_str {
-                            "request" => has_request = true,
-                            "response" => has_response = true,
-                            _ => unreachable!(),
-                        }
-                    }
-                }
-            }
-
-            // Reject invalid attributes by returning None
-            if has_invalid {
-                return None;
-            }
-
-            // Reject empty attributes (no request or response)
-            if !has_request && !has_response {
-                return None;
-            }
-
-            return Some(ApiDtoArgs {
-                has_request,
-                has_response,
-            });
-        }
-    }
-    None
-}
-
-/// Arguments parsed from a valid `#[api_dto(request, response)]` attribute.
-///
-/// # Validity
-///
-/// This struct is only returned by `get_api_dto_args()` for valid attributes.
-/// Invalid attributes (unknown flags, duplicates, or empty) cause `get_api_dto_args()`
-/// to return `None` instead.
-///
-/// A valid `api_dto` attribute has:
-/// - At least one of `request` or `response`
-/// - Only "request" and "response" flags (no unknown flags)
-/// - No duplicate flags
-#[derive(Debug, Clone, Copy)]
-pub struct ApiDtoArgs {
-    pub has_request: bool,
-    pub has_response: bool,
-}
-
-impl ApiDtoArgs {
-    /// Returns true if the macro will add Serialize derive (response mode)
-    pub fn adds_serialize(&self) -> bool {
-        self.has_response
-    }
-
-    /// Returns true if the macro will add Deserialize derive (request mode)
-    pub fn adds_deserialize(&self) -> bool {
-        self.has_request
-    }
-
-    /// Returns true if the macro will add ToSchema derive.
-    /// Always returns true because `ApiDtoArgs` only exists for valid attributes.
-    pub fn adds_toschema(&self) -> bool {
-        true
-    }
-
-    /// Returns true if the macro will add serde(rename_all = "snake_case").
-    /// This is added when serde derives are present (i.e., at least one mode is enabled).
-    /// Always returns true for valid `ApiDtoArgs` since validation requires at least one mode.
-    pub fn adds_snake_case_rename(&self) -> bool {
-        // Matches proc-macro logic: has_serde = serialize || deserialize
-        self.has_request || self.has_response
-    }
-}
-
 // Check if path segments represent a utoipa trait
 // Examples: ["ToSchema"], ["utoipa", "ToSchema"], ["utoipa", "ToSchema"]
 pub fn is_utoipa_trait(segments: &[&str], trait_name: &str) -> bool {
@@ -457,7 +326,7 @@ pub fn is_utoipa_trait(segments: &[&str], trait_name: &str) -> bool {
     }
 }
 
-/// Converts a UseTree to a vector of fully qualified path strings.
+/// Converts a `UseTree` to a vector of fully qualified path strings.
 /// Handles Simple, Glob, and Nested use tree kinds.
 ///
 /// Examples:
@@ -466,7 +335,7 @@ pub fn is_utoipa_trait(segments: &[&str], trait_name: &str) -> bool {
 /// - `use foo::*` -> `["foo"]`
 pub fn use_tree_to_strings(tree: &UseTree) -> Vec<String> {
     match &tree.kind {
-        UseTreeKind::Simple(..) | UseTreeKind::Glob => {
+        UseTreeKind::Simple(..) | UseTreeKind::Glob(_) => {
             vec![
                 tree.prefix
                     .segments
@@ -493,7 +362,7 @@ pub fn use_tree_to_strings(tree: &UseTree) -> Vec<String> {
                     } else if prefix.is_empty() {
                         paths.push(nested_str);
                     } else {
-                        paths.push(format!("{}::{}", prefix, nested_str));
+                        paths.push(format!("{prefix}::{nested_str}"));
                     }
                 }
             }
@@ -575,6 +444,7 @@ fn extract_simulated_dir(path_str: &str) -> Option<String> {
 /// * `ui_dir` - Path to the directory containing UI test files
 /// * `lint_code` - The lint code to check for in comments (e.g., "DE0101")
 /// * `comment_pattern` - The pattern to match in comments (e.g., "Serde in contract")
+#[cfg(test)]
 pub fn test_comment_annotations_match_stderr(
     ui_dir: &std::path::Path,
     lint_code: &str,
@@ -583,8 +453,8 @@ pub fn test_comment_annotations_match_stderr(
     use std::collections::{HashMap, HashSet};
     use std::fs;
 
-    let trigger_comment = format!("// Should trigger {} - {}", lint_code, comment_pattern);
-    let not_trigger_comment = format!("// Should not trigger {} - {}", lint_code, comment_pattern);
+    let trigger_comment = format!("// Should trigger {lint_code} - {comment_pattern}");
+    let not_trigger_comment = format!("// Should not trigger {lint_code} - {comment_pattern}");
 
     // Find all .rs files in ui directory
     let rs_files: Vec<_> = fs::read_dir(ui_dir)
@@ -609,8 +479,8 @@ pub fn test_comment_annotations_match_stderr(
         let stderr_file = rs_file.with_extension("stderr");
 
         // Read the .rs file
-        let rs_content =
-            fs::read_to_string(&rs_file).unwrap_or_else(|_| panic!("Failed to read {:?}", rs_file));
+        let rs_content = fs::read_to_string(&rs_file)
+            .unwrap_or_else(|_| panic!("Failed to read {}", rs_file.display()));
 
         // Read the .stderr file (if it exists)
         let stderr_content = fs::read_to_string(&stderr_file).unwrap_or_default();
@@ -640,7 +510,7 @@ pub fn test_comment_annotations_match_stderr(
         // only consider errors whose preceding `error:` line contains `(DExxxx)`.
         let mut error_lines = HashSet::new();
         let stderr_lines: Vec<&str> = stderr_content.lines().collect();
-        let lint_tag = format!("({})", lint_code);
+        let lint_tag = format!("({lint_code})");
         let mut current_error_is_ours = false;
         for line in &stderr_lines {
             if line.starts_with("error:") || line.starts_with("warning:") {
@@ -664,8 +534,8 @@ pub fn test_comment_annotations_match_stderr(
         for (line_num, comment_line_num) in &should_trigger_lines {
             assert!(
                 error_lines.contains(line_num),
-                "In {:?}: Line {} has '{}' comment but no corresponding error in .stderr file",
-                rs_file.file_name().unwrap(),
+                "In {}: Line {} has '{}' comment but no corresponding error in .stderr file",
+                rs_file.file_name().unwrap().display(),
                 comment_line_num,
                 trigger_comment
             );
@@ -675,8 +545,8 @@ pub fn test_comment_annotations_match_stderr(
         for (line_num, comment_line_num) in &should_not_trigger_lines {
             assert!(
                 !error_lines.contains(line_num),
-                "In {:?}: Line {} has '{}' comment but has an error in .stderr file",
-                rs_file.file_name().unwrap(),
+                "In {}: Line {} has '{}' comment but has an error in .stderr file",
+                rs_file.file_name().unwrap().display(),
                 comment_line_num,
                 not_trigger_comment
             );
@@ -686,8 +556,8 @@ pub fn test_comment_annotations_match_stderr(
         for line_num in &error_lines {
             assert!(
                 should_trigger_lines.contains_key(line_num),
-                "In {:?}: Line {} has an error in .stderr file but no '{}' comment",
-                rs_file.file_name().unwrap(),
+                "In {}: Line {} has an error in .stderr file but no '{}' comment",
+                rs_file.file_name().unwrap().display(),
                 line_num,
                 trigger_comment
             );

@@ -1,7 +1,8 @@
 extern crate rustc_ast;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind};
-use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
+use rustc_lint::{EarlyContext, EarlyLintPass};
 
 use crate::lint_utils::is_in_domain_module_ast;
 
@@ -75,10 +76,15 @@ impl EarlyLintPass for De0104NoApiDtoInContract {
                 );
 
                 if is_api_dto {
-                    cx.span_lint(DE0104_NO_API_DTO_IN_CONTRACT, attr.span, |diag| {
-                        diag.primary_message("domain type should not use `api_dto` macro (DE0104)");
-                        diag.help("api_dto is for API DTOs; use plain structs in domain/ and create DTOs in api/rest/");
-                    });
+                    span_lint_and_then(
+                        cx,
+                        DE0104_NO_API_DTO_IN_CONTRACT,
+                        attr.span,
+                        "domain type should not use `api_dto` macro (DE0104)",
+                        |diag| {
+                            diag.help("api_dto is for API DTOs; use plain structs in domain/ and create DTOs in api/rest/");
+                        },
+                    );
                 }
             }
         }

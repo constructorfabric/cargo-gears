@@ -8,7 +8,7 @@ use gts_macros::struct_to_gts_schema;
     dir_path = "schemas",
     base = true,
     // Should NOT trigger - valid GTS schema_id string
-    schema_id = "gts.vendor.test.entities.product.v1~",
+    type_id = "gts.vendor.test.entities.product.v1~",
     description = "Product entity",
     properties = "id"
 )]
@@ -62,6 +62,10 @@ fn main() {
     // Error 10: disallowed vendor in instance segment
     // Should trigger DE0901 - invalid GTS vendor
     let _id_vendor = ProductV1::<()>::gts_make_instance_id("badvendor.package.sku.abc.v1");
+
+    // Error 10b: empty instance segment
+    // Should trigger DE0901 - invalid GTS segment
+    let _id_empty = ProductV1::<()>::gts_make_instance_id("");
 
     // Valid case for comparison
     // Should NOT trigger - valid GTS instance segment

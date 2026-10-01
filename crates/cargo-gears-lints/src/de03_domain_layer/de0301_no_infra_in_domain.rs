@@ -1,6 +1,7 @@
 extern crate rustc_ast;
 
 use crate::lint_utils::{is_in_contract_module_ast, is_in_domain_path, use_tree_to_strings};
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind, Ty, TyKind};
 use rustc_lint::{EarlyLintPass, LintContext};
 
@@ -75,8 +76,8 @@ const INFRA_PATTERNS: &[&str] = &[
 ];
 
 /// Check if a path matches an infrastructure pattern.
-/// Returns the matched pattern if path equals pattern exactly or starts with "pattern::"
-/// This avoids false positives like "http_client" matching "http".
+/// Returns the matched pattern if path equals pattern exactly or starts with "`pattern::`"
+/// This avoids false positives like "`http_client`" matching "http".
 fn matches_infra_pattern(path: &str) -> Option<&'static str> {
     for pattern in INFRA_PATTERNS {
         // Patterns containing "::" are already specific (e.g., "crate::infra")
@@ -99,14 +100,17 @@ fn check_use_in_domain(cx: &rustc_lint::EarlyContext<'_>, item: &Item) {
 
     for path_str in use_tree_to_strings(use_tree) {
         if let Some(pattern) = matches_infra_pattern(&path_str) {
-            cx.span_lint(DE0301_NO_INFRA_IN_DOMAIN, item.span, |diag| {
-                diag.primary_message(format!(
-                    "domain module imports infrastructure dependency `{pattern}` (DE0301)"
-                ));
-                diag.help(
+            span_lint_and_then(
+                cx,
+                DE0301_NO_INFRA_IN_DOMAIN,
+                item.span,
+                format!("domain module imports infrastructure dependency `{pattern}` (DE0301)"),
+                |diag| {
+                    diag.help(
                     "domain should depend only on abstractions; move infrastructure code to infra/ layer",
                 );
-            });
+                },
+            );
             return;
         }
     }
@@ -124,14 +128,17 @@ fn check_type_in_domain(cx: &rustc_lint::EarlyContext<'_>, ty: &Ty) {
                 .join("::");
 
             if matches_infra_pattern(&path_str).is_some() {
-                cx.span_lint(DE0301_NO_INFRA_IN_DOMAIN, ty.span, |diag| {
-                    diag.primary_message(format!(
-                        "domain module uses infrastructure type `{path_str}` (DE0301)"
-                    ));
-                    diag.help(
+                span_lint_and_then(
+                    cx,
+                    DE0301_NO_INFRA_IN_DOMAIN,
+                    ty.span,
+                    format!("domain module uses infrastructure type `{path_str}` (DE0301)"),
+                    |diag| {
+                        diag.help(
                         "domain should depend only on abstractions; move infrastructure code to infra/ layer",
                     );
-                });
+                    },
+                );
                 return;
             }
 
@@ -151,21 +158,13 @@ fn check_type_in_domain(cx: &rustc_lint::EarlyContext<'_>, ty: &Ty) {
                 }
             }
         }
-        // Handle references: &sqlx::PgPool
-        TyKind::Ref(_, mut_ty) => {
+        // Handle references and raw pointers: &sqlx::PgPool, *const sqlx::PgPool
+        TyKind::Ref(_, mut_ty) | TyKind::Ptr(mut_ty) => {
             check_type_in_domain(cx, &mut_ty.ty);
         }
-        // Handle slices: [sqlx::PgPool]
-        TyKind::Slice(inner_ty) => {
+        // Handle slices and arrays: [sqlx::PgPool], [sqlx::PgPool; 10]
+        TyKind::Slice(inner_ty) | TyKind::Array(inner_ty, _) => {
             check_type_in_domain(cx, inner_ty);
-        }
-        // Handle arrays: [sqlx::PgPool; 10]
-        TyKind::Array(inner_ty, _) => {
-            check_type_in_domain(cx, inner_ty);
-        }
-        // Handle raw pointers: *const sqlx::PgPool
-        TyKind::Ptr(mut_ty) => {
-            check_type_in_domain(cx, &mut_ty.ty);
         }
         // Handle tuples: (sqlx::PgPool, String)
         TyKind::Tup(types) => {
@@ -187,14 +186,19 @@ fn check_type_in_domain(cx: &rustc_lint::EarlyContext<'_>, ty: &Ty) {
                         .join("::");
 
                     if matches_infra_pattern(&path_str).is_some() {
-                        cx.span_lint(DE0301_NO_INFRA_IN_DOMAIN, ty.span, |diag| {
-                            diag.primary_message(format!(
+                        span_lint_and_then(
+                            cx,
+                            DE0301_NO_INFRA_IN_DOMAIN,
+                            ty.span,
+                            format!(
                                 "domain module uses infrastructure trait `{path_str}` (DE0301)"
-                            ));
-                            diag.help(
+                            ),
+                            |diag| {
+                                diag.help(
                                 "domain should depend only on abstractions; move infrastructure code to infra/ layer",
                             );
-                        });
+                            },
+                        );
                         return;
                     }
                 }
@@ -214,14 +218,19 @@ fn check_type_in_domain(cx: &rustc_lint::EarlyContext<'_>, ty: &Ty) {
                         .join("::");
 
                     if matches_infra_pattern(&path_str).is_some() {
-                        cx.span_lint(DE0301_NO_INFRA_IN_DOMAIN, ty.span, |diag| {
-                            diag.primary_message(format!(
+                        span_lint_and_then(
+                            cx,
+                            DE0301_NO_INFRA_IN_DOMAIN,
+                            ty.span,
+                            format!(
                                 "domain module uses infrastructure trait `{path_str}` (DE0301)"
-                            ));
-                            diag.help(
+                            ),
+                            |diag| {
+                                diag.help(
                                 "domain should depend only on abstractions; move infrastructure code to infra/ layer",
                             );
-                        });
+                            },
+                        );
                         return;
                     }
                 }
