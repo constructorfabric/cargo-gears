@@ -1,8 +1,27 @@
 extern crate rustc_ast;
 
 use crate::lint_utils::is_in_contract_module_ast;
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind, TyKind, VisibilityKind};
-use rustc_lint::{EarlyLintPass, LintContext};
+use rustc_lint::EarlyLintPass;
+
+/// Backing types that make a `pub type` alias a disguised primitive: UUID types,
+/// `String`, and all built-in primitive types.
+#[rustfmt::skip]
+const PRIMITIVE_BACKING_TYPES: &[&str] = &[
+    // UUID / identifier types
+    "Uuid", "Ulid",
+    // String
+    "String",
+    // Unsigned integers
+    "u8", "u16", "u32", "u64", "u128", "usize",
+    // Signed integers
+    "i8", "i16", "i32", "i64", "i128", "isize",
+    // Floating point
+    "f32", "f64",
+    // Other primitives
+    "bool", "char",
+];
 
 dylint_linting::declare_early_lint! {
     /// ### What it does
@@ -73,18 +92,7 @@ impl EarlyLintPass for De1303NoPrimitiveTypeAlias {
         }
 
         // RHS must be a bare path whose last segment is a primitive-like backing type.
-        // Covers UUID types, String, and all built-in primitive types. Qualified paths
-        // like `uuid::Uuid` work because we only inspect the last path segment.
-        const PRIMITIVE_BACKING_TYPES: &[&str] = &[
-            // UUID / identifier types
-            "Uuid", "Ulid",   // String
-            "String", // Unsigned integers
-            "u8", "u16", "u32", "u64", "u128", "usize", // Signed integers
-            "i8", "i16", "i32", "i64", "i128", "isize", // Floating point
-            "f32", "f64", // Other primitives
-            "bool", "char",
-        ];
-
+        // Qualified paths like `uuid::Uuid` work because we only inspect the last path segment.
         let Some(ty) = &ty_alias.ty else {
             return;
         };
@@ -99,14 +107,19 @@ impl EarlyLintPass for De1303NoPrimitiveTypeAlias {
             return;
         }
 
-        cx.span_lint(DE1303_NO_PRIMITIVE_TYPE_ALIAS, item.span, |diag| {
-            diag.primary_message(format!(
+        span_lint_and_then(
+            cx,
+            DE1303_NO_PRIMITIVE_TYPE_ALIAS,
+            item.span,
+            format!(
                 "`pub type {name} = {backing}` is a transparent alias with no type safety (DE1303)"
-            ));
-            diag.help(format!(
+            ),
+            |diag| {
+                diag.help(format!(
                 "wrap {backing} in a newtype: `pub struct {name}(pub {backing});` or `pub struct {name}({backing});`"
             ));
-            diag.note("transparent aliases provide no compile-time separation; use a newtype for distinct semantic types");
-        });
+                diag.note("transparent aliases provide no compile-time separation; use a newtype for distinct semantic types");
+            },
+        );
     }
 }

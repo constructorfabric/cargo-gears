@@ -2,11 +2,12 @@ extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::ty::implements_trait;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::DefId;
 use rustc_hir::{self as hir, Expr, ExprKind, ImplItemKind, ItemKind, QPath};
-use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_lint::{LateContext, LateLintPass};
 use rustc_middle::ty::{Ty, TypeckResults};
 use rustc_span::hygiene::{ExpnKind, MacroKind};
 
@@ -84,7 +85,7 @@ dylint_linting::declare_late_lint! {
 /// Uses the `rustc_diagnostic_item = "Error"` marker and `clippy_utils::ty::implements_trait`
 /// for proper trait resolution. Handles ADTs, type aliases, and generic params with bounds.
 fn implements_error<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> bool {
-    let Some(error_did) = cx.tcx.get_diagnostic_item(rustc_span::sym::Error) else {
+    let Some(error_did) = cx.tcx.get_diagnostic_item(clippy_utils::sym::Error) else {
         return false;
     };
     implements_trait(cx, ty, error_did, &[])
@@ -110,17 +111,20 @@ struct ToStringVisitor<'tcx, 'cx> {
 impl<'tcx> ToStringVisitor<'tcx, '_> {
     /// Emit the DE1302 diagnostic at `span`.
     fn emit(&self, span: rustc_span::Span) {
-        self.cx.span_lint(DE1302_ERROR_FROM_TO_STRING, span, |diag| {
-            diag.primary_message(
-                "`.to_string()` in `From`/`TryFrom` impl destroys the error chain (DE1302)",
-            );
-            diag.help(
+        span_lint_and_then(
+            self.cx,
+            DE1302_ERROR_FROM_TO_STRING,
+            span,
+            "`.to_string()` in `From`/`TryFrom` impl destroys the error chain (DE1302)",
+            |diag| {
+                diag.help(
                 "store the source error directly, use an enum variant, or use `#[from]` with thiserror",
             );
-            diag.note(
+                diag.note(
                 "`.to_string()` discards the original error type: `.source()` returns None and the error cannot be downcast",
             );
-        });
+            },
+        );
     }
 
     /// Returns true if `ty` (after peeling references) is a type whose
@@ -158,11 +162,11 @@ impl<'tcx> ToStringVisitor<'tcx, '_> {
 /// Returns true if `def_id` is `core::string::ToString::to_string`.
 ///
 /// Walks up from the associated fn to its containing trait and compares to
-/// the `ToString` diagnostic item. Shared by the MethodCall and UFCS arms so
+/// the `ToString` diagnostic item. Shared by the `MethodCall` and UFCS arms so
 /// both paths verify they're actually hitting the trait method, not a bare
 /// inherent method named `to_string`.
-fn is_to_string_def<'tcx>(cx: &LateContext<'tcx>, def_id: DefId) -> bool {
-    let Some(to_string_trait) = cx.tcx.get_diagnostic_item(rustc_span::sym::ToString) else {
+fn is_to_string_def(cx: &LateContext<'_>, def_id: DefId) -> bool {
+    let Some(to_string_trait) = cx.tcx.get_diagnostic_item(clippy_utils::sym::ToString) else {
         return false;
     };
     cx.tcx.trait_of_assoc(def_id) == Some(to_string_trait)
@@ -269,8 +273,13 @@ impl<'tcx> LateLintPass<'tcx> for De1302ErrorFromToString {
         // the impl, not in the trait substs).
         let impl_def_id = item.owner_id.def_id;
         // `tcx.impl_trait_ref` returns `EarlyBinder<...>` directly in
-        // nightly-2026-01-22 (no longer wrapped in `Option`).
-        let impl_trait_ref = cx.tcx.impl_trait_ref(impl_def_id).instantiate_identity();
+        // nightly-2026-01-22 (no longer wrapped in `Option`); since nightly-2026-08-20
+        // `instantiate_identity` yields `Unnormalized<...>`.
+        let impl_trait_ref = cx
+            .tcx
+            .impl_trait_ref(impl_def_id)
+            .instantiate_identity()
+            .skip_normalization();
         let source_ty = impl_trait_ref.args.type_at(1); // X
         let target_ty = impl_trait_ref.args.type_at(0); // Y = Self
 
@@ -292,7 +301,8 @@ impl<'tcx> LateLintPass<'tcx> for De1302ErrorFromToString {
                 let ty = cx
                     .tcx
                     .type_of(item_ref.owner_id.def_id)
-                    .instantiate_identity();
+                    .instantiate_identity()
+                    .skip_normalization();
                 implements_error(cx, ty).then_some(ty)
             })
         } else {

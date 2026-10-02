@@ -1,7 +1,8 @@
 extern crate rustc_ast;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind};
-use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
+use rustc_lint::{EarlyContext, EarlyLintPass};
 
 dylint_linting::declare_pre_expansion_lint! {
     /// DE0204: DTOs Must Have ToSchema Derive
@@ -53,8 +54,7 @@ fn check_dto_toschema_derive(cx: &EarlyContext<'_>, item: &Item) {
 
     // Check if the type name ends with "Dto" suffix (case-insensitive)
     let item_name = match &item.kind {
-        ItemKind::Struct(ident, _, _) => ident.name.as_str(),
-        ItemKind::Enum(ident, _, _) => ident.name.as_str(),
+        ItemKind::Struct(ident, _, _) | ItemKind::Enum(ident, _, _) => ident.name.as_str(),
         _ => return,
     };
     let item_name_lower = item_name.to_lowercase();
@@ -79,9 +79,14 @@ fn check_dto_toschema_derive(cx: &EarlyContext<'_>, item: &Item) {
 
     // Report missing derive
     if !has_toschema {
-        cx.span_lint(DE0204_DTOS_MUST_HAVE_TOSCHEMA_DERIVE, item.span, |diag| {
-            diag.primary_message("api/rest type is missing required ToSchema derive (DE0204)");
-            diag.help("DTOs in api/rest must derive ToSchema for OpenAPI documentation");
-        });
+        span_lint_and_then(
+            cx,
+            DE0204_DTOS_MUST_HAVE_TOSCHEMA_DERIVE,
+            item.span,
+            "api/rest type is missing required ToSchema derive (DE0204)",
+            |diag| {
+                diag.help("DTOs in api/rest must derive ToSchema for OpenAPI documentation");
+            },
+        );
     }
 }

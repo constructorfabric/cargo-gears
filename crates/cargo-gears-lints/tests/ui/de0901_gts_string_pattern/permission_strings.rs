@@ -32,8 +32,8 @@ fn main() {
     let _perm6 = "uuid:gts.badvendor.pkg.ns.type.v1~cf.pkg.ns.derived.v1~:action";
 
     let _perm7 = MockPermissionBuilder::default()
-        // Should trigger DE0901 - invalid GTS
-        .resource_pattern("gts.cf.core.events.type.v*")
+        // Should trigger DE0901 - invalid GTS (`v*` alone is a valid "any version" wildcard)
+        .resource_pattern("gts.cf.core.events.type.v1*")
         .build();
 
     // Additional valid cases

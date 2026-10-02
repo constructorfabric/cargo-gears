@@ -2,6 +2,7 @@ extern crate rustc_hir;
 extern crate rustc_middle;
 extern crate rustc_span;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::{is_doc_hidden, is_from_proc_macro};
 use rustc_hir::def_id::{LOCAL_CRATE, LocalDefId};
 use rustc_hir::{
@@ -49,8 +50,7 @@ impl De1202MissingDocsForPubCrate {
         let rustc_crate_is_excluded =
             is_name_excluded(&self.excluded_crates, rustc_crate_name.as_str());
         let cargo_package_is_excluded = std::env::var("CARGO_PKG_NAME")
-            .ok()
-            .is_some_and(|package_name| is_name_excluded(&self.excluded_crates, &package_name));
+            .is_ok_and(|package_name| is_name_excluded(&self.excluded_crates, &package_name));
 
         rustc_crate_is_excluded || cargo_package_is_excluded
     }
@@ -79,12 +79,15 @@ impl De1202MissingDocsForPubCrate {
             return;
         }
 
-        cx.span_lint(DE1202_MISSING_DOCS_FOR_PUB_CRATE, span, |diag| {
-            diag.primary_message(format!(
-                "crate-public {kind} is missing documentation (DE1202)"
-            ));
-            diag.help("add a non-empty `///` doc comment or `#[doc = ...]` attribute");
-        });
+        span_lint_and_then(
+            cx,
+            DE1202_MISSING_DOCS_FOR_PUB_CRATE,
+            span,
+            format!("crate-public {kind} is missing documentation (DE1202)"),
+            |diag| {
+                diag.help("add a non-empty `///` doc comment or `#[doc = ...]` attribute");
+            },
+        );
     }
 }
 
@@ -150,7 +153,7 @@ impl<'tcx> LateLintPass<'tcx> for De1202MissingDocsForPubCrate {
             ItemKind::Mod(..) => Some("module"),
             ItemKind::Static(..) => Some("static"),
             ItemKind::Struct(..) => Some("struct"),
-            ItemKind::Trait(..) => Some("trait"),
+            ItemKind::Trait { .. } => Some("trait"),
             ItemKind::TraitAlias(..) => Some("trait alias"),
             ItemKind::TyAlias(..) => Some("type alias"),
             ItemKind::Union(..) => Some("union"),
@@ -459,7 +462,7 @@ mod tests {
     #[test]
     fn empty_and_duplicate_entries_are_normalized() {
         let excluded = normalize_excluded_crates(vec![
-            "".to_string(),
+            String::new(),
             " legacy-crate ".to_string(),
             "legacy_crate".to_string(),
         ]);

@@ -1,5 +1,6 @@
 extern crate rustc_ast;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::Item;
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 use std::cell::RefCell;
@@ -157,35 +158,46 @@ impl EarlyLintPass for De1101TestsInSeparateFiles {
         for violation in violations {
             match violation {
                 TestViolation::InlineTestCode => {
-                    cx.span_lint(DE1101_TESTS_IN_SEPARATE_FILES, item.span, |diag| {
-                        diag.primary_message(
-                            "test code must be moved to a separate test file (DE1101)",
-                        );
-                        diag.help(format!(
+                    span_lint_and_then(
+                        cx,
+                        DE1101_TESTS_IN_SEPARATE_FILES,
+                        item.span,
+                        "test code must be moved to a separate test file (DE1101)",
+                        |diag| {
+                            diag.help(format!(
                             "move the test into `tests/*.rs` or an out-of-line `*_tests.rs` module (inline test block exceeds {} lines)",
                             self.max_inline_test_lines,
                         ));
-                    });
+                        },
+                    );
                 }
                 TestViolation::InlineTestCodeWithCompanion => {
-                    cx.span_lint(DE1101_TESTS_IN_SEPARATE_FILES, item.span, |diag| {
-                        diag.primary_message(
-                            "test code must not be added back to a file that already has a companion test file (DE1101)",
-                        );
-                        diag.help(
+                    span_lint_and_then(
+                        cx,
+                        DE1101_TESTS_IN_SEPARATE_FILES,
+                        item.span,
+                        "test code must not be added back to a file that already has a companion test file (DE1101)",
+                        |diag| {
+                            diag.help(
                             "a `*_tests.rs` companion file already exists; add tests there instead",
                         );
-                    });
+                        },
+                    );
                 }
                 TestViolation::WrongPathAttr { expected, actual } => {
-                    cx.span_lint(DE1101_TESTS_IN_SEPARATE_FILES, item.span, |diag| {
-                        diag.primary_message(format!(
+                    span_lint_and_then(
+                        cx,
+                        DE1101_TESTS_IN_SEPARATE_FILES,
+                        item.span,
+                        format!(
                             "test module path `{actual}.rs` must reference `{expected}.rs` to match the source file (DE1101)",
-                        ));
-                        diag.help(format!(
-                            "use `#[path = \"{expected}.rs\"]` or remove `#[path]`"
-                        ));
-                    });
+                        ),
+                        |diag| {
+                            diag.help(format!(
+                                "use `#[path = \"{expected}.rs\"]` or remove `#[path]`"
+                            ));
+                        },
+                    );
                 }
             }
         }
@@ -544,7 +556,7 @@ mod tests {
             extract_path_attr_value(r#"#[path="bar.rs"]"#),
             Some("bar.rs".to_string())
         );
-        assert_eq!(extract_path_attr_value(r#"#[cfg(test)]"#), None);
+        assert_eq!(extract_path_attr_value(r"#[cfg(test)]"), None);
     }
 
     #[test]
@@ -562,12 +574,12 @@ mod tests {
 
     #[test]
     fn test_find_violations_correct_name_no_issues() {
-        let source = r#"
+        let source = r"
 #[cfg(test)]
 mod handler_tests;
 
 fn main() {}
-"#;
+";
         let violations = find_test_violations(source, Some("handler"), false, 100);
         assert!(violations.is_empty(), "expected no violations");
     }
@@ -575,12 +587,12 @@ fn main() {}
     #[test]
     fn test_find_violations_any_mod_name_without_path_ok() {
         // Without #[path], any module name is accepted.
-        let source = r#"
+        let source = r"
 #[cfg(test)]
 mod tests;
 
 fn main() {}
-"#;
+";
         let violations = find_test_violations(source, Some("handler"), false, 100);
         assert!(
             violations.is_empty(),
@@ -621,7 +633,7 @@ fn main() {}
 
     #[test]
     fn test_find_violations_inline_code_over_threshold() {
-        let source = r#"
+        let source = r"
 #[cfg(test)]
 mod tests {
     #[test]
@@ -629,7 +641,7 @@ mod tests {
 }
 
 fn main() {}
-"#;
+";
         // Threshold 3: the test block is 4 lines (mod tests { ... }), trigger.
         let violations = find_test_violations(source, Some("handler"), false, 3);
         assert!(
@@ -641,7 +653,7 @@ fn main() {}
 
     #[test]
     fn test_find_violations_inline_code_under_threshold() {
-        let source = r#"
+        let source = r"
 #[cfg(test)]
 mod tests {
     #[test]
@@ -649,7 +661,7 @@ mod tests {
 }
 
 fn main() {}
-"#;
+";
         // Threshold 100: the test block is ~6 lines total, allow.
         let violations = find_test_violations(source, Some("handler"), false, 100);
         assert!(
@@ -660,7 +672,7 @@ fn main() {}
 
     #[test]
     fn test_find_violations_inline_code_with_companion() {
-        let source = r#"
+        let source = r"
 #[cfg(test)]
 mod tests {
     #[test]
@@ -668,7 +680,7 @@ mod tests {
 }
 
 fn main() {}
-"#;
+";
         // Even tiny inline tests are denied when companion exists.
         let violations = find_test_violations(source, Some("handler"), true, 100);
         assert!(

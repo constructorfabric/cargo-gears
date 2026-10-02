@@ -2,7 +2,7 @@
 
 // Test file for valid GTS strings and gts-macros annotations - should not trigger DE0901
 
-use gts::{GtsInstanceId, GtsWildcard};
+use gts::{GtsIdPattern, GtsInstanceId};
 use gts_macros::struct_to_gts_schema;
 
 #[derive(Debug)]
@@ -10,7 +10,7 @@ use gts_macros::struct_to_gts_schema;
     dir_path = "schemas",
     base = true,
     // Should NOT trigger DE0901 - valid GTS schema_id string
-    schema_id = "gts.example.core.events.topic.v1~",
+    type_id = "gts.example.core.events.topic.v1~",
     description = "Event Topic definition",
     properties = "id,name"
 )]
@@ -25,7 +25,7 @@ pub struct EventTopicV1<T: gts::GtsSchema> {
     dir_path = "schemas",
     base = true,
     // Should NOT trigger DE0901- valid GTS schema_id string
-    schema_id = "gts.example.core.events.type.v1~",
+    type_id = "gts.example.core.events.type.v1~",
     description = "Base event type definition",
     properties = "id"
 )]
@@ -39,7 +39,7 @@ pub struct BaseEventTypeV1<P: gts::GtsSchema> {
     dir_path = "schemas",
     base = BaseEventTypeV1,
     // Should NOT trigger DE0901 - valid GTS schema_id string with inheritance
-    schema_id = "gts.example.core.events.type.v1~cf.core.audit.event.v1~",
+    type_id = "gts.example.core.events.type.v1~cf.core.audit.event.v1~",
     description = "Audit event",
     properties = "user_id"
 )]
@@ -54,6 +54,9 @@ fn main() {
     // Should NOT trigger DE0901 - valid GTS instance segment
     let _id = EventTopicV1::<()>::gts_make_instance_id("example.commerce.orders.orders.v1.0");
 
+    // Should NOT trigger DE0901 - anonymous-instance UUID segment
+    let _anon_id = EventTopicV1::<()>::gts_make_instance_id("7a1d2f34-5678-49ab-9012-abcdef123456");
+
     // Should NOT trigger DE0901 - valid GTS type schema string
     let _s1 = "gts.example.core.events.type.v1~";
 
@@ -65,17 +68,17 @@ fn main() {
     // Should NOT trigger DE0901 - strings inside starts_with() should be ignored
     let _check2 = "another.invalid.gts.string".starts_with("gts.example.core.");
 
-    // Should NOT trigger DE0901 - GtsWildcard::new() accepts wildcard patterns
-    let _wc1 = GtsWildcard::new("gts.example.core.srr.resource.v1~*");
+    // Should NOT trigger DE0901 - GtsIdPattern::try_new() accepts wildcard patterns
+    let _wc1 = GtsIdPattern::try_new("gts.example.core.srr.resource.v1~*");
 
-    // Should NOT trigger DE0901 - GtsWildcard::new() accepts wildcard with sub-prefix
-    let _wc2 = GtsWildcard::new("gts.example.core.srr.resource.v1~example.*");
+    // Should NOT trigger DE0901 - GtsIdPattern::try_new() accepts wildcard with sub-prefix
+    let _wc2 = GtsIdPattern::try_new("gts.example.core.srr.resource.v1~example.*");
 
-    // Should NOT trigger DE0901 - gts::GtsWildcard::new() qualified path form
-    let _wc3 = gts::GtsWildcard::new("gts.example.core.events.type.v1~*");
+    // Should NOT trigger DE0901 - gts::GtsIdPattern::try_new() qualified path form
+    let _wc3 = gts::GtsIdPattern::try_new("gts.example.core.events.type.v1~*");
 
-    // Should NOT trigger DE0901 - const holding wildcard used with GtsWildcard::new()
-    let _wc4 = GtsWildcard::new(SRR_WILDCARD);
+    // Should NOT trigger DE0901 - const holding wildcard used with GtsIdPattern::try_new()
+    let _wc4 = GtsIdPattern::try_new(SRR_WILDCARD);
 }
 
 // Vendor checks are skipped in #[cfg(test)] modules - any vendor is allowed

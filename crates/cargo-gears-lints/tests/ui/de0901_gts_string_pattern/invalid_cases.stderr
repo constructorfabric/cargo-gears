@@ -13,7 +13,7 @@ error: invalid GTS segment: 'vendor.package.sku.v1' (DE0901)
 LL |     let _id2 = ProductV1::<()>::gts_make_instance_id("vendor.package.sku.v1");
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = note: Invalid GTS segment #0 @ offset 0: 'vendor.package.sku.v1': Too few tokens (got 4, min 5). Expected format: vendor.package.namespace.type.vMAJOR[.MINOR]
+   = note: Too few tokens (got 4, min 5). Expected format: vendor.package.namespace.type.vMAJOR[.MINOR]
    = help: Example: vendor.package.sku.abc.v1
 
 error: gts_make_instance_id expects a single GTS segment, got: 'vendor.package.sku.abc.v1~' (DE0901)
@@ -81,8 +81,17 @@ LL |     let _id_vendor = ProductV1::<()>::gts_make_instance_id("badvendor.packa
    |
    = note: found vendor 'badvendor', allowed vendors: cf, vendor, example, fabrikam, contoso, acme, globex
 
+error: invalid GTS segment: '' (DE0901)
+  --> $DIR/invalid_cases.rs:68:21
+   |
+LL |     let _id_empty = ProductV1::<()>::gts_make_instance_id("");
+   |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: instance segment must not be empty
+   = help: Example: vendor.package.sku.abc.v1
+
 error: GTS wildcard string in `const`/`static` `BAD_PATTERN` must have a name ending with `_WILDCARD` (DE0901)
-  --> $DIR/invalid_cases.rs:76:1
+  --> $DIR/invalid_cases.rs:80:1
    |
 LL | const BAD_PATTERN: &str = "gts.vendor.core.srr.resource.v1~*";
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,5 +99,5 @@ LL | const BAD_PATTERN: &str = "gts.vendor.core.srr.resource.v1~*";
    = note: found wildcard GTS pattern `gts.vendor.core.srr.resource.v1~*` stored in `BAD_PATTERN`
    = help: rename to `BAD_PATTERN_WILDCARD` or use a non-wildcard value
 
-error: aborting due to 11 previous errors
+error: aborting due to 12 previous errors
 

@@ -1,8 +1,9 @@
 extern crate rustc_ast;
 extern crate rustc_hir;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::{Expr, ExprKind};
-use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_lint::{LateContext, LateLintPass};
 
 dylint_linting::declare_late_lint! {
     /// ### What it does
@@ -71,10 +72,8 @@ impl<'tcx> LateLintPass<'tcx> for De0801ApiEndpointVersion {
 
                     if segments.len() >= 2 {
                         let has_op_builder = segments.contains(&"OperationBuilder");
-                        let last_is_http_method = segments
-                            .last()
-                            .map(|s| HTTP_METHODS.contains(s))
-                            .unwrap_or(false);
+                        let last_is_http_method =
+                            segments.last().is_some_and(|s| HTTP_METHODS.contains(s));
                         has_op_builder && last_is_http_method
                     } else {
                         false
@@ -233,10 +232,10 @@ fn validate_api_path(path: &str) -> Result<(), PathValidationError> {
     Ok(())
 }
 
-/// HTTP method names that OperationBuilder uses
+/// HTTP method names that `OperationBuilder` uses
 const HTTP_METHODS: &[&str] = &["get", "post", "put", "delete", "patch"];
 
-/// Recursively check if a type contains "OperationBuilder"
+/// Recursively check if a type contains "`OperationBuilder`"
 fn type_contains_operation_builder(ty: &rustc_hir::Ty<'_>) -> bool {
     match &ty.kind {
         rustc_hir::TyKind::Path(qpath) => match qpath {
@@ -263,61 +262,50 @@ fn check_path_argument<'tcx>(cx: &LateContext<'tcx>, path_arg: &'tcx Expr<'tcx>)
             let (message, help, note) = match err {
                 PathValidationError::MissingServiceName => (
                     format!(
-                        "API endpoint `{}` is missing a service name before version (DE0801)",
-                        path
+                        "API endpoint `{path}` is missing a service name before version (DE0801)"
                     ),
                     "use format: /{service-name}/v{N}/{resource}".to_string(),
                     "service name must come before version segment".to_string(),
                 ),
                 PathValidationError::InvalidServiceName(name) => (
-                    format!(
-                        "API endpoint `{}` has invalid service name `{}` (DE0801)",
-                        path, name
-                    ),
+                    format!("API endpoint `{path}` has invalid service name `{name}` (DE0801)"),
                     "service name must be kebab-case (lowercase letters, numbers, dashes)"
                         .to_string(),
                     "service name must not start or end with a dash".to_string(),
                 ),
                 PathValidationError::MissingVersion => (
-                    format!(
-                        "API endpoint `{}` is missing a version segment (DE0801)",
-                        path
-                    ),
+                    format!("API endpoint `{path}` is missing a version segment (DE0801)"),
                     "add version as second segment: /{service-name}/v{N}/{resource}".to_string(),
                     "version must be v1, v2, etc.".to_string(),
                 ),
                 PathValidationError::InvalidVersionFormat(ver) => (
-                    format!(
-                        "API endpoint `{}` has invalid version format `{}` (DE0801)",
-                        path, ver
-                    ),
+                    format!("API endpoint `{path}` has invalid version format `{ver}` (DE0801)"),
                     "version must be lowercase 'v' followed by digits (v1, v2, v10)".to_string(),
                     "semver (v1.0) and uppercase (V1) are not allowed".to_string(),
                 ),
                 PathValidationError::MissingResource => (
-                    format!(
-                        "API endpoint `{}` is missing a resource after version (DE0801)",
-                        path
-                    ),
+                    format!("API endpoint `{path}` is missing a resource after version (DE0801)"),
                     "add resource: /{service-name}/v{N}/{resource}".to_string(),
                     "at least one resource segment is required after version".to_string(),
                 ),
                 PathValidationError::InvalidResourceName(name) => (
-                    format!(
-                        "API endpoint `{}` has invalid resource name `{}` (DE0801)",
-                        path, name
-                    ),
+                    format!("API endpoint `{path}` has invalid resource name `{name}` (DE0801)"),
                     "resource names must be kebab-case (lowercase letters, numbers, dashes)"
                         .to_string(),
                     "resource names must not start or end with a dash".to_string(),
                 ),
             };
 
-            cx.span_lint(DE0801_API_ENDPOINT_VERSION, path_arg.span, |diag| {
-                diag.primary_message(message);
-                diag.help(help);
-                diag.note(note);
-            });
+            span_lint_and_then(
+                cx,
+                DE0801_API_ENDPOINT_VERSION,
+                path_arg.span,
+                message,
+                |diag| {
+                    diag.help(help);
+                    diag.note(note);
+                },
+            );
         }
     }
 }

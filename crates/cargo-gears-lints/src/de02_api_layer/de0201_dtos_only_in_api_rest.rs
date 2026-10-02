@@ -1,5 +1,6 @@
 extern crate rustc_ast;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::ItemKind;
 use rustc_lint::{EarlyLintPass, LintContext};
 
@@ -22,11 +23,7 @@ impl EarlyLintPass for De0201DtosOnlyInApiRest {
 
         // Check if item name ends with "Dto"
         let (item_name, span) = match &item.kind {
-            ItemKind::Struct(ident, ..) => {
-                let span = item.span.with_hi(ident.span.hi());
-                (ident.name.as_str(), span)
-            }
-            ItemKind::Enum(ident, ..) => {
+            ItemKind::Struct(ident, ..) | ItemKind::Enum(ident, ..) => {
                 let span = item.span.with_hi(ident.span.hi());
                 (ident.name.as_str(), span)
             }
@@ -39,13 +36,15 @@ impl EarlyLintPass for De0201DtosOnlyInApiRest {
 
         // Check if the file is in api/rest folder (supports simulated_dir for tests)
         if !crate::lint_utils::is_in_api_rest_folder(cx.sess().source_map(), item.span) {
-            cx.span_lint(DE0201_DTOS_ONLY_IN_API_REST, span, |diag| {
-                diag.primary_message(format!(
-                    "DTO type `{}` is defined outside of api/rest folder (DE0201)",
-                    item_name
-                ));
-                diag.help("move DTO types to src/api/rest/dto.rs");
-            });
+            span_lint_and_then(
+                cx,
+                DE0201_DTOS_ONLY_IN_API_REST,
+                span,
+                format!("DTO type `{item_name}` is defined outside of api/rest folder (DE0201)"),
+                |diag| {
+                    diag.help("move DTO types to src/api/rest/dto.rs");
+                },
+            );
         }
     }
 }

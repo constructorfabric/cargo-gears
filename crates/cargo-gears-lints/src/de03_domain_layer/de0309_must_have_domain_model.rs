@@ -1,6 +1,7 @@
 extern crate rustc_ast;
 
 use crate::lint_utils::is_in_domain_path;
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_ast::{Item, ItemKind, VisibilityKind};
 use rustc_lint::{EarlyContext, EarlyLintPass, LintContext};
 
@@ -83,15 +84,18 @@ fn check_domain_model_attribute(cx: &EarlyContext<'_>, item: &Item) {
         _ => return,
     };
 
-    cx.span_lint(DE0309_MUST_HAVE_DOMAIN_MODEL, item.span, |diag| {
-        diag.primary_message(format!(
-            "domain type `{item_name}` is missing required #[domain_model] attribute (DE0309)"
-        ));
-        diag.help(format!(
-            "add #[domain_model] attribute to enforce DDD boundaries at compile time: \
+    span_lint_and_then(
+        cx,
+        DE0309_MUST_HAVE_DOMAIN_MODEL,
+        item.span,
+        format!("domain type `{item_name}` is missing required #[domain_model] attribute (DE0309)"),
+        |diag| {
+            diag.help(format!(
+                "add #[domain_model] attribute to enforce DDD boundaries at compile time: \
              use toolkit_macros::domain_model; #[domain_model] pub {item_keyword} ..."
-        ));
-    });
+            ));
+        },
+    );
 }
 
 /// Check if an item has the `#[domain_model]` or `#[toolkit::domain_model]` attribute.

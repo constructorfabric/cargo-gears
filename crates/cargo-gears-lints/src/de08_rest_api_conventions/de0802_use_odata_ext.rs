@@ -1,8 +1,9 @@
 extern crate rustc_ast;
 extern crate rustc_hir;
 
+use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::{Expr, ExprKind};
-use rustc_lint::{LateContext, LateLintPass, LintContext};
+use rustc_lint::{LateContext, LateLintPass};
 
 dylint_linting::declare_late_lint! {
     /// ### What it does
@@ -42,10 +43,10 @@ dylint_linting::declare_late_lint! {
     "use OperationBuilderODataExt methods instead of .query_param() for OData parameters (DE0802)"
 }
 
-/// OData query parameter names that should use the type-safe extension methods
+/// `OData` query parameter names that should use the type-safe extension methods
 const ODATA_PARAMS: &[&str] = &["$filter", "$orderby", "$select", "$top", "$skip", "$count"];
 
-/// Mapping from OData parameter to the recommended method
+/// Mapping from `OData` parameter to the recommended method
 fn get_recommended_method(param: &str) -> &'static str {
     match param {
         "$filter" => ".with_odata_filter::<FilterFieldEnum>()",
@@ -80,7 +81,7 @@ impl<'tcx> LateLintPass<'tcx> for De0802UseOdataExt {
     }
 }
 
-/// Check if an expression is part of an OperationBuilder method chain
+/// Check if an expression is part of an `OperationBuilder` method chain
 fn is_operation_builder_chain(expr: &Expr<'_>) -> bool {
     match &expr.kind {
         // Direct call like OperationBuilder::get(...)
@@ -98,7 +99,7 @@ fn is_operation_builder_chain(expr: &Expr<'_>) -> bool {
     }
 }
 
-/// Check if a QPath contains "OperationBuilder"
+/// Check if a `QPath` contains "`OperationBuilder`"
 fn path_contains_operation_builder(qpath: &rustc_hir::QPath<'_>) -> bool {
     match qpath {
         rustc_hir::QPath::Resolved(_, path) => path
@@ -111,7 +112,7 @@ fn path_contains_operation_builder(qpath: &rustc_hir::QPath<'_>) -> bool {
     }
 }
 
-/// Recursively check if a type contains "OperationBuilder"
+/// Recursively check if a type contains "`OperationBuilder`"
 fn type_contains_operation_builder(ty: &rustc_hir::Ty<'_>) -> bool {
     match &ty.kind {
         rustc_hir::TyKind::Path(qpath) => path_contains_operation_builder(qpath),
@@ -119,7 +120,7 @@ fn type_contains_operation_builder(ty: &rustc_hir::Ty<'_>) -> bool {
     }
 }
 
-/// Check if the first argument is an OData parameter and emit lint if so
+/// Check if the first argument is an `OData` parameter and emit lint if so
 fn check_odata_param<'tcx>(cx: &LateContext<'tcx>, arg: &'tcx Expr<'tcx>, method_name: &str) {
     if let ExprKind::Lit(lit) = &arg.kind
         && let rustc_ast::ast::LitKind::Str(sym, _) = lit.node
@@ -130,16 +131,20 @@ fn check_odata_param<'tcx>(cx: &LateContext<'tcx>, arg: &'tcx Expr<'tcx>, method
         if ODATA_PARAMS.contains(&param_name) {
             let recommended = get_recommended_method(param_name);
 
-            cx.span_lint(DE0802_USE_ODATA_EXT, arg.span, |diag| {
-                diag.primary_message(format!(
-                    "use OperationBuilderODataExt instead of .{}() for OData parameter `{}` (DE0802)",
-                    method_name, param_name
-                ));
-                diag.help(format!("use {} instead", recommended));
-                diag.note(
+            span_lint_and_then(
+                cx,
+                DE0802_USE_ODATA_EXT,
+                arg.span,
+                format!(
+                    "use OperationBuilderODataExt instead of .{method_name}() for OData parameter `{param_name}` (DE0802)"
+                ),
+                |diag| {
+                    diag.help(format!("use {recommended} instead"));
+                    diag.note(
                     "type-safe OData methods provide compile-time validation and automatic OpenAPI schema generation",
                 );
-            });
+                },
+            );
         }
     }
 }
