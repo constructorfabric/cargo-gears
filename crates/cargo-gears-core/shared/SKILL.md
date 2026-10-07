@@ -1026,8 +1026,8 @@ Arguments:
   `--all`. If passed by itself, it runs only formatting checks.
 - **[`--clippy`]** Runs workspace Clippy checks; if passed by itself, it runs only Clippy
 - **[`--strict`]** Turns Clippy warnings into errors; valid only when Clippy is selected explicitly or through `--all`
-- **[`--dylint`]** Runs the embedded `cargo-gears-lints` Dylint rules against the workspace rooted at the current or selected
-  directory
+- **[`--dylint`]** Runs the `cargo-gears-lints` Dylint rules against the workspace rooted at the current or selected
+  directory. Uses the lints from the CLI's own release tag
 - **[`-P, --package <SPEC>`]** Restricts formatting, Clippy, and Dylint to the given workspace package(s); repeatable.
   Supports Cargo package ID specifications and package-name globs such as `cf-gears-*`. When omitted together with
   `--gear`, the whole workspace is linted.
@@ -1043,7 +1043,7 @@ Arguments:
 - **[`--no-default-features`]** Disables Cargo default features. May be combined with `--features`.
 - **[`--locked`]** Requires `Cargo.lock` to be up to date; passed to Clippy and Dylint's `cargo check`.
 - **[`--list`]** Lists available lint rules instead of running them. When combined with `--dylint`, lists only the
-  embedded dylint rules. Does not require a manifest or workspace path.
+  dylint rules. Does not require a manifest or workspace path.
 
 Behavior:
 

@@ -3,25 +3,18 @@ use crate::packages::PackageScope;
 use anyhow::{Context, Result};
 
 #[cfg(feature = "dylint-rules")]
-use std::collections::BTreeSet;
-#[cfg(feature = "dylint-rules")]
-use std::fs;
-#[cfg(feature = "dylint-rules")]
 use std::io::ErrorKind;
-#[cfg(feature = "dylint-rules")]
-use std::io::Write;
 use std::path::{Path, PathBuf};
-
 #[cfg(feature = "dylint-rules")]
-mod ensure_toolchain_installed_shared {
-    include!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/shared/ensure_toolchain_installed.rs"
-    ));
-}
+use std::process::Command;
 
+/// Repository Dylint fetches `cargo-gears-lints` from.
 #[cfg(feature = "dylint-rules")]
-use ensure_toolchain_installed_shared::ensure_toolchain_installed;
+const LINTS_GIT_URL: &str = "https://github.com/constructorfabric/cargo-gears";
+
+/// Location of the `cargo-gears-lints` package inside [`LINTS_GIT_URL`].
+#[cfg(feature = "dylint-rules")]
+const LINTS_PATTERN: &str = "crates/cargo-gears-lints";
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct LintParams {
@@ -276,9 +269,6 @@ pub static DYLINT_LINTS: &[DylintLintInfo] = &[
     },
 ];
 
-#[cfg(feature = "dylint-rules")]
-include!(concat!(env!("OUT_DIR"), "/generated_libs.rs"));
-
 impl LintParams {
     pub fn run(&self) -> Result<()> {
         if self.list {
@@ -334,11 +324,11 @@ fn list_lints(dylint_only: bool) {
         println!("Built-in lint suites:");
         println!("  fmt     Run `cargo fmt --check` for the selected package scope");
         println!("  clippy  Run `cargo clippy --workspace --all-targets`");
-        println!("  dylint  Run embedded architectural lint rules (see below)");
+        println!("  dylint  Run architectural lint rules (see below)");
         println!();
     }
 
-    println!("Embedded dylint rules ({} total):\n", DYLINT_LINTS.len());
+    println!("Dylint rules ({} total):\n", DYLINT_LINTS.len());
 
     // Group by category for readability.
     let mut current_category = "";
@@ -426,21 +416,6 @@ fn run_clippy(
 }
 
 #[cfg(feature = "dylint-rules")]
-fn embedded_toolchains() -> Result<BTreeSet<String>> {
-    LIBS.iter()
-        .map(|(filename, _)| {
-            let (_, toolchain_and_ext) = filename
-                .rsplit_once('@')
-                .with_context(|| format!("missing toolchain marker in `{filename}`"))?;
-            let (toolchain, _) = toolchain_and_ext
-                .rsplit_once('.')
-                .with_context(|| format!("missing library extension in `{filename}`"))?;
-            Ok(toolchain.to_owned())
-        })
-        .collect()
-}
-
-#[cfg(feature = "dylint-rules")]
 fn run_dylint(
     workspace_path: &Path,
     skipped_lints: &[String],
@@ -448,47 +423,41 @@ fn run_dylint(
     locked: bool,
     features: &LintFeatureSelection,
 ) -> Result<()> {
-    for toolchain in embedded_toolchains()? {
-        ensure_toolchain_installed(&toolchain)?;
-        clear_dylint_rustc_info_cache(workspace_path, &toolchain)?;
-    }
+    ensure_dylint_link_installed()?;
 
-    // Write every embedded dylib to a per-run temp directory so dylint can
-    // dlopen them. The temp dir (and its contents) is removed when `tmp_dir`
-    // drops at the end of this function, which is safe because `dylint::run`
-    // is synchronous and has already finished using the files by then.
-    let tmp_dir = tempfile::tempdir().context("could not create temp dir for dylibs")?;
+    // Check all packages in the workspace rooted at `workspace_path`. Pointing
+    // Dylint at the workspace manifest avoids depending on the process CWD.
+    let manifest_path = Some(
+        workspace_path
+            .join("Cargo.toml")
+            .to_string_lossy()
+            .into_owned(),
+    );
 
-    let lib_paths: Vec<String> = LIBS
-        .iter()
-        .map(|(filename, bytes)| {
-            let dest = tmp_dir.path().join(filename);
-            let mut f = std::fs::File::create(&dest)
-                .with_context(|| format!("could not create {filename} in temp dir"))?;
-            f.write_all(bytes)
-                .with_context(|| format!("could not write {filename} to temp dir"))?;
-            Ok(dest.to_string_lossy().into_owned())
-        })
-        .collect::<Result<_>>()?;
+    // Dylint builds and caches the library with the toolchain pinned by its
+    // `rust-toolchain.toml`. Naming a path or git source also makes Dylint
+    // ignore any libraries the workspace declares.
+    let lib_sel = if let Some(lints_dir) = local_lints_dir() {
+        eprintln!("Using cargo-gears-lints from {}", lints_dir.display());
+        dylint::opts::LibrarySelection {
+            paths: vec![lints_dir.to_string_lossy().into_owned()],
+            manifest_path,
+            ..Default::default()
+        }
+    } else {
+        // Fetch the lints from the commit this CLI was released from.
+        dylint::opts::LibrarySelection {
+            git: Some(LINTS_GIT_URL.to_owned()),
+            tag: Some(format!("cargo-gears-v{}", env!("CARGO_PKG_VERSION"))),
+            pattern: Some(LINTS_PATTERN.to_owned()),
+            manifest_path,
+            ..Default::default()
+        }
+    };
 
     let opts = dylint::opts::Dylint {
         operation: dylint::opts::Operation::Check(dylint::opts::Check {
-            lib_sel: dylint::opts::LibrarySelection {
-                // Point directly at the extracted, versioned dylib files.
-                // dylint parses the toolchain from each filename so no further
-                // discovery or building is necessary.
-                lib_paths,
-                // Check all packages in the workspace rooted at `workspace_path`.
-                // Pointing Dylint at the workspace manifest avoids depending on
-                // the process CWD.
-                manifest_path: Some(
-                    workspace_path
-                        .join("Cargo.toml")
-                        .to_string_lossy()
-                        .into_owned(),
-                ),
-                ..Default::default()
-            },
+            lib_sel,
             // Lint the whole workspace unless specific packages were requested
             // on the command line, in which case only those are checked.
             workspace: matches!(package_scope, PackageScope::Workspace),
@@ -500,6 +469,17 @@ fn run_dylint(
     };
 
     dylint::run(&opts)
+}
+
+/// The `cargo-gears-lints` package next to this crate's sources. It exists
+/// when the CLI is built from a clone of the repository or installed with
+/// `cargo install --git`, but not when it is installed from crates.io.
+#[cfg(feature = "dylint-rules")]
+fn local_lints_dir() -> Option<PathBuf> {
+    let lints_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()?
+        .join("cargo-gears-lints");
+    lints_dir.join("Cargo.toml").is_file().then_some(lints_dir)
 }
 
 #[cfg(feature = "dylint-rules")]
@@ -530,31 +510,28 @@ fn dylint_cargo_check_args(
     Ok(args)
 }
 
+/// `cargo-gears-lints` links through `dylint-link` (see its
+/// `.cargo/config.toml`), so Dylint cannot build it without that tool.
 #[cfg(feature = "dylint-rules")]
-fn clear_dylint_rustc_info_cache(workspace_path: &Path, toolchain: &str) -> Result<()> {
-    let metadata = cargo_metadata::MetadataCommand::new()
-        .manifest_path(workspace_path.join("Cargo.toml"))
-        .no_deps()
-        .exec()
-        .context("failed to resolve workspace metadata for dylint target dir")?;
-
-    let rustc_info = metadata
-        .target_directory
-        .as_std_path()
-        .join("dylint/target")
-        .join(toolchain)
-        .join(".rustc_info.json");
-
-    match fs::remove_file(&rustc_info) {
-        Ok(()) => Ok(()),
-        Err(err) if err.kind() == ErrorKind::NotFound => Ok(()),
-        Err(err) => Err(err).with_context(|| {
-            format!(
-                "failed to clear stale dylint rustc info cache at {}",
-                rustc_info.display()
-            )
-        }),
+fn ensure_dylint_link_installed() -> Result<()> {
+    // `dylint-link` forwards its arguments to the system linker, so only
+    // whether it can be spawned matters, not its exit status.
+    match Command::new("dylint-link").arg("--version").output() {
+        Ok(_) => return Ok(()),
+        Err(err) if err.kind() == ErrorKind::NotFound => {}
+        Err(err) => return Err(err).context("failed to run `dylint-link`"),
     }
+
+    eprintln!("Installing dylint-link...");
+    let status = cargo_cmd()?
+        .args(["install", "--locked", "dylint-link"])
+        .status()
+        .context("failed to run `cargo install dylint-link`")?;
+    if !status.success() {
+        anyhow::bail!("`cargo install dylint-link` failed with exit status {status}");
+    }
+
+    Ok(())
 }
 
 #[cfg(not(feature = "dylint-rules"))]

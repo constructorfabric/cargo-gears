@@ -1,8 +1,8 @@
 [workspace]
 # This is a separate Cargo project from the repo root (own Cargo.lock, own pinned
 # nightly toolchain for rustc-dev/dylint) - it releases independently via its own
-# release-plz pipeline. See crates/cargo-gears-core/build.rs's LINTS_PACKAGE_VERSION
-# for how the CLI adopts a given cargo-gears-lints release.
+# release-plz pipeline. The CLI runs the lints from its own release tag, so a
+# lints release reaches workspaces with the next cargo-gears release.
 allow_dirty = true
 
 pr_labels = ["release-plz"]
