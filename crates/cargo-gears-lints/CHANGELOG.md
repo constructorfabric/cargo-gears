@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-lints-v0.0.5...cargo-gears-lints-v0.0.6) - 2026-10-08
+
+### Added
+
+- *(lint)* [**breaking**] fetch lints from the repository (by @fluiderson)
+
+### Contributors
+
+* @fluiderson
+
 ## [0.0.5](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-lints-v0.0.4...cargo-gears-lints-v0.0.5) - 2026-10-02
 
 ### Added
