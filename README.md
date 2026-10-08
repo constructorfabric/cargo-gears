@@ -133,6 +133,11 @@ GEARS_CONFIG=/tmp/cf-demo/config/app1-dev.yml cargo run --manifest-path /tmp/cf-
 Use `--all` when you want to run every available lint stage explicitly. If the CLI is built without the
 `dylint-rules` feature, `lint --dylint` returns an error.
 
+The `dylint` rules come from [`cargo-gears-lints`](crates/cargo-gears-lints). Dylint fetches them from this repository
+and builds them on the first run, so it needs access to GitHub and installs `dylint-link` if it is missing. The CLI
+uses the lints from its own release tag (`cargo-gears-v<version>`). A CLI built from a clone of this repository, or
+installed with `cargo install --git`, uses the `crates/cargo-gears-lints` next to its sources instead.
+
 ### Testing
 
 `cargo gears test --app <APP> --env <ENV>` is the manifest-driven test entrypoint. It passes the selected environment

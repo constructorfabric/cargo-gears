@@ -2,7 +2,7 @@
 
 Custom [dylint](https://github.com/trailofbits/dylint) linters enforcing architectural patterns, layer separation, and REST API conventions.
 
-These rules are compiled by `cargo-gears-core`'s build script when the CLI is built with `dylint-rules`. During local development, the build uses the sibling `crates/cargo-gears-lints` path; in installed builds, it resolves this package from the Cargo registry at the version pinned by the `LINTS_PACKAGE_VERSION` constant in `crates/cargo-gears-core/build.rs`. The resulting Dylint library is embedded into the CLI.
+`cargo gears lint --dylint` has Dylint fetch these rules from this repository, then build and cache them with the toolchain pinned in `rust-toolchain.toml`. It uses the `cargo-gears-v<version>` tag of the running CLI, so the rules a workspace gets follow its `cargo-gears` version. A CLI built from a clone of this repository, or installed with `cargo install --git`, uses this directory instead, including uncommitted changes.
 
 ## Available Lints
 
@@ -321,11 +321,9 @@ This lets you validate that:
 
 `cargo-gears-lints` and `cargo-gears` release independently (each has its own
 `release-plz` pipeline and toolchain - `release-plz` opens a release PR for
-each automatically once commits land on `main`). Once the lint is merged and
-`cargo-gears-lints` is released, `cargo-gears-core`'s `LINTS_PACKAGE_VERSION`
-constant (`crates/cargo-gears-core/build.rs`) needs to be bumped to that new
-version for standalone installs to pick it up - this requires its own
-PR/release of `cargo-gears`.
+each automatically once commits land on `main`). The CLI runs the lints from
+its own release tag, so a merged lint reaches workspaces with the next
+`cargo-gears` release.
 
 Once that new version of `cargo-gears` is published:
 
@@ -356,7 +354,8 @@ Once that new version of `cargo-gears` is published:
 ## Troubleshooting
 
 **Build fails for lint package** — Dylint rules require a specific nightly toolchain
-(declared in `rust-toolchain.toml`). The build script installs it automatically via `rustup`.
+(declared in `rust-toolchain.toml`). `rustup` installs it automatically when Dylint builds the
+library. Building also needs `dylint-link`, which `cargo gears lint --dylint` installs if it is missing.
 
 **Lint not triggering** — Check that the file path matches the expected module pattern
 (e.g., `*/api/rest/*`). See the per-lint README for details.
