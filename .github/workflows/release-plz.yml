@@ -25,7 +25,7 @@ jobs:
   # self-healing: the next push to main finishes it. That is why this needs no
   # pull_request trigger and no label matching to decide whether a release is happening.
   release:
-    name: Publish crates (${{ matrix.name }})
+    name: Publish crates
     runs-on: ubuntu-latest
     if: >-
       ${{
@@ -35,19 +35,6 @@ jobs:
           || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release')
         )
       }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Root workspace: cargo-gears, cargo-gears-core, cargo-gears-macros
-          # (stable toolchain).
-          - name: cli
-            dir: .
-          # Separate Cargo project: cargo-gears-lints (own Cargo.lock, pinned nightly
-          # toolchain for rustc-dev/dylint) - can't share a `cargo metadata` resolution
-          # with the root workspace, so it releases through its own release-plz config.
-          - name: lints
-            dir: crates/cargo-gears-lints
     # No concurrency group, deliberately. Any group can cancel a *pending* run when a
     # newer one joins it, and a skipped publish is silent - no crates, no tags, no
     # failure. release-plz's docs mandate this: "the concurrency block cancels the
@@ -69,22 +56,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # Each project pins its own toolchain (root: stable; cargo-gears-lints: a nightly
-      # with rustc-dev/llvm-tools-preview for dylint) via its own rust-toolchain.toml.
       - name: Install Rust toolchain from rust-toolchain.toml
-        working-directory: ${{ matrix.dir }}
         run: |
           rustup show active-toolchain || rustup toolchain install
           rustup show
-
-      # cargo-gears-lints pins `linker = "dylint-link"` in its .cargo/config.toml, so
-      # every compilation in that project (including `cargo publish`, which compiles
-      # the whole crate + dependency build scripts) needs dylint-link on PATH.
-      - name: Install dylint-link (lints project only)
-        if: matrix.name == 'lints'
-        uses: taiki-e/install-action@v2
-        with:
-          tool: dylint-link
 
       # No test run here. ci.yml/dylint.yml test every push to main, and merging a
       # release PR is the maintainer's release decision - re-testing could only
@@ -94,8 +69,7 @@ jobs:
       # Exchanges this job's GitHub OIDC token for a short-lived crates.io token, per
       # the Trusted Publisher entry registered on crates.io for this repo+workflow
       # (constructorfabric/cargo-gears, release-plz.yml, no environment) on each of the
-      # four published crates: cargo-gears, cargo-gears-core, cargo-gears-macros,
-      # cargo-gears-lints.
+      # three published crates: cargo-gears, cargo-gears-core, cargo-gears-macros.
       - name: Authenticate with crates.io
         id: crates-io-auth
         uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
@@ -104,15 +78,13 @@ jobs:
         uses: release-plz/action@2eb1d8bcb770b4c48ccfaad919734b38b51958c9 # v0.5.131
         with:
           command: release
-          manifest_path: ${{ matrix.dir }}/Cargo.toml
-          config: ${{ matrix.dir }}/release-plz.toml
           token: ${{ steps.crates-io-auth.outputs.token }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
   release-pr:
-    name: Create release PR (${{ matrix.name }})
+    name: Create release PR
     runs-on: ubuntu-latest
     # Ordered after `release` so release-plz never derives the next versions from
     # crates.io while a publish is mid-flight. `!cancelled()` keeps this running when
@@ -127,18 +99,10 @@ jobs:
           || (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'release-pr')
         )
       }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: cli
-            dir: .
-          - name: lints
-            dir: crates/cargo-gears-lints
     # Let a running instance finish - it is part-way through committing and force-pushing
     # the release branch - and keep only the newest waiting one.
     concurrency:
-      group: release-plz-pr-${{ matrix.name }}-${{ github.ref }}
+      group: release-plz-pr-${{ github.ref }}
       cancel-in-progress: false
     permissions:
       contents: write
@@ -151,24 +115,13 @@ jobs:
           persist-credentials: false
 
       - name: Install Rust toolchain from rust-toolchain.toml
-        working-directory: ${{ matrix.dir }}
         run: |
           rustup show active-toolchain || rustup toolchain install
           rustup show
-
-      # cargo-gears-lints pins `linker = "dylint-link"` in its .cargo/config.toml, so
-      # every compilation in that project needs dylint-link on PATH.
-      - name: Install dylint-link (lints project only)
-        if: matrix.name == 'lints'
-        uses: taiki-e/install-action@v2
-        with:
-          tool: dylint-link
 
       - name: release-plz release-pr
         uses: release-plz/action@2eb1d8bcb770b4c48ccfaad919734b38b51958c9 # v0.5.131
         with:
           command: release-pr
-          manifest_path: ${{ matrix.dir }}/Cargo.toml
-          config: ${{ matrix.dir }}/release-plz.toml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
