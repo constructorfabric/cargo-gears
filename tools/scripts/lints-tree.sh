@@ -9,6 +9,8 @@
 # lands the commit in CHANGELOG.md.
 #
 # The tree id is taken from the index, so stage the lints changes first.
+# crates/cargo-gears-lints/build.rs computes the same id from the working copy on
+# every build, so `update` is only needed when the lints weren't built.
 #
 # Usage: make lints-tree | make lints-tree-check
 #        (or: bash tools/scripts/lints-tree.sh update|check)
