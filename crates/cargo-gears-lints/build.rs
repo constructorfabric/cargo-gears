@@ -6,11 +6,15 @@
 //! change then also changes a cargo-gears file, which bumps its version and lands the
 //! commit in its CHANGELOG.md. CI rejects a stale marker
 //! (`tools/scripts/lints-tree.sh check`); this script only saves running
-//! `make lints-tree` by hand.
+//! `make lints-tree` by hand. It does nothing when Dylint builds the lints to run
+//! them, so a user's checkout is never touched.
 //!
 //! It reruns when any hashed file or the marker itself changes. Watching the marker
 //! matters: Cargo replays the warnings of the last run, so without a rerun after the
 //! marker was rewritten, the "commit it" warning would stick around after the commit.
+//! A new top-level file has no watched path yet, so it is picked up once staged,
+//! through the repository's index. Watching this directory instead would rerun on
+//! every build, as Cargo scans it recursively, `target/` included.
 
 use std::collections::BTreeSet;
 use std::env;
@@ -26,6 +30,13 @@ fn main() {
 }
 
 fn update_marker() -> Result<(), String> {
+    // Dylint is building the lints for `cargo gears lint` (from a clone, or from Cargo's
+    // git checkouts for an installed CLI), not for someone changing them.
+    println!("cargo:rerun-if-env-changed=DYLINT_BUILDING_LIBRARIES");
+    if env::var_os("DYLINT_BUILDING_LIBRARIES").is_some() {
+        return Ok(());
+    }
+
     let lints_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?);
     let cli_dir = lints_dir.join("../cargo-gears");
     // Outside a cargo-gears checkout there is no marker to keep in sync. A missing
@@ -52,7 +63,8 @@ fn update_marker() -> Result<(), String> {
 }
 
 /// The git tree id of the working copy of `lints_dir`, ignored files excluded, and
-/// the top-level entries it covers (Cargo watches directories recursively).
+/// the paths to watch: the top-level entries it covers (Cargo watches directories
+/// recursively) and the repository's index.
 ///
 /// It goes through a scratch index, so unlike `make lints-tree` nothing has to be
 /// staged first and the user's index is left alone. Once the changes are staged
@@ -81,10 +93,15 @@ fn lints_tree(lints_dir: &Path) -> Result<(String, BTreeSet<String>), String> {
     git(&["read-tree", "--empty"])?;
     git(&["add", "--all", "."])?;
     let tree = git(&["write-tree", &format!("--prefix={prefix}")])?;
-    let watched = git(&["ls-files"])?
+    let mut watched: BTreeSet<String> = git(&["ls-files"])?
         .lines()
         .filter_map(|path| path.split('/').next())
         .map(str::to_owned)
         .collect();
+    // Not `--git-path index`, which would resolve to the scratch index.
+    watched.insert(format!(
+        "{}/index",
+        git(&["rev-parse", "--absolute-git-dir"])?
+    ));
     Ok((tree, watched))
 }
