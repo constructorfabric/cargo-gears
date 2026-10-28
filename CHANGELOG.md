@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-v0.0.8...cargo-gears-v0.0.9) - 2026-10-28
+
+### Fixed
+
+- *(lints)* skip the lints.tree update when Dylint builds the lints (by @fluiderson)
+- *(lints)* recreate a missing lints.tree on build (by @fdlockgraf)
+
+### Other
+
+- *(lints)* update lints.tree from a build script (by @fdlockgraf)
+- *(lints)* release lints with cargo-gears (by @fluiderson)
+
+### Contributors
+
+* @fluiderson
+* @fdlockgraf
+
 ## [0.0.8](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-v0.0.7...cargo-gears-v0.0.8) - 2026-10-08
 
 ### Added
