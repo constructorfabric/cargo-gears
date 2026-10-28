@@ -27,11 +27,13 @@ fn main() {
 
 fn update_marker() -> Result<(), String> {
     let lints_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").map_err(|e| e.to_string())?);
-    let marker = lints_dir.join("../cargo-gears/lints.tree");
-    // Outside a cargo-gears checkout there is no marker to keep in sync.
-    if !marker.is_file() {
+    let cli_dir = lints_dir.join("../cargo-gears");
+    // Outside a cargo-gears checkout there is no marker to keep in sync. A missing
+    // marker inside one is recreated.
+    if !cli_dir.join("Cargo.toml").is_file() {
         return Ok(());
     }
+    let marker = cli_dir.join("lints.tree");
 
     let (tree, watched) = lints_tree(&lints_dir)?;
     println!("cargo:rerun-if-changed={}", marker.display());
@@ -39,7 +41,7 @@ fn update_marker() -> Result<(), String> {
         println!("cargo:rerun-if-changed={path}");
     }
 
-    let current = fs::read_to_string(&marker).map_err(|e| e.to_string())?;
+    let current = fs::read_to_string(&marker).unwrap_or_default();
     if current.trim() != tree {
         fs::write(&marker, format!("{tree}\n")).map_err(|e| e.to_string())?;
         println!(
