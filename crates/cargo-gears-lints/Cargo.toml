@@ -1,16 +1,11 @@
 [package]
 name = "cargo-gears-lints"
-version = "0.0.5"
 edition = "2024"
 license = "Apache-2.0"
 authors = ["Constructor Fabric"]
 description = "Dylint lint collection for cargo-gears architectural rules"
 readme = "README.md"
 repository = "https://github.com/constructorfabric/cargo-gears"
-publish = true
-
-[package.metadata.docs.rs]
-all-features = true
 
 [lib]
 crate-type = ["cdylib"]

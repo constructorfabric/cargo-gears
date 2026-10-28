@@ -319,11 +319,25 @@ This lets you validate that:
 
 ### 9. Publish and adopt
 
-`cargo-gears-lints` and `cargo-gears` release independently (each has its own
-`release-plz` pipeline and toolchain - `release-plz` opens a release PR for
-each automatically once commits land on `main`). The CLI runs the lints from
-its own release tag, so a merged lint reaches workspaces with the next
-`cargo-gears` release.
+`cargo-gears-lints` is not published to crates.io - the CLI fetches it from
+this repository at its own release tag, so a merged lint reaches workspaces
+with the next `cargo-gears` release.
+
+release-plz only notices commits that touch files packaged with `cargo-gears`,
+so every commit changing this directory must also update
+`crates/cargo-gears/lints.tree`, the git tree id of this directory. This
+crate's `build.rs` keeps it up to date: any `cargo build` or `cargo test` here
+rewrites the marker and prints a warning when it changed. Without building, stage
+your changes and run from the repository root:
+
+```bash
+make lints-tree
+git add crates/cargo-gears/lints.tree
+```
+
+CI rejects pull requests where the marker is stale. Commit it together with the
+lints change: release-plz bumps `cargo-gears` and adds the commit message to
+`CHANGELOG.md` only for commits that touch the marker.
 
 Once that new version of `cargo-gears` is published:
 
@@ -348,6 +362,7 @@ Once that new version of `cargo-gears` is published:
 - [ ] UI test fixtures in `tests/ui/<lint>/` (forbidden + allowed cases)
 - [ ] Examples registered in `Cargo.toml`
 - [ ] `cargo test` passes
+- [ ] `crates/cargo-gears/lints.tree` committed (updated by `cargo build`, or `make lints-tree`)
 - [ ] Tested against a real workspace
 - [ ] Crate README table updated (this file)
 
