@@ -10,3 +10,6 @@ Always prefer `cargo add` over manually editing `Cargo.toml`.
 Always prefer enums over strings when there's a clear set of valid values.
 
 When updating the behaviour of any flag or option, update the [SKILL.md](./SKILL.md) file.
+
+When changing anything in `crates/cargo-gears-lints`, stage the changes and run `make lints-tree`, then commit the
+updated `crates/cargo-gears/lints.tree` in the same commit.

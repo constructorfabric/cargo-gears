@@ -6,8 +6,19 @@ on:
     paths:
       - 'crates/cargo-gears-lints/*'
       - 'crates/cargo-gears-lints/**/*'
+      - 'crates/cargo-gears/lints.tree'
+      - 'tools/scripts/lints-tree.sh'
 
 jobs:
+  # release-plz only bumps cargo-gears for commits touching its packaged files, so
+  # every lints change must also update crates/cargo-gears/lints.tree.
+  lints-tree:
+    name: Lints tree marker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: bash tools/scripts/lints-tree.sh check
+
   test:
     name: Dylint libs checks
     runs-on: ubuntu-latest
