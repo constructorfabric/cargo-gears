@@ -346,7 +346,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-gears"
-version = "0.0.9"
+version = "0.0.10"
 dependencies = [
  "anyhow",
  "cargo-gears-core",
@@ -359,7 +359,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-gears-core"
-version = "0.0.9"
+version = "0.0.10"
 dependencies = [
  "anyhow",
  "camino",
@@ -394,7 +394,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-gears-macros"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "proc-macro2",
  "quote",
