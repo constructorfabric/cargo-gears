@@ -23,8 +23,6 @@ clap = { version = "4.6", features = ["derive"] }
 cargo-generate = { version = "0.23.11" }
 cargo_metadata = { version = "0.23.1" }
 
-dylint = "6.0.1"
-
 serde = { version = "1.0", features = ["derive"] }
 serde-saphyr = { version = "0.0.28" }
 serde_json = { version = "1.0" }

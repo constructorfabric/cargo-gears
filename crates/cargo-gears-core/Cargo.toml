@@ -11,7 +11,6 @@ publish = true
 
 [features]
 default = []
-dylint-rules = ["dep:dylint"]
 test-utils = []
 clap = ["dep:clap"]
 
@@ -37,7 +36,6 @@ toml = { workspace = true }
 toml_edit = { workspace = true }
 semver = { workspace = true }
 tempfile = { workspace = true }
-dylint = { workspace = true, optional = true, features = ["library_packages"] }
 syn = { workspace = true }
 clap = { workspace = true, features = ["derive"], optional = true }
 

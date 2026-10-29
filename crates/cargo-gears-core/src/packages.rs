@@ -470,7 +470,7 @@ pub struct FileParser;
         write_workspace(temp.path());
 
         let expanded = expand_with_dependents(temp.path(), &[]).expect("expand");
-        assert!(expanded.is_empty());
+        assert_eq!(expanded, Vec::<String>::new());
     }
 
     #[test]
@@ -742,7 +742,7 @@ pub struct Root;
 
         let packages = packages_for_gears(temp.path(), &[]).expect("empty selection");
 
-        assert!(packages.is_empty());
+        assert_eq!(packages, Vec::<String>::new());
     }
 
     #[test]
