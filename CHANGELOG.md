@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-v0.0.9...cargo-gears-v0.0.10) - 2026-10-29
+
+### Added
+
+- *(lint)* [**breaking**] run Dylint from workspace metadata (by @fluiderson)
+
+### Contributors
+
+* @fluiderson
+
 ## [0.0.9](https://github.com/constructorfabric/cargo-gears/compare/cargo-gears-v0.0.8...cargo-gears-v0.0.9) - 2026-10-28
 
 ### Fixed
