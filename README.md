@@ -130,13 +130,23 @@ GEARS_CONFIG=/tmp/cf-demo/config/app1-dev.yml cargo run --manifest-path /tmp/cf-
 `cargo gears lint --app <APP> --env <ENV>` reads the selected manifest lint policy and orchestrates `cargo fmt`,
 `cargo clippy`, and `dylint` custom rules for that workspace. It respects your custom settings from `Cargo.toml`.
 
-Use `--all` when you want to run every available lint stage explicitly. If the CLI is built without the
-`dylint-rules` feature, `lint --dylint` returns an error.
+Use `--all` when you want to run every available lint stage explicitly.
 
-The `dylint` rules come from [`cargo-gears-lints`](crates/cargo-gears-lints). Dylint fetches them from this repository
-and builds them on the first run, so it needs access to GitHub and installs `dylint-link` if it is missing. The CLI
-uses the lints from its own release tag (`cargo-gears-v<version>`). A CLI built from a clone of this repository, or
-installed with `cargo install --git`, uses the `crates/cargo-gears-lints` next to its sources instead.
+The `dylint` rules come from [`cargo-gears-lints`](crates/cargo-gears-lints), declared like any other Dylint library
+in the workspace's `[workspace.metadata.dylint]`. `lint --dylint` checks that the entry is pinned to the CLI's own
+release tag (`cargo-gears-v<version>`) and then runs `cargo dylint --all`, so any other library declared there runs
+too. `generate workspace` writes the pin, and `lint --pin-dylint` adds or updates it, e.g. after a CLI upgrade:
+
+```toml
+[workspace.metadata.dylint]
+libraries = [
+    { git = "https://github.com/constructorfabric/cargo-gears", tag = "cargo-gears-v<version>", pattern = "crates/cargo-gears-lints" },
+]
+```
+
+The CLI installs `cargo-dylint` and `dylint-link` if they are missing. Dylint fetches and builds the libraries on the
+first run, so it needs access to GitHub. To develop the lints, point the entry at a local checkout with
+`path = "<checkout>", pattern = "crates/cargo-gears-lints"`; the CLI accepts it with a warning.
 
 ### Testing
 

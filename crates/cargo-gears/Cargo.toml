@@ -20,7 +20,7 @@ path = "../../design/v1/manifest_schema.rs"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
-cargo-gears-core = { workspace = true, features = ["clap", "dylint-rules"] }
+cargo-gears-core = { workspace = true, features = ["clap"] }
 semver = { workspace = true }
 
 [lints]

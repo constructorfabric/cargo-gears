@@ -50,6 +50,10 @@ pub struct LintArgs {
     /// Combine with `--dylint` to list only dylint rules.
     #[arg(long)]
     list: bool,
+    /// Pin `cargo-gears-lints` to this CLI's release tag in the workspace's Dylint metadata
+    /// (`workspace.metadata.dylint.libraries`) instead of running lints.
+    #[arg(long, conflicts_with_all = ["all", "fmt", "clippy", "strict", "dylint", "list"])]
+    pin_dylint: bool,
 }
 
 impl LintArgs {
@@ -73,6 +77,7 @@ impl LintArgs {
                 locked: false,
                 features: cargo_gears_core::lint::LintFeatureSelection::Default,
                 list: true,
+                pin_dylint: false,
             });
         }
 
@@ -128,6 +133,7 @@ impl LintArgs {
             locked: self.locked,
             features: feature_selection(self.features, self.all_features, self.no_default_features),
             list: false,
+            pin_dylint: self.pin_dylint,
         })
     }
 }
@@ -606,5 +612,39 @@ edition = "2021"
             resolved.package_scope,
             PackageScope::Selected(vec!["crate-a".to_owned()])
         );
+    }
+
+    #[test]
+    fn pin_dylint_resolves_the_workspace_root() {
+        let temp = TempDir::new().expect("temp dir");
+        write_workspace(&temp, MINIMAL);
+
+        let resolved = parse(&temp, &["--pin-dylint"]).resolve().expect("resolve");
+
+        assert!(resolved.pin_dylint);
+        assert_eq!(
+            resolved
+                .workspace_root
+                .canonicalize()
+                .expect("canonical root"),
+            temp.path().canonicalize().expect("canonical temp")
+        );
+    }
+
+    #[test]
+    fn pin_dylint_conflicts_with_lint_selection() {
+        for flag in ["--all", "--fmt", "--clippy", "--dylint", "--list"] {
+            let result = TestCli::try_parse_from([
+                "gears",
+                "--app",
+                "app1",
+                "--env",
+                "dev",
+                "--pin-dylint",
+                flag,
+            ]);
+
+            assert!(result.is_err(), "`--pin-dylint {flag}` should be rejected");
+        }
     }
 }

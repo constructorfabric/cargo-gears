@@ -98,6 +98,12 @@ impl WorkspaceParams {
                 .context("failed to write Dockerfile to root directory")?;
         }
 
+        // Pin the lints `cargo gears lint --dylint` expects. A template without a workspace
+        // manifest still produces a usable project, so this only warns.
+        if let Err(err) = crate::lint::pin_lints(&self.path) {
+            eprintln!("warning: {err:#}");
+        }
+
         println!("Project initialized at {}", self.path.display());
         Ok(())
     }

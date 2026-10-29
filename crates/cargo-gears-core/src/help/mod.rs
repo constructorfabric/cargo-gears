@@ -257,7 +257,7 @@ mod tests {
             include_str!("topics/security.md"),
         ];
         for topic in topics {
-            assert!(!topic.is_empty());
+            assert_ne!(*topic, "");
         }
     }
 }

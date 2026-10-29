@@ -159,6 +159,9 @@ Behavior:
   provided
 - **[uses template registry]** Template names resolve through the built-in registry and then manifest-defined templates
 - **[forces git init]** Template generation runs with Git initialization enabled
+- **[pins dylint lints]** Pins `cargo-gears-lints` to the CLI's release tag in the generated workspace's Dylint
+  metadata, as `lint --pin-dylint` does. If that fails (for example, the template has no workspace `Cargo.toml`), it
+  only warns
 
 Examples:
 
@@ -1013,7 +1016,7 @@ Run workspace linting helpers from the selected workspace directory.
 Synopsis:
 
 ```bash
-cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--gear <NAME>]... [--include-dependents] [-F <FEATURES>]... [--all-features | --no-default-features] [--locked] [--list]
+cargo gears lint [--app <APP>] [--env <ENV>] [--manifest <Gears.toml>] [-p <PATH>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <SPEC>]... [--gear <NAME>]... [--include-dependents] [-F <FEATURES>]... [--all-features | --no-default-features] [--locked] [--list] [--pin-dylint]
 ```
 
 Arguments:
@@ -1026,8 +1029,9 @@ Arguments:
   `--all`. If passed by itself, it runs only formatting checks.
 - **[`--clippy`]** Runs workspace Clippy checks; if passed by itself, it runs only Clippy
 - **[`--strict`]** Turns Clippy warnings into errors; valid only when Clippy is selected explicitly or through `--all`
-- **[`--dylint`]** Runs the `cargo-gears-lints` Dylint rules against the workspace rooted at the current or selected
-  directory. Uses the lints from the CLI's own release tag
+- **[`--dylint`]** Runs `cargo dylint --all` against the workspace rooted at the current or selected directory, which
+  loads every library declared in `workspace.metadata.dylint.libraries`. Fails unless `cargo-gears-lints` is declared
+  there and pinned to the CLI's own release tag (see `--pin-dylint`)
 - **[`-P, --package <SPEC>`]** Restricts formatting, Clippy, and Dylint to the given workspace package(s); repeatable.
   Supports Cargo package ID specifications and package-name globs such as `cf-gears-*`. When omitted together with
   `--gear`, the whole workspace is linted.
@@ -1044,6 +1048,11 @@ Arguments:
 - **[`--locked`]** Requires `Cargo.lock` to be up to date; passed to Clippy and Dylint's `cargo check`.
 - **[`--list`]** Lists available lint rules instead of running them. When combined with `--dylint`, lists only the
   dylint rules. Does not require a manifest or workspace path.
+- **[`--pin-dylint`]** Writes or updates the `cargo-gears-lints` entry in `workspace.metadata.dylint.libraries` so it is
+  pinned to the CLI's own release tag, then exits without running lints. Edits `dylint.toml` when it declares at least
+  one library, otherwise the workspace `Cargo.toml`; an empty `libraries = []` does not count. Fails without editing
+  when both files declare libraries, which Dylint rejects. Other libraries and keys are kept. Conflicts with `--all`, `--fmt`,
+  `--clippy`, `--strict`, `--dylint`, and `--list`.
 
 Behavior:
 
@@ -1061,8 +1070,20 @@ Behavior:
   flags are appended when selected. Without feature flags, each package's default features are used. Manifest
   `feature-set-test` remains reserved for future feature-matrix linting and is not currently applied.
 - **[strict scope]** `--strict` is rejected unless Clippy is active through `--clippy` or `--all`
-- **[workspace-scoped dylint]** Dylint receives the resolved workspace manifest path, so `-p/--path` is the way to lint
-  another workspace without manually changing directories
+- **[workspace-scoped dylint]** `cargo dylint` runs from the resolved workspace root with
+  `--manifest-path <root>/Cargo.toml`, so `-p/--path` is the way to lint another workspace without manually changing
+  directories, and a workspace whose metadata cannot be loaded fails the run instead of linting nothing. It runs with
+  `--workspace`, or with `--package <SPEC>` for
+  each effective package when a package/gear scope is selected; features, skips, and `--locked` are forwarded to its
+  `cargo check`.
+- **[pinned dylint lints]** Before running Dylint, the CLI checks the workspace's Dylint libraries (in `dylint.toml`
+  when it declares at least one, otherwise in the workspace `Cargo.toml`; declaring libraries in both is an error) for exactly one `cargo-gears-lints` entry. A git entry
+  must point at `https://github.com/constructorfabric/cargo-gears` with `tag = "cargo-gears-v<CLI version>"`,
+  `pattern = "crates/cargo-gears-lints"`, and no `branch` or `rev`. A `path` entry to a local `cargo-gears-lints`
+  checkout is accepted with a warning, for developing the lints. A missing, duplicated, or differently pinned entry
+  fails the run and points at `--pin-dylint`.
+- **[external dylint lints]** Any other library in `workspace.metadata.dylint.libraries` runs together with
+  `cargo-gears-lints`, so third-party or in-house Dylint lints need only a standard Dylint entry
 - **[package-scoped linting]** Passing one or more `-P/--package <SPEC>` flags restricts formatting, Clippy, and Dylint
   to those packages instead of the whole workspace; the flag is repeatable and supports Cargo package ID specifications
   plus package-name globs. A bare `*` intentionally selects every workspace package while remaining an explicit scope.
@@ -1077,11 +1098,15 @@ Behavior:
   semantics and apply to both Clippy and Dylint. Package-qualified features such as `crate-name/feature-name` can be used
   when linting multiple workspace packages.
 - **[manifest dylint skips]** Manifest `lint.dylint.skip` entries are passed to Dylint as allowed rustc lints, so
-  listed rules are ignored for that lint run
-- **[toolchain bootstrap]** The build script ensures the lint package toolchain and components are installed when
-  compiling embedded rules. Before running Dylint, the CLI ensures the embedded dylib toolchain is installed.
+  listed rules are ignored for that lint run. They apply to external libraries' lints as well. They are passed both
+  as `build.rustflags` and appended to `DYLINT_RUSTFLAGS`, so they still hold when `RUSTFLAGS` is set, even to
+  `-D warnings`.
+- **[tool bootstrap]** Before running Dylint, the CLI installs `cargo-dylint` and `dylint-link` with
+  `cargo install --locked` if either is missing. Dylint itself fetches and builds the declared libraries on the first
+  run, with each library's pinned toolchain, so it needs access to GitHub.
 - **[list mode]** `--list` prints available lints grouped by category and exits without running any checks.
-  `--list --dylint` prints only the embedded dylint rules. `--list` alone prints all lint suites plus the dylint rules.
+  `--list --dylint` prints only the `cargo-gears-lints` rules. `--list` alone prints all lint suites plus those rules.
+  Lints from other Dylint libraries are not listed.
 
 Examples:
 
@@ -1150,7 +1175,21 @@ cargo gears lint --list --dylint
 ```
 
 ```bash
+cargo gears lint --app app1 --env dev --pin-dylint
+```
+
+```bash
 cargo gears lint --list
+```
+
+Workspace `Cargo.toml` pin written by `--pin-dylint`, next to an external library:
+
+```toml
+[workspace.metadata.dylint]
+libraries = [
+    { git = "https://github.com/constructorfabric/cargo-gears", tag = "cargo-gears-v<CLI version>", pattern = "crates/cargo-gears-lints" },
+    { git = "https://github.com/example/my-lints", tag = "v1.0.0" },
+]
 ```
 
 Manifest Dylint skip example:
@@ -1442,8 +1481,8 @@ cargo gears src --verbose tokio::sync
 - **[`-c/--config` is mandatory]** For `config ...` and `deploy`; `build` and `run` use `Gears.toml` instead
 - **[generated servers expect `GEARS_CONFIG`]** `cargo gears run` sets it for you, but manual execution of
   generated project directory or its compiled binary must provide it explicitly
-- **[`lint --dylint` needs the feature build]** Without the `dylint-rules` feature enabled, it currently reaches
-  an error
+- **[`lint --dylint` needs the lints pinned]** Run `cargo gears lint --pin-dylint` after creating a workspace by
+  other means than `generate workspace`, and after every CLI upgrade
 - **[`lint --strict` depends on Clippy]** Use it together with `--clippy` or `--all`
 - **[`test` is not ready]** It is part of the CLI surface but currently panics at runtime
 - **[`tools` can mutate your system]** It may install `rustup` or rustup components
@@ -1478,7 +1517,7 @@ cargo gears ls packages [-p <workspace>] [--dirs <dirs>] [--filter <regex>] [--i
 cargo gears ls targets --manifest <Cargo.toml> [-f list|json|cargo-flags]
 
 cargo gears src [-p <path>] [--version <version>] [--clean] [<query>]
-cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <spec>]... [--gear <name>]... [--include-dependents] [-F <features>]... [--all-features | --no-default-features] [--locked] [--list]
+cargo gears lint [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--all] [--fmt] [--clippy] [--strict] [--dylint] [-P <spec>]... [--gear <name>]... [--include-dependents] [-F <features>]... [--all-features | --no-default-features] [--locked] [--list] [--pin-dylint]
 cargo gears tools --all
 cargo gears tools check-version <tool> '<requirement>'
 cargo gears run [-p <workspace>] [--app <app>] [--env <env>] [--manifest <Gears.toml>] [--name <name>] [--watch] [--locked]

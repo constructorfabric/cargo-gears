@@ -262,7 +262,7 @@ mod tests {
 
         let parsed = parse_module_rs_source(content).expect("module should parse");
         assert_eq!(parsed.name, "grpc-hub");
-        assert!(parsed.deps.is_empty());
+        assert_eq!(parsed.deps, Vec::<String>::new());
         assert_eq!(parsed.capabilities, vec![Capability::Stateful]);
         assert_eq!(
             parsed.provisions,
@@ -282,9 +282,9 @@ mod tests {
 
         let parsed = parse_module_rs_source(content).expect("module should parse");
         assert_eq!(parsed.name, "bookmarks");
-        assert!(parsed.deps.is_empty());
+        assert_eq!(parsed.deps, Vec::<String>::new());
         assert_eq!(parsed.capabilities, vec![Capability::Db, Capability::Rest]);
-        assert!(parsed.provisions.is_empty());
+        assert_eq!(parsed.provisions, Vec::<Provision>::new());
     }
 
     #[test]
@@ -297,8 +297,8 @@ mod tests {
         let parsed = parse_module_rs_source(content).expect("module should parse");
         assert_eq!(parsed.name, "demo");
         assert_eq!(parsed.deps, vec!["authz", "tenant-resolver"]);
-        assert!(parsed.capabilities.is_empty());
-        assert!(parsed.provisions.is_empty());
+        assert_eq!(parsed.capabilities, Vec::<Capability>::new());
+        assert_eq!(parsed.provisions, Vec::<Provision>::new());
     }
 
     #[test]

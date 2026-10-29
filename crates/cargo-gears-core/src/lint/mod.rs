@@ -1,20 +1,11 @@
 use crate::common::cargo_cmd;
 use crate::packages::PackageScope;
 use anyhow::{Context, Result};
-
-#[cfg(feature = "dylint-rules")]
-use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-#[cfg(feature = "dylint-rules")]
-use std::process::Command;
 
-/// Repository Dylint fetches `cargo-gears-lints` from.
-#[cfg(feature = "dylint-rules")]
-const LINTS_GIT_URL: &str = "https://github.com/constructorfabric/cargo-gears";
+mod dylint;
 
-/// Location of the `cargo-gears-lints` package inside [`LINTS_GIT_URL`].
-#[cfg(feature = "dylint-rules")]
-const LINTS_PATTERN: &str = "crates/cargo-gears-lints";
+pub use dylint::pin_lints;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct LintParams {
@@ -41,6 +32,8 @@ pub struct LintParams {
     pub features: LintFeatureSelection,
     /// List available lints instead of running them.
     pub list: bool,
+    /// Pin `cargo-gears-lints` in the workspace's Dylint metadata instead of running lints.
+    pub pin_dylint: bool,
 }
 
 /// Cargo feature selection for a lint run.
@@ -163,6 +156,13 @@ pub static DYLINT_LINTS: &[DylintLintInfo] = &[
         default_level: "deny",
     },
     DylintLintInfo {
+        code: "DE0309",
+        name: "de0309_must_have_domain_model",
+        category: "Domain Boundaries",
+        description: "domain types must have #[domain_model] attribute",
+        default_level: "deny",
+    },
+    DylintLintInfo {
         code: "DE0503",
         name: "de0503_plugin_client_suffix",
         category: "Client Layer",
@@ -233,6 +233,13 @@ pub static DYLINT_LINTS: &[DylintLintInfo] = &[
         default_level: "deny",
     },
     DylintLintInfo {
+        code: "DE0904",
+        name: "de0904_no_hardcoded_gts_prefix",
+        category: "GTS Layer",
+        description: "hard-coded GTS ID prefix; use gts_id!(\"<suffix>\") instead",
+        default_level: "deny",
+    },
+    DylintLintInfo {
         code: "DE1101",
         name: "de1101_tests_in_separate_files",
         category: "Testing",
@@ -244,6 +251,13 @@ pub static DYLINT_LINTS: &[DylintLintInfo] = &[
         name: "de1201_docs_rs_all_features",
         category: "Documentation",
         description: "crates with features must set docs.rs all-features metadata",
+        default_level: "warn",
+    },
+    DylintLintInfo {
+        code: "DE1202",
+        name: "de1202_missing_docs_for_pub_crate",
+        category: "Documentation",
+        description: "crate-public APIs must have documentation",
         default_level: "deny",
     },
     DylintLintInfo {
@@ -276,6 +290,10 @@ impl LintParams {
             return Ok(());
         }
 
+        if self.pin_dylint {
+            return pin_lints(&self.workspace_root);
+        }
+
         let package_scope = self.effective_package_scope()?;
 
         if self.fmt {
@@ -293,12 +311,12 @@ impl LintParams {
         }
 
         if self.dylint {
-            run_dylint(
+            dylint::run(
                 &self.workspace_root,
                 &self.dylint_skip,
                 &package_scope,
                 self.locked,
-                &self.features,
+                &self.features.cargo_args(),
             )?;
         }
 
@@ -415,163 +433,13 @@ fn run_clippy(
     Ok(())
 }
 
-#[cfg(feature = "dylint-rules")]
-fn run_dylint(
-    workspace_path: &Path,
-    skipped_lints: &[String],
-    package_scope: &PackageScope,
-    locked: bool,
-    features: &LintFeatureSelection,
-) -> Result<()> {
-    ensure_dylint_link_installed()?;
-
-    // Check all packages in the workspace rooted at `workspace_path`. Pointing
-    // Dylint at the workspace manifest avoids depending on the process CWD.
-    let manifest_path = Some(
-        workspace_path
-            .join("Cargo.toml")
-            .to_string_lossy()
-            .into_owned(),
-    );
-
-    // Dylint builds and caches the library with the toolchain pinned by its
-    // `rust-toolchain.toml`. Naming a path or git source also makes Dylint
-    // ignore any libraries the workspace declares.
-    let lib_sel = if let Some(lints_dir) = local_lints_dir() {
-        eprintln!("Using cargo-gears-lints from {}", lints_dir.display());
-        dylint::opts::LibrarySelection {
-            paths: vec![lints_dir.to_string_lossy().into_owned()],
-            manifest_path,
-            ..Default::default()
-        }
-    } else {
-        // Fetch the lints from the commit this CLI was released from.
-        dylint::opts::LibrarySelection {
-            git: Some(LINTS_GIT_URL.to_owned()),
-            tag: Some(format!("cargo-gears-v{}", env!("CARGO_PKG_VERSION"))),
-            pattern: Some(LINTS_PATTERN.to_owned()),
-            manifest_path,
-            ..Default::default()
-        }
-    };
-
-    let opts = dylint::opts::Dylint {
-        operation: dylint::opts::Operation::Check(dylint::opts::Check {
-            lib_sel,
-            // Lint the whole workspace unless specific packages were requested
-            // on the command line, in which case only those are checked.
-            workspace: matches!(package_scope, PackageScope::Workspace),
-            packages: package_scope.selected().unwrap_or_default().to_vec(),
-            args: dylint_cargo_check_args(skipped_lints, locked, features)?,
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-
-    dylint::run(&opts)
-}
-
-/// The `cargo-gears-lints` package next to this crate's sources. It exists
-/// when the CLI is built from a clone of the repository or installed with
-/// `cargo install --git`, but not when it is installed from crates.io.
-#[cfg(feature = "dylint-rules")]
-fn local_lints_dir() -> Option<PathBuf> {
-    let lints_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()?
-        .join("cargo-gears-lints");
-    lints_dir.join("Cargo.toml").is_file().then_some(lints_dir)
-}
-
-#[cfg(feature = "dylint-rules")]
-fn dylint_cargo_check_args(
-    skipped_lints: &[String],
-    locked: bool,
-    features: &LintFeatureSelection,
-) -> Result<Vec<String>> {
-    let mut args = features.cargo_args();
-
-    if !skipped_lints.is_empty() {
-        let rustflags = skipped_lints
-            .iter()
-            .flat_map(|lint| ["-A".to_owned(), lint.clone()])
-            .collect::<Vec<_>>();
-        let rustflags =
-            serde_json::to_string(&rustflags).context("failed to encode dylint skips")?;
-        args.extend([
-            "--config".to_owned(),
-            format!("build.rustflags={rustflags}"),
-        ]);
-    }
-
-    if locked {
-        args.push("--locked".to_owned());
-    }
-
-    Ok(args)
-}
-
-/// `cargo-gears-lints` links through `dylint-link` (see its
-/// `.cargo/config.toml`), so Dylint cannot build it without that tool.
-#[cfg(feature = "dylint-rules")]
-fn ensure_dylint_link_installed() -> Result<()> {
-    // `dylint-link` forwards its arguments to the system linker, so only
-    // whether it can be spawned matters, not its exit status.
-    match Command::new("dylint-link").arg("--version").output() {
-        Ok(_) => return Ok(()),
-        Err(err) if err.kind() == ErrorKind::NotFound => {}
-        Err(err) => return Err(err).context("failed to run `dylint-link`"),
-    }
-
-    eprintln!("Installing dylint-link...");
-    let status = cargo_cmd()?
-        .args(["install", "--locked", "dylint-link"])
-        .status()
-        .context("failed to run `cargo install dylint-link`")?;
-    if !status.success() {
-        anyhow::bail!("`cargo install dylint-link` failed with exit status {status}");
-    }
-
-    Ok(())
-}
-
-#[cfg(not(feature = "dylint-rules"))]
-fn run_dylint(
-    _workspace_path: &Path,
-    _skipped_lints: &[String],
-    _package_scope: &PackageScope,
-    _locked: bool,
-    _features: &LintFeatureSelection,
-) -> Result<()> {
-    anyhow::bail!("dylint-rules feature not enabled")
-}
-
 #[cfg(test)]
 mod tests {
     use super::{DYLINT_LINTS, LintFeatureSelection};
     use crate::packages::PackageScope;
-
-    #[cfg(feature = "dylint-rules")]
-    #[test]
-    fn dylint_skip_list_is_converted_to_cargo_rustflags_config() {
-        let args = super::dylint_cargo_check_args(
-            &[
-                "de0301_no_infra_in_domain".to_owned(),
-                "de1302_error_from_to_string".to_owned(),
-            ],
-            false,
-            &LintFeatureSelection::Default,
-        )
-        .expect("skip args should encode");
-
-        assert_eq!(
-            args,
-            vec![
-                "--config".to_owned(),
-                "build.rustflags=[\"-A\",\"de0301_no_infra_in_domain\",\"-A\",\"de1302_error_from_to_string\"]"
-                    .to_owned(),
-            ]
-        );
-    }
+    use regex::Regex;
+    use std::fs;
+    use std::path::Path;
 
     #[test]
     fn fmt_uses_all_packages_without_a_package_selection() {
@@ -601,7 +469,10 @@ mod tests {
 
     #[test]
     fn lint_feature_selection_maps_to_cargo_arguments() {
-        assert!(LintFeatureSelection::Default.cargo_args().is_empty());
+        assert_eq!(
+            LintFeatureSelection::Default.cargo_args(),
+            Vec::<String>::new()
+        );
         assert_eq!(LintFeatureSelection::All.cargo_args(), ["--all-features"]);
         assert_eq!(
             LintFeatureSelection::Selected {
@@ -629,32 +500,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "dylint-rules")]
-    #[test]
-    fn dylint_feature_arguments_are_combined_with_skip_config_and_locked() {
-        let args = super::dylint_cargo_check_args(
-            &["de1301_no_print_macros".to_owned()],
-            true,
-            &LintFeatureSelection::Selected {
-                features: vec!["otel".to_owned()],
-                no_default_features: true,
-            },
-        )
-        .expect("dylint arguments should encode");
-
-        assert_eq!(
-            args,
-            [
-                "--no-default-features",
-                "--features",
-                "otel",
-                "--config",
-                "build.rustflags=[\"-A\",\"de1301_no_print_macros\"]",
-                "--locked",
-            ]
-        );
-    }
-
     #[test]
     fn dylint_lints_registry_is_sorted_by_code() {
         for pair in DYLINT_LINTS.windows(2) {
@@ -678,6 +523,41 @@ mod tests {
                 lower_code,
             );
         }
+    }
+
+    /// `--list` prints this registry, so it must match the lints the pinned
+    /// `cargo-gears-lints` declares.
+    #[test]
+    fn dylint_lints_registry_matches_lints_crate() {
+        let lints_src = Path::new(env!("CARGO_MANIFEST_DIR")).join("../cargo-gears-lints/src");
+        let declaration = Regex::new(r"(?m)^\s*pub (DE\d{4}_\w+),\s*\n\s*(Allow|Warn|Deny),")
+            .expect("valid regex");
+
+        let mut declared = Vec::new();
+        let mut dirs = vec![lints_src];
+        while let Some(dir) = dirs.pop() {
+            for entry in fs::read_dir(&dir).expect("read lints source dir") {
+                let path = entry.expect("read lints source entry").path();
+                if path.is_dir() {
+                    dirs.push(path);
+                } else if path.extension().is_some_and(|ext| ext == "rs") {
+                    let source = fs::read_to_string(&path).expect("read lint source");
+                    declared.extend(
+                        declaration.captures_iter(&source).map(|captures| {
+                            (captures[1].to_lowercase(), captures[2].to_lowercase())
+                        }),
+                    );
+                }
+            }
+        }
+        declared.sort();
+
+        let registered = DYLINT_LINTS
+            .iter()
+            .map(|lint| (lint.name.to_owned(), lint.default_level.to_owned()))
+            .collect::<Vec<_>>();
+
+        assert_eq!(registered, declared);
     }
 
     #[test]
